@@ -1,0 +1,2046 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LBS 漁港徽章＋專屬小遊戲 示範</title>
+<style>
+  :root{
+    --ink:#12221c;
+    --paper:#f4f7f5;
+    --line:rgba(18,34,28,0.14);
+    --accent:#0f7a5c;
+    --accent-soft:rgba(15,122,92,0.12);
+    --warn:#c0522d;
+    --gold:#b8860b;
+    --gold-soft:rgba(184,134,11,0.12);
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    height:100%;
+    margin:0;
+    overflow:hidden; /* 不用RWD、不捲動：固定手機直式畫面 */
+  }
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'PingFang TC','Microsoft JhengHei',-apple-system,BlinkMacSystemFont,sans-serif;
+    display:flex;
+    flex-direction:column;
+    padding:14px 14px 10px;
+    gap:8px;
+    height:100dvh;
+  }
+  h1{
+    font-size:1.05rem;
+    font-weight:900;
+    letter-spacing:0.02em;
+    margin:0;
+    flex-shrink:0;
+  }
+  .sub{
+    font-size:0.72rem;
+    color:rgba(18,34,28,0.55);
+    margin:0;
+    line-height:1.45;
+    flex-shrink:0;
+  }
+  .panel{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px 12px;
+    flex-shrink:0;
+  }
+  .panel h2{
+    font-size:0.74rem;
+    margin:0 0 7px;
+    font-weight:900;
+    color:rgba(18,34,28,0.55);
+  }
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  button{
+    padding:8px 12px;
+    border-radius:7px;
+    border:1.5px solid var(--ink);
+    background:#fff;
+    color:var(--ink);
+    font-size:0.76rem;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  button:disabled{opacity:0.35;cursor:not-allowed;}
+  .status-line{
+    font-size:0.7rem;
+    color:rgba(18,34,28,0.6);
+    margin-top:6px;
+    line-height:1.4;
+    font-family:var(--mono);
+  }
+  .status-line.err{color:var(--warn);}
+  .sim-shortcuts{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+  .sim-shortcuts button{padding:5px 9px;font-size:0.68rem;font-weight:600;}
+
+  .harbor-list{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+    min-height:0; /* 讓 flex 子項可以正確被壓縮，不會撐破容器 */
+  }
+  .harbor-card{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    padding:9px 12px;
+    background:#fff;
+    transition:border-color .2s ease, background .2s ease;
+    min-height:0;
+  }
+  .harbor-card.unlocked{
+    border-color:var(--gold);
+    background:linear-gradient(180deg, var(--gold-soft), #fff 60%);
+  }
+  .harbor-card.in-range:not(.unlocked){
+    border-color:var(--accent);
+  }
+  .harbor-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+  }
+  .harbor-name{font-weight:900;font-size:0.86rem;}
+  .harbor-game-name{
+    font-size:0.68rem;
+    color:rgba(18,34,28,0.5);
+  }
+  .harbor-dist{
+    text-align:right;
+    font-family:var(--mono);
+    font-size:0.72rem;
+    color:rgba(18,34,28,0.55);
+    flex-shrink:0;
+  }
+  .harbor-bottom{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:6px;
+  }
+  .badge-status{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    padding:3px 8px;
+    border-radius:20px;
+    font-size:0.66rem;
+    font-weight:700;
+    white-space:nowrap;
+  }
+  .badge-status.locked{background:rgba(18,34,28,0.06);color:rgba(18,34,28,0.4);}
+  .badge-status.range{background:var(--accent-soft);color:var(--accent);}
+  .badge-status.unlocked{background:var(--gold-soft);color:var(--gold);}
+  .harbor-actions{flex:1;}
+  .harbor-actions button{width:100%;padding:7px 10px;font-size:0.72rem;}
+
+  /* 遊戲彈窗 */
+  #game-modal{
+    display:none;
+    position:fixed;
+    top:0;left:0;width:100%;height:100%;
+    background:rgba(10,15,12,0.92);
+    z-index:5000;
+    flex-direction:column;
+  }
+  #game-modal.show{display:flex;}
+  .game-modal-bar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 14px;
+    background:#0f1a15;
+    color:#fff;
+    font-size:0.85rem;
+    font-weight:700;
+    flex-shrink:0;
+  }
+  .game-modal-bar button{
+    background:rgba(255,255,255,0.12);
+    border:none;
+    color:#fff;
+    padding:7px 14px;
+    border-radius:8px;
+    font-size:0.8rem;
+    cursor:pointer;
+  }
+  #game-modal iframe{
+    flex:1;
+    width:100%;
+    border:none;
+    background:#fff;
+    min-height:0;
+  }
+  .toast{
+    position:fixed;
+    bottom:24px;left:50%;
+    transform:translateX(-50%);
+    background:var(--gold);
+    color:#fff;
+    padding:12px 20px;
+    border-radius:10px;
+    font-size:0.88rem;
+    font-weight:700;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    box-shadow:0 8px 24px rgba(184,134,11,0.35);
+    z-index:6000;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+</style>
+</head>
+<body>
+<h1>🎣 LBS 漁港徽章＋專屬小遊戲</h1>
+<p class="sub">人在漁港附近解鎖徽章，有徽章才能玩該漁港的專屬小遊戲。</p>
+
+<div class="panel">
+  <h2>定位</h2>
+  <div class="row">
+    <button class="primary" id="btn-locate">📡 取得目前位置</button>
+    <button id="btn-clear">🗑️ 清除徽章</button>
+  </div>
+  <div class="status-line" id="gps-status">尚未定位</div>
+  <div class="sim-shortcuts" id="sim-shortcuts"></div>
+</div>
+
+<div class="harbor-list" id="harbor-list"></div>
+
+<div id="game-modal">
+  <div class="game-modal-bar">
+    <span id="game-modal-title">遊戲</span>
+    <button onclick="closeGame()">✕ 關閉</button>
+  </div>
+  <iframe id="game-iframe"></iframe>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── 資料設定 ──
+// 每個漁港：真實 GPS 座標＋徽章名稱＋對應的專屬小遊戲檔案
+var HARBORS = [
+  { id:'longfeng', name:'竹南龍鳳漁港', lat:24.699778, lng:120.85831,
+    badgeName:'龍鳳漁港章', gameName:'永續海鮮翻牌對對碰', gameTpl:'tpl-longfeng' },
+  { id:'waipu',    name:'後龍外埔漁港', lat:24.65002,  lng:120.77310,
+    badgeName:'外埔漁港章', gameName:'石滬修復九宮格',     gameTpl:'tpl-waipu' },
+  { id:'yuangang', name:'苑港觀光漁港', lat:24.4591,   lng:120.64726,
+    badgeName:'苑港漁港章', gameName:'海洋廢棄物分類連連看', gameTpl:'tpl-yuangang' }
+];
+
+var UNLOCK_RADIUS_M = 500; // 解鎖半徑（公尺），跟正式遊戲要用的數字一致時記得同步改
+var STORAGE_KEY = 'lbsHarborBadges';
+
+var currentPos = null;
+
+var gpsStatusEl = document.getElementById('gps-status');
+var harborListEl = document.getElementById('harbor-list');
+var simShortcutsEl = document.getElementById('sim-shortcuts');
+var toastEl = document.getElementById('toast');
+
+// ── 徽章資料（localStorage）──
+function loadBadges(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function saveBadges(data){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+function hasBadge(id){
+  var data = loadBadges();
+  return !!data[id];
+}
+function unlockBadge(id){
+  var data = loadBadges();
+  if(data[id]) return false; // 已經有了，回傳 false 代表「這次沒有新解鎖」
+  data[id] = { unlockedAt: new Date().toISOString() };
+  saveBadges(data);
+  return true; // 這次是新解鎖
+}
+
+// ── 距離計算（Haversine 公式）──
+function distanceMeters(lat1, lng1, lat2, lng2){
+  var R = 6371000;
+  var toRad = function(d){ return d * Math.PI / 180; };
+  var dLat = toRad(lat2 - lat1);
+  var dLng = toRad(lng2 - lng1);
+  var a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+          Math.cos(toRad(lat1))*Math.cos(toRad(lat2)) *
+          Math.sin(dLng/2)*Math.sin(dLng/2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+function formatDist(m){
+  if(m < 1000) return Math.round(m) + ' 公尺';
+  return (m/1000).toFixed(2) + ' 公里';
+}
+
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(function(){ toastEl.classList.remove('show'); }, 2400);
+}
+
+// ── 畫面渲染 ──
+function renderHarbors(){
+  harborListEl.innerHTML = '';
+  HARBORS.forEach(function(h){
+    var unlocked = hasBadge(h.id);
+    var dist = currentPos ? distanceMeters(currentPos.lat, currentPos.lng, h.lat, h.lng) : null;
+    var inRange = dist !== null && dist <= UNLOCK_RADIUS_M;
+
+    var card = document.createElement('div');
+    card.className = 'harbor-card' + (unlocked ? ' unlocked' : (inRange ? ' in-range' : ''));
+
+    var statusClass = unlocked ? 'unlocked' : (inRange ? 'range' : 'locked');
+    var statusText = unlocked ? ('🎖️ 已解鎖：' + h.badgeName) : (inRange ? '✓ 在範圍內，可解鎖' : '🔒 尚未解鎖');
+
+    card.innerHTML =
+      '<div class="harbor-top">' +
+        '<div>' +
+          '<div class="harbor-name">' + h.name + '</div>' +
+          '<div class="harbor-game-name">' + h.gameName + '</div>' +
+        '</div>' +
+        '<div class="harbor-dist">' + (dist !== null ? formatDist(dist) : '—') + '</div>' +
+      '</div>' +
+      '<div class="harbor-bottom">' +
+        '<div class="badge-status ' + statusClass + '">' + statusText + '</div>' +
+        '<div class="harbor-actions">' +
+          (unlocked
+            ? '<button class="primary" data-game="' + h.gameTpl + '" data-name="' + h.gameName + '">▶ 進入遊戲</button>'
+            : (inRange
+                ? '<button class="primary" data-unlock="' + h.id + '">🎖️ 解鎖徽章</button>'
+                : '<button disabled>需在' + UNLOCK_RADIUS_M + '公尺內解鎖</button>'))
+        + '</div>' +
+      '</div>';
+
+    harborListEl.appendChild(card);
+  });
+
+  // 事件綁定（用 data-* 屬性判斷按鈕動作，避免重複綁定疊加）
+  harborListEl.querySelectorAll('[data-unlock]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var id = btn.getAttribute('data-unlock');
+      var h = HARBORS.filter(function(x){ return x.id === id; })[0];
+      var isNew = unlockBadge(id);
+      if(isNew) showToast('🎖️ 解鎖「' + h.badgeName + '」！');
+      renderHarbors();
+    });
+  });
+  harborListEl.querySelectorAll('[data-game]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      openGame(btn.getAttribute('data-game'), btn.getAttribute('data-name'));
+    });
+  });
+}
+
+function renderSimShortcuts(){
+  simShortcutsEl.innerHTML = '';
+  HARBORS.forEach(function(h){
+    var btn = document.createElement('button');
+    btn.textContent = '📍 模擬在' + h.name;
+    btn.onclick = function(){
+      currentPos = { lat:h.lat, lng:h.lng };
+      gpsStatusEl.textContent = '模擬定位：目前在「' + h.name + '」正中心';
+      gpsStatusEl.classList.remove('err');
+      renderHarbors();
+    };
+    simShortcutsEl.appendChild(btn);
+  });
+}
+
+// ── 定位 ──
+document.getElementById('btn-locate').addEventListener('click', function(){
+  if(!navigator.geolocation){
+    gpsStatusEl.textContent = '這個瀏覽器不支援地理定位功能';
+    gpsStatusEl.classList.add('err');
+    return;
+  }
+  gpsStatusEl.textContent = '定位中…（手機請確認已開啟定位權限）';
+  gpsStatusEl.classList.remove('err');
+  navigator.geolocation.getCurrentPosition(
+    function(pos){
+      currentPos = { lat:pos.coords.latitude, lng:pos.coords.longitude };
+      gpsStatusEl.textContent =
+        '定位成功：' + pos.coords.latitude.toFixed(6) + ', ' + pos.coords.longitude.toFixed(6) +
+        '（精確度 ±' + Math.round(pos.coords.accuracy) + ' 公尺）';
+      renderHarbors();
+    },
+    function(err){
+      var msg = '定位失敗：';
+      if(err.code === 1) msg += '沒有取得定位權限（請到瀏覽器/手機設定允許此網站使用位置）';
+      else if(err.code === 2) msg += '目前無法取得位置資訊';
+      else if(err.code === 3) msg += '定位逾時';
+      else msg += err.message;
+      gpsStatusEl.textContent = msg;
+      gpsStatusEl.classList.add('err');
+    },
+    { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
+  );
+});
+
+document.getElementById('btn-clear').addEventListener('click', function(){
+  localStorage.removeItem(STORAGE_KEY);
+  showToast('已清除全部徽章，可以重新測試');
+  renderHarbors();
+});
+
+// ── 遊戲彈窗 ──
+function openGame(tplId, name){
+  var raw = document.getElementById(tplId).textContent;
+  var restored = raw.split('@@ENDSCRIPT_TOKEN@@').join('<' + '/script>');
+  document.getElementById('game-modal-title').textContent = name;
+  document.getElementById('game-iframe').srcdoc = restored;
+  document.getElementById('game-modal').classList.add('show');
+}
+function closeGame(){
+  document.getElementById('game-modal').classList.remove('show');
+  document.getElementById('game-iframe').srcdoc = '';
+}
+
+renderSimShortcuts();
+renderHarbors();
+</script>
+
+<!-- 三款漁港專屬小遊戲的完整原始碼，各自用 <script type="text/html"> 包起來，
+     啟動時取出文字內容還原 </script> 後透過 iframe srcdoc 載入。 -->
+<script type="text/html" id="tpl-longfeng">
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>海紋守護團・永續海鮮翻牌對對碰</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ocean-deep:#08222d;
+    --ocean-mid:#0f3a4c;
+    --ocean-panel:#134a5e;
+    --teal:#2e93a0;
+    --cream:#f3eedc;
+    --cream-dim:#d9d2b8;
+    --green:#3fa66b;
+    --amber:#e0a83e;
+    --coral:#e2574c;
+    --gold:#c9a227;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;}
+  body{
+    font-family:'Noto Sans TC', sans-serif;
+    color:var(--cream);
+    background:
+      radial-gradient(circle at 15% -10%, #1a5468 0%, transparent 45%),
+      radial-gradient(circle at 90% 110%, #0b2c39 0%, transparent 55%),
+      linear-gradient(180deg, var(--ocean-deep) 0%, var(--ocean-mid) 55%, var(--ocean-deep) 100%);
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    height:100dvh;
+  }
+  /* 波浪裝飾（fixed 定位，不佔版面高度） */
+  .wave-layer{position:fixed;left:0;right:0;bottom:0;height:50px;pointer-events:none;opacity:.25;z-index:0;}
+  .wave-layer svg{width:200%;height:100%;animation:driftWave 22s linear infinite;}
+  @keyframes driftWave{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+  .app{
+    position:relative;z-index:1;
+    display:flex;flex-direction:column;
+    flex:1;min-height:0;
+    padding:10px 14px 16px;
+  }
+
+  .brandline{display:none;} /* 手機固定版面：省掉裝飾性標語，把空間留給遊戲內容 */
+  h1.title{
+    font-family:'Noto Serif TC', serif;
+    font-weight:900;
+    font-size:1.05rem;
+    text-align:center;
+    margin:0 0 2px;
+    color:var(--cream);
+    flex-shrink:0;
+  }
+  p.subtitle{
+    text-align:center;
+    color:var(--cream-dim);
+    font-size:0.68rem;
+    margin:0 0 8px;
+    flex-shrink:0;
+  }
+
+  .screen{display:none;}
+  .screen.active{display:flex;flex-direction:column;flex:1;min-height:0;animation:fadeUp .4s ease both;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+  /* ---- 選擇畫面 ---- */
+  .section-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.62rem;
+    letter-spacing:.1em;
+    color:var(--gold);
+    margin:0 0 6px;
+    display:flex;align-items:center;gap:8px;
+    flex-shrink:0;
+  }
+  .section-label::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--gold),transparent);}
+
+  .port-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:6px;
+    margin-bottom:8px;
+    flex-shrink:0;
+  }
+  .port-card{
+    background:linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,0) 60%), var(--ocean-panel);
+    border:1px solid rgba(201,162,39,.35);
+    border-radius:9px;
+    padding:8px 6px 7px;
+    cursor:pointer;
+    transition:border-color .2s ease;
+    position:relative;
+    overflow:hidden;
+    text-align:center;
+  }
+  .port-card.selected{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal) inset;}
+  .port-card .area{font-size:0.56rem;color:var(--teal);font-family:'JetBrains Mono',monospace;}
+  .port-card .name{font-family:'Noto Serif TC',serif;font-weight:700;font-size:0.72rem;margin:2px 0 3px;}
+  .port-card .badge{font-size:0.6rem;color:var(--cream-dim);}
+  .port-card .badge::before{content:"⚓ ";}
+
+  .diff-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;flex-shrink:0;}
+  .diff-btn{
+    flex:1;min-width:70px;
+    background:transparent;
+    border:1px solid rgba(243,238,220,.3);
+    color:var(--cream);
+    padding:7px 4px;
+    border-radius:8px;
+    font-family:'Noto Sans TC',sans-serif;
+    font-weight:500;
+    font-size:0.68rem;
+    cursor:pointer;
+    transition:all .2s ease;
+    text-align:center;
+  }
+  .diff-btn b{display:block;font-family:'Noto Serif TC',serif;font-size:0.9rem;}
+  .diff-btn.selected{background:var(--gold);color:var(--ocean-deep);border-color:var(--gold);}
+
+  .legend-row{
+    display:flex;flex-wrap:wrap;gap:8px;
+    justify-content:center;
+    margin:0 0 8px;
+    font-size:0.62rem;
+    flex-shrink:0;
+  }
+  .legend-chip{
+    display:flex;align-items:center;gap:5px;
+    background:rgba(0,0,0,.2);
+    padding:5px 10px;border-radius:999px;
+    border:1px solid rgba(255,255,255,.08);
+  }
+  .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .dot.g{background:var(--green);} .dot.y{background:var(--amber);} .dot.r{background:var(--coral);}
+
+  .start-btn{
+    display:block;margin:auto auto 4px;
+    background:var(--teal);
+    color:var(--ocean-deep);
+    font-family:'Noto Serif TC',serif;
+    font-weight:700;
+    font-size:0.85rem;
+    border:none;
+    padding:10px 40px;
+    border-radius:999px;
+    cursor:pointer;
+    box-shadow:0 6px 18px rgba(46,147,160,.4);
+    flex-shrink:0;
+  }
+  .start-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+
+  /* ---- 遊戲畫面 ---- */
+  .game-header{
+    display:flex;flex-wrap:wrap;gap:6px;
+    align-items:center;justify-content:space-between;
+    margin-bottom:6px;
+    flex-shrink:0;
+  }
+  .port-title{font-family:'Noto Serif TC',serif;font-weight:700;font-size:0.82rem;}
+  .port-title span{color:var(--teal);font-size:0.58rem;display:block;font-family:'JetBrains Mono',monospace;font-weight:400;margin-top:1px;}
+
+  .stat-bar{display:flex;gap:5px;flex-wrap:wrap;}
+  .stat{
+    background:rgba(0,0,0,.25);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:8px;
+    padding:4px 8px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.62rem;
+    min-width:46px;
+    text-align:center;
+  }
+  .stat b{display:block;font-size:0.76rem;color:var(--cream);}
+  .stat span{color:var(--cream-dim);font-size:0.52rem;}
+
+  .icon-btn{
+    background:none;border:1px solid rgba(255,255,255,.25);
+    color:var(--cream-dim);border-radius:7px;
+    padding:5px 8px;cursor:pointer;font-size:0.62rem;
+    font-family:'Noto Sans TC',sans-serif;
+  }
+
+  .board{
+    display:grid;
+    grid-template-columns:repeat(var(--cols,4), 1fr);
+    gap:6px;
+    perspective:1000px;
+    flex:1;
+    min-height:0;
+    align-content:center;
+    align-self:center;
+    width:min(232px, 66vw);
+    margin-bottom:6px;
+  }
+  .card{
+    position:relative;
+    aspect-ratio:3/3.3;
+    cursor:pointer;
+  }
+  .card-inner{
+    position:absolute;inset:0;
+    transform-style:preserve-3d;
+    transition:transform .5s cubic-bezier(.4,.2,.2,1);
+  }
+  .card.flipped .card-inner, .card.matched .card-inner{transform:rotateY(180deg);}
+  .card-face{
+    position:absolute;inset:0;
+    border-radius:7px;
+    backface-visibility:hidden;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:3px;
+  }
+  .card-back{
+    background:
+      radial-gradient(circle at 30% 30%, rgba(255,255,255,.08) 0 6px, transparent 7px) 0 0/22px 22px,
+      linear-gradient(155deg, var(--ocean-panel), #0b2c39);
+    border:1px solid rgba(201,162,39,.4);
+    color:var(--gold);
+  }
+  .card-back .anchor{font-size:1rem;opacity:.8;}
+  .card-back .badge-txt{font-size:0.5rem;margin-top:2px;letter-spacing:.06em;font-family:'JetBrains Mono',monospace;text-align:center;padding:0 2px;}
+  .card-front{
+    transform:rotateY(180deg);
+    background:var(--cream);
+    color:var(--ocean-deep);
+    border:1.5px solid var(--border-c, var(--teal));
+  }
+  .card.matched .card-front{box-shadow:0 0 0 2px var(--border-c) inset;}
+  .card-front .fname{
+    font-family:'Noto Serif TC',serif;
+    font-weight:700;
+    font-size:0.56rem;
+    margin-top:2px;
+    text-align:center;
+    line-height:1.15;
+  }
+  .light-dot{
+    width:22px;height:22px;border-radius:50%;
+    box-shadow:0 0 0 3px rgba(0,0,0,.08) inset, 0 2px 6px rgba(0,0,0,.25);
+  }
+  .card.wrong .card-inner{animation:shake .4s;}
+  @keyframes shake{0%,100%{transform:rotateY(180deg) translateX(0);}25%{transform:rotateY(180deg) translateX(-6px);}75%{transform:rotateY(180deg) translateX(6px);}}
+
+  .legend-mini{display:flex;justify-content:center;gap:10px;font-size:0.6rem;color:var(--cream-dim);flex-shrink:0;}
+
+  /* toast */
+  #toast-wrap{position:fixed;left:0;right:0;bottom:18px;display:flex;justify-content:center;z-index:50;pointer-events:none;}
+  .toast{
+    pointer-events:auto;
+    max-width:340px;width:calc(100% - 28px);
+    background:linear-gradient(160deg, rgba(255,255,255,.08), rgba(0,0,0,.1)), var(--ocean-panel);
+    border:1px solid var(--border-c, var(--teal));
+    border-radius:13px;
+    padding:11px 15px;
+    box-shadow:0 12px 30px rgba(0,0,0,.5);
+    animation:toastIn .35s ease;
+  }
+  @keyframes toastIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+  .toast h4{margin:0 0 3px;font-family:'Noto Serif TC',serif;font-size:0.85rem;display:flex;align-items:center;gap:6px;}
+  .toast p{margin:0;font-size:0.68rem;color:var(--cream-dim);line-height:1.4;}
+  .toast .meta{font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--teal);margin-top:5px;}
+
+  /* modal */
+  .overlay{
+    position:fixed;inset:0;background:rgba(4,16,20,.75);
+    display:none;align-items:center;justify-content:center;z-index:80;padding:16px;
+  }
+  .overlay.active{display:flex;animation:fadeUp .3s ease both;}
+  .modal{
+    background:var(--ocean-panel);
+    border:1px solid var(--gold);
+    border-radius:14px;
+    max-width:340px;width:100%;
+    padding:20px 20px;
+    text-align:center;
+    max-height:90dvh;overflow-y:auto;
+  }
+  .modal h2{font-family:'Noto Serif TC',serif;font-size:1.15rem;margin:4px 0 3px;}
+  .modal .medal{font-size:2rem;}
+  .modal .result-grid{display:flex;justify-content:center;gap:14px;margin:12px 0;}
+  .modal .result-grid div b{display:block;font-size:1rem;font-family:'JetBrains Mono',monospace;}
+  .modal .result-grid div span{font-size:0.62rem;color:var(--cream-dim);}
+  .modal .tip{
+    background:rgba(0,0,0,.25);
+    border-radius:8px;padding:9px 11px;
+    font-size:0.7rem;color:var(--cream-dim);
+    margin-bottom:14px;line-height:1.5;text-align:left;
+  }
+  .modal .btn-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+
+</style>
+</head>
+<body>
+
+<div class="wave-layer"><svg viewBox="0 0 1600 140" preserveAspectRatio="none"><path d="M0,60 C200,110 400,10 600,60 C800,110 1000,10 1200,60 C1400,110 1500,40 1600,60 L1600,140 L0,140 Z" fill="#2e93a0"/></svg></div>
+
+<div class="app">
+  <div class="brandline"><div class="eyebrow">Taiwan Coastal Guardians</div></div>
+  <h1 class="title">海紋守護團・永續海鮮翻牌對對碰</h1>
+  <p class="subtitle">翻牌配對：魚種配燈號，找出每種漁獲對應的永續燈號</p>
+
+  <!-- 畫面一：選擇漁港 -->
+  <div class="screen active" id="screen-select">
+    <div class="section-label">選擇出航漁港</div>
+    <div class="port-grid" id="portGrid"></div>
+
+    <div class="legend-row">
+      <div class="legend-chip"><span class="dot g"></span>綠燈・安心食用</div>
+      <div class="legend-chip"><span class="dot y"></span>黃燈・斟酌選擇</div>
+      <div class="legend-chip"><span class="dot r"></span>紅燈・建議避免</div>
+    </div>
+
+    <button class="start-btn" id="startBtn" disabled>啟航出海</button>
+  </div>
+
+  <!-- 畫面二：遊戲進行 -->
+  <div class="screen" id="screen-game">
+    <div class="game-header">
+      <div class="port-title" id="gamePortTitle">—<span id="gamePortArea"></span></div>
+      <div class="stat-bar">
+        <div class="stat"><b id="statTime">00:00</b><span>時間</span></div>
+        <div class="stat"><b id="statMoves">0</b><span>翻牌次數</span></div>
+        <div class="stat"><b id="statPairs">0/0</b><span>配對成功</span></div>
+        <button class="icon-btn" id="backBtn">↺ 重新選擇</button>
+      </div>
+    </div>
+
+    <div class="board" id="board"></div>
+
+    <div class="legend-mini">
+      <div><span class="dot g" style="display:inline-block;"></span> 綠燈</div>
+      <div><span class="dot y" style="display:inline-block;"></span> 黃燈</div>
+      <div><span class="dot r" style="display:inline-block;"></span> 紅燈</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<div class="overlay" id="winOverlay">
+  <div class="modal">
+    <div class="medal">🎣</div>
+    <h2>滿載而歸！</h2>
+    <div class="result-grid">
+      <div><b id="finalTime">00:00</b><span>總時間</span></div>
+      <div><b id="finalMoves">0</b><span>翻牌次數</span></div>
+      <div><b id="finalPairs">0</b><span>配對數</span></div>
+    </div>
+    <div class="tip" id="winTip"></div>
+    <div class="btn-row">
+      <button class="start-btn" id="playAgainBtn" style="padding:12px 30px;">再玩一次</button>
+      <button class="icon-btn" id="changePortBtn">更換漁港</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ 資料庫（節錄自 db.js） ============ */
+const fishDB = [
+{n:"吳郭魚",l:1,s:"夏秋",m:["養殖"],h:"定棲性",d:"養殖",i:"適應力極強的台灣代表性養殖魚，肉質紮實且平價，是餐桌上最常見的家常美味。"},
+{n:"竹筴魚",l:1,s:"夏",m:["一支釣","定置網","圍網","拖網"],h:"洄游性",d:"近海",i:"體側有明顯的堅硬稜鱗，是日本料理常見的食材，適合鹽烤或製成一夜干。"},
+{n:"台灣鯖魚",l:1,s:"秋冬",m:["定置網","圍網"],h:"洄游性",d:"近海",i:"背部有如波浪般的青色花紋，富含Omega-3，是營養價值極高的優質藍皮魚。"},
+{n:"飛魚",l:1,s:"春夏",m:["定置網","追逐網","流刺網"],h:"洄游性",d:"近海",i:"擁有一對長長的胸鰭，能跳出水面滑行數百公尺，是蘭嶼達悟族重要的祭祀魚類。"},
+{n:"臭肚魚",l:1,s:"全年",m:["一支釣","拖網","流刺網"],h:"洄游性",d:"近海",i:"因腸道內海藻發酵氣味重而得名，鰭棘有毒需小心，但肉質紮實、風味特殊。"},
+{n:"紅魽",l:1,s:"冬春",m:["一支釣","延繩釣","拖網","流刺網"],h:"洄游性",d:"近海",i:"頂級生魚片食材，游速極快且力氣驚人，是釣魚愛好者心目中最具挑戰性的目標。"},
+{n:"小卷",l:1,s:"夏",m:["一支釣","拖網"],h:"洄游性",d:"近海",i:"台灣東北角名產，屬於一年生頭足類，生長快速且數量穩定，是永續海鮮的首選。"},
+{n:"星雞魚",l:1,s:"夏秋",m:["手釣","延繩釣","拖網"],h:"定棲性",d:"近海",i:"身上帶有如星點般的黑色斑紋，幼魚時期特徵最明顯，肉質鮮美，適合各種料理方式。"},
+{n:"巴鰹",l:1,s:"全年",m:["一支釣","定置網","圍網"],h:"洄游性",d:"近海",i:"體側有波浪紋與數個黑點，游動快速，是製作柴魚片或醃製品的主要魚種。"},
+{n:"虱目魚",l:1,s:"夏秋",m:["養殖"],h:"洄游性",d:"養殖",i:"台灣養殖業的靈魂，肉質細嫩、營養豐富，雖然魚刺較多但極受歡迎，俗稱牛奶魚。"},
+{n:"白帶魚",l:1,s:"全年",m:["一支釣","定置網","拖網"],h:"洄游性",d:"近海",i:"身型細長如銀色絲帶，在水中是垂直游動。肉質細嫩，是台灣極受歡迎的家常煎魚。"},
+{n:"養殖鱸魚",l:1,s:"全年",m:["養殖"],h:"定棲性",d:"養殖",i:"台灣沿海箱網與魚塭普遍養殖，肉質細嫩、刺少，是家庭料理與餐廳最受歡迎的白肉魚。"},
+{n:"養殖烏魚",l:1,s:"冬",m:["養殖"],h:"洄游性",d:"養殖",i:"烏魚子的原料來源，台灣南部為主要養殖重鎮。冬至前後出產，魚卵飽滿是為上品。"},
+{n:"皮刀",l:1,s:"春夏",m:["定置網","圍網"],h:"洄游性",d:"近海",i:"身體極扁如菜刀，銀亮色澤能反射陽光，在水中常被當作釣大型魚種的絕佳活餌。"},
+{n:"剝皮魚",l:1,s:"夏",m:["定置網","拖網"],h:"洄游性",d:"近海",i:"皮膚堅韌如皮革，食用前須剝除。肉質潔白、細緻且幾乎沒有細刺，非常適合小孩食用。"},
+{n:"鰆魚",l:1,s:"冬春",m:["一支釣","延繩釣","定置網"],h:"洄游性",d:"近海",i:"龍鳳漁港的主力招牌漁獲，體型修長游速極快。肉質細嫩潔白幾乎無刺，是苗栗海線的靈魂滋味。"},
+{n:"鯽仔",l:1,s:"全年",m:["養殖","定置網","手釣"],h:"定棲性",d:"養殖",i:"台灣海峽沿岸常見的小型鯛科魚，繁殖力強且生長迅速，是物美價廉的家常小魚。"},
+{n:"紅目鰱",l:2,s:"夏",m:["一支釣","拖網"],h:"洄游性",d:"近海",i:"眼睛大而通紅，具有粗硬的鱗片。烹飪後可輕易將魚皮連鱗片整片剝除，口感鮮甜。"},
+{n:"白鯧",l:2,s:"春",m:["拖網","流刺網"],h:"洄游性",d:"近海",i:"過年必備的吉祥魚種，魚體扁平圓潤，肉質肥美細緻且少刺，是高級食用魚代表。"},
+{n:"石狗公",l:2,s:"夏秋",m:["延繩釣","拖網"],h:"定棲性",d:"近海",i:"岩礁區的偽裝大師，頭部帶有許多棘刺。肉質鮮美有彈性，是燉煮魚湯的首選食材。"},
+{n:"鰻魚",l:2,s:"春夏",m:["養殖"],h:"洄游性",d:"養殖",i:"生命史神秘，需在深海產卵後回河口生長。富含豐富脂肪與維生素，是知名的滋補海鮮。"},
+{n:"花枝",l:2,s:"冬",m:["一支釣","延繩釣","圍網"],h:"洄游性",d:"近海",i:"正式名稱為烏賊，體內有一塊厚厚的石灰質內殼，肉質厚實且清脆，常用於各式炒食。"},
+{n:"笛鯛",l:2,s:"夏",m:["一支釣","延繩釣","流刺網"],h:"洄游性",d:"近海",i:"常見於珊瑚礁或岩礁區，種類多樣且色彩豐富，是經濟價值極高的底棲性魚種。"},
+{n:"肉魚",l:2,s:"冬春",m:["一支釣","拖網","流刺網"],h:"洄游性",d:"近海",i:"學名刺鯧，身型扁平，油脂分豐富且刺少。因價格平實，是台灣家庭中最受歡迎的家常菜。"},
+{n:"午仔魚",l:2,s:"秋冬",m:["釣具","定置網","流刺網","底拖網"],h:"洄游性",d:"近海",i:"台灣民間美味排名第一的魚種，油脂分佈極其豐厚、入口即化，肉質極為細嫩。"},
+{n:"養殖黑鯛",l:2,s:"冬春",m:["養殖"],h:"定棲性",d:"養殖",i:"俗稱黑格，養殖者體型較肥美，肉質較野生種更具油脂，是宴席中常見的高級料理食材。"},
+{n:"黃鰭鯛",l:2,s:"冬",m:["一支釣","底刺網"],h:"定棲性",d:"近海",i:"腹鰭與臀鰭呈現明顯鮮黃色，肉質細嫩且帶有獨特香氣，是沿岸磯釣最熱門的目標。"},
+{n:"牛舌",l:2,s:"全年",m:["拖網"],h:"定棲性",d:"近海",i:"身體長且扁平，棲息在泥沙底層偽裝。肉質細緻，簡單紅燒或油煎就能呈現鮮甜風味。"},
+{n:"比目魚",l:2,s:"全年",m:["一支釣","延繩釣","底拖網"],h:"洄游性",d:"近海",i:"兩隻眼睛長在身體同一側，擅長埋在沙中偷襲獵物。肉質細嫩柔軟，是高品質的食用魚。"},
+{n:"海鱺",l:2,s:"秋冬",m:["養殖"],h:"洄游性",d:"養殖",i:"成長極快的明星養殖魚種。肉質紮實Q彈且富含膠質，常做成生魚片或魚湯供人品嚐。"},
+{n:"赤鯮",l:2,s:"冬春",m:["一支釣","延繩釣","底拖網"],h:"定棲性",d:"近海",i:"身披鮮紅橘色鱗片、腹部銀白，是台灣礁區最美麗的鯛科魚之一，但族群恢復速度緩慢。"},
+{n:"金線魚",l:2,s:"全年",m:["一支釣","延繩釣","底拖網"],h:"定棲性",d:"近海",i:"體側有一條閃亮的金黃縱紋是辨識特徵，肉質鮮甜清淡，是清蒸或做魚湯的首選。"},
+{n:"三點蟹",l:2,s:"夏秋",m:["流刺網","底拖網","籠具"],h:"洄游性",d:"近海",i:"北海岸「萬里蟹」三寶之一，殼面有三枚明顯黑斑，蟹肉甜嫩飽滿。"},
+{n:"鬼頭刀",l:2,s:"夏秋",m:["一支釣","延繩釣","流刺網"],h:"洄游性",d:"近海",i:"英文名Mahi-Mahi，捕獲後體色從藍綠驟變金黃，肉質厚實如魚排，深受歐美喜愛。"},
+{n:"秋刀魚",l:2,s:"秋",m:["棒受網","圍網"],h:"洄游性",d:"遠洋",i:"細長如一把秋日利刃，秋季大批洄游太平洋，鹽烤後香氣四溢。"},
+{n:"魩仔魚",l:2,s:"春夏",m:["拖網","棒受網"],h:"洄游性",d:"近海",i:"由多種魚類幼苗組成的混合體，常見於炒飯與粥品，但混獲問題讓台灣指南列為黃燈。"},
+{n:"野生石斑",l:3,s:"夏秋",m:["一支釣","底拖網"],h:"定棲性",d:"近海",i:"棲息在岩礁縫隙中，生長緩慢，肉質鮮甜彈牙，是高級中式宴席的主角。"},
+{n:"鯊魚",l:3,s:"夏",m:["延繩釣","流刺網","拖網"],h:"洄游性",d:"遠洋",i:"海中的頂級掠食者。因過度捕撈與重金屬累積風險，建議玩家優先選擇永續替代海鮮。"},
+{n:"龍占",l:3,s:"全年",m:["一支釣","延繩釣","底拖網"],h:"定棲性",d:"近海",i:"嘴部厚實且咬合力強，能咬破螃蟹與海星，在南部海域是非常受歡迎的食用魚。"},
+{n:"鸚哥魚",l:3,s:"夏",m:["一支釣","延繩釣","底刺網"],h:"定棲性",d:"近海",i:"牙齒癒合成喙狀，專門啃食珊瑚礁上的藻類，是珊瑚礁生態的重要魚種。"},
+{n:"曼波魚",l:3,s:"全年",m:["定置網"],h:"洄游性",d:"遠洋",i:"體型呈奇特的圓盤狀，性情溫和且常在海面翻身曬太陽，又被稱為翻車魚。"},
+{n:"黑鮪魚",l:3,s:"春夏",m:["一支釣","延繩釣"],h:"洄游性",d:"遠洋",i:"海洋界的法拉利，游速極快，是全球公認最頂級的海鮮珍饈，也面臨過漁壓力。"},
+{n:"旗魚",l:3,s:"全年",m:["延繩釣","流刺網"],h:"洄游性",d:"遠洋",i:"上顎延伸成長矛狀，是海中速度最快的魚類之一，東港鏢旗魚是傳統漁法。"},
+{n:"鯨鯊",l:3,s:"全年",m:["禁止捕撈"],h:"洄游性",d:"遠洋",i:"海中溫柔的巨人，也是現存最大的魚類，濾食性且生長極慢，已列為禁捕保育類。"},
+{n:"泥鰍",l:3,s:"全年",m:["養殖","籠具","手釣"],h:"定棲性",d:"養殖",i:"生命力頑強的底棲魚類，野生族群因水田消失而驟減，現以養殖為主，但廢水問題仍受關注。"},
+{n:"對蝦",l:3,s:"夏秋",m:["養殖","底拖網","流刺網"],h:"洄游性",d:"養殖",i:"台灣重要的養殖蝦種，肉質Q彈鮮甜，但高密度養殖的飼料耗魚量大且廢水問題尚待解決。"},
+{n:"魔鬼魚",l:3,s:"夏",m:["流刺網","定置網"],h:"洄游性",d:"遠洋",i:"翼展可達七公尺的大洋巨人，每胎僅一仔且生長極慢，已被列入國際保育名單。"},
+{n:"白海豚",l:3,s:"全年",m:["禁止捕撈"],h:"定棲性",d:"近海",i:"台灣西部沿海特有的中華白海豚，俗稱「媽祖魚」，全球僅剩約60頭，棲地正受工業開發威脅。"}
+];
+
+const locationDB = [
+  {id:"longfeng",name:"苗栗龍鳳漁港",area:"苗栗海線",badge:"龍鳳初航章",
+    fishPool:["吳郭魚","竹筴魚","台灣鯖魚","臭肚魚","星雞魚","虱目魚","白帶魚","養殖鱸魚","皮刀","鰆魚","鯽仔","飛魚","小卷","紅魽","紅目鰱","白鯧","肉魚","黃鰭鯛","牛舌","赤鯮","午仔魚","養殖黑鯛","花枝","比目魚","海鱺","野生石斑","鯊魚","龍占","曼波魚","白海豚"]},
+  {id:"waipu",name:"苗栗外埔漁港",area:"苗栗海線",badge:"外埔潮夕章",
+    fishPool:["吳郭魚","竹筴魚","台灣鯖魚","臭肚魚","虱目魚","白帶魚","養殖鱸魚","養殖烏魚","皮刀","鰆魚","鯽仔","飛魚","小卷","紅目鰱","白鯧","肉魚","黃鰭鯛","牛舌","午仔魚","養殖黑鯛","花枝","比目魚","三點蟹","笛鯛","赤鯮","星雞魚","巴鰹","對蝦","龍占","魔鬼魚"]},
+  {id:"yuangang",name:"苑港觀光漁港",area:"苗栗海線",badge:"苑港虹橋章",
+    fishPool:["吳郭魚","竹筴魚","台灣鯖魚","星雞魚","虱目魚","白帶魚","養殖鱸魚","養殖烏魚","皮刀","鯽仔","臭肚魚","飛魚","巴鰹","小卷","紅目鰱","白鯧","午仔魚","黃鰭鯛","牛舌","比目魚","花枝","養殖黑鯛","笛鯛","三點蟹","對蝦","肉魚","秋刀魚","鬼頭刀","曼波魚","白海豚"]}
+];
+
+const fishByName = Object.fromEntries(fishDB.map(f=>[f.n,f]));
+const LIGHT_INFO = {
+  1:{label:"綠燈",cls:"green",color:"var(--green)",note:"資源穩定，可安心食用"},
+  2:{label:"黃燈",cls:"amber",color:"var(--amber)",note:"資源尚待觀察，建議斟酌選擇"},
+  3:{label:"紅燈",cls:"coral",color:"var(--coral)",note:"資源稀少或具保育疑慮，建議避免食用"}
+};
+const FIXED_PAIRS = 10; // 固定10組配對，不再讓玩家選難度
+const BOARD_COLS = 4;   // 20張卡（10組），4欄5列
+
+/* ============ 狀態 ============ */
+let selectedPort = null;
+let state = null; // {cards, flipped, matchedPairs, moves, timer, startTime}
+
+/* ============ 小魚 SVG ============ */
+function fishSVG(color, size=34){
+  return `<svg width="${size}" height="${size}" viewBox="0 0 64 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M6 20 C6 10 20 4 34 8 C44 11 50 15 58 12 C54 18 54 22 58 28 C50 25 44 29 34 32 C20 36 6 30 6 20Z" fill="${color}"/>
+    <circle cx="16" cy="17" r="2.4" fill="#08222d"/>
+    <path d="M34 8 C40 4 46 2 50 2 C48 6 48 10 50 13 Z" fill="${color}" opacity=".75"/>
+  </svg>`;
+}
+
+/* ============ 建立選擇畫面 ============ */
+const portGrid = document.getElementById('portGrid');
+locationDB.forEach(p=>{
+  const el = document.createElement('div');
+  el.className='port-card';
+  el.innerHTML = `<div class="area">${p.area}</div><div class="name">${p.name}</div><div class="badge">${p.badge}</div>`;
+  el.addEventListener('click', ()=>{
+    document.querySelectorAll('.port-card').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedPort = p;
+    checkReady();
+  });
+  portGrid.appendChild(el);
+});
+
+function checkReady(){
+  document.getElementById('startBtn').disabled = !selectedPort;
+}
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('backBtn').addEventListener('click', ()=>switchScreen('screen-select'));
+document.getElementById('changePortBtn').addEventListener('click', ()=>{
+  document.getElementById('winOverlay').classList.remove('active');
+  switchScreen('screen-select');
+});
+document.getElementById('playAgainBtn').addEventListener('click', ()=>{
+  document.getElementById('winOverlay').classList.remove('active');
+  startGame();
+});
+
+function switchScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ============ 遊戲邏輯 ============ */
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function startGame(){
+  const pool = shuffle(selectedPort.fishPool).slice(0, FIXED_PAIRS);
+  let cards = [];
+  pool.forEach((name,idx)=>{
+    const fish = fishByName[name];
+    // 每種魚產生兩張卡：一張顯示魚名，一張顯示牠對應的燈號——玩法變成「魚種配燈號」
+    cards.push({uid:idx+'-fish',  type:'fish',  fish});
+    cards.push({uid:idx+'-light', type:'light', fish});
+  });
+  cards = shuffle(cards);
+
+  state = {
+    cards,
+    flipped: [],
+    matchedPairs: 0,
+    moves: 0,
+    seconds: 0,
+    timerHandle: null,
+    lightCounts: {1:0,2:0,3:0}
+  };
+
+  document.getElementById('gamePortTitle').innerHTML = `${selectedPort.name}<span>${selectedPort.badge}</span>`;
+  document.getElementById('statTime').textContent = '00:00';
+  document.getElementById('statMoves').textContent = '0';
+  document.getElementById('statPairs').textContent = `0/${FIXED_PAIRS}`;
+  document.getElementById('board').style.setProperty('--cols', BOARD_COLS);
+
+  renderBoard();
+  switchScreen('screen-game');
+}
+
+function renderBoard(){
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  state.cards.forEach(card=>{
+    const fish = card.fish;
+    const li = LIGHT_INFO[fish.l];
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.dataset.uid = card.uid;
+
+    const frontHtml = card.type === 'fish'
+      ? `<div class="card-face card-front" style="--border-c:var(--teal)">
+           ${fishSVG('var(--teal)')}
+           <div class="fname">${fish.n}</div>
+         </div>`
+      : `<div class="card-face card-front" style="--border-c:${li.color}">
+           <div class="light-dot" style="background:${li.color}"></div>
+           <div class="fname" style="color:${li.color}">${li.label}</div>
+         </div>`;
+
+    el.innerHTML = `
+      <div class="card-inner">
+        <div class="card-face card-back">
+          <div class="anchor">⚓</div>
+          <div class="badge-txt">${selectedPort.badge}</div>
+        </div>
+        ${frontHtml}
+      </div>`;
+    el.addEventListener('click', ()=>onCardClick(el, card, fish, li));
+    board.appendChild(el);
+  });
+}
+
+function onCardClick(el, card, fish, li){
+  if(el.classList.contains('flipped') || el.classList.contains('matched')) return;
+  if(state.flipped.length >= 2) return;
+  if(!state.timerHandle) startTimer();
+
+  el.classList.add('flipped');
+  state.flipped.push({el, card, fish, li});
+
+  if(state.flipped.length === 2){
+    state.moves++;
+    document.getElementById('statMoves').textContent = state.moves;
+    const [a,b] = state.flipped;
+    // 配對規則：一張要是「魚卡」、一張要是「燈號卡」，且燈號要一致（魚種配燈號，不是找兩張一樣的牌）
+    const isMatch = a.card.type !== b.card.type && a.fish.l === b.fish.l;
+    if(isMatch){
+      const fishSide = a.card.type === 'fish' ? a : b;
+      setTimeout(()=>{
+        a.el.classList.add('matched');
+        b.el.classList.add('matched');
+        state.matchedPairs++;
+        state.lightCounts[fishSide.fish.l]++;
+        document.getElementById('statPairs').textContent = `${state.matchedPairs}/${FIXED_PAIRS}`;
+        showToast(fishSide.fish, LIGHT_INFO[fishSide.fish.l]);
+        state.flipped = [];
+        if(state.matchedPairs === FIXED_PAIRS){
+          setTimeout(finishGame, 700);
+        }
+      }, 450);
+    } else {
+      a.el.classList.add('wrong'); b.el.classList.add('wrong');
+      setTimeout(()=>{
+        a.el.classList.remove('flipped','wrong');
+        b.el.classList.remove('flipped','wrong');
+        state.flipped = [];
+      }, 800);
+    }
+  }
+}
+
+function startTimer(){
+  state.timerHandle = setInterval(()=>{
+    state.seconds++;
+    const m = String(Math.floor(state.seconds/60)).padStart(2,'0');
+    const s = String(state.seconds%60).padStart(2,'0');
+    document.getElementById('statTime').textContent = `${m}:${s}`;
+  },1000);
+}
+
+function showToast(fish, li){
+  const wrap = document.getElementById('toast-wrap');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.style.setProperty('--border-c', li.color);
+  t.innerHTML = `
+    <h4><span style="color:${li.color}">●</span> ${fish.n}　${li.label}</h4>
+    <p>${fish.i}</p>
+    <div class="meta">${fish.h}・${fish.d}・常見漁法：${fish.m.join('、')}</div>
+  `;
+  wrap.innerHTML='';
+  wrap.appendChild(t);
+  setTimeout(()=>{ if(t.parentNode) t.remove(); }, 3600);
+}
+
+function finishGame(){
+  clearInterval(state.timerHandle);
+  const m = String(Math.floor(state.seconds/60)).padStart(2,'0');
+  const s = String(state.seconds%60).padStart(2,'0');
+  document.getElementById('finalTime').textContent = `${m}:${s}`;
+  document.getElementById('finalMoves').textContent = state.moves;
+  document.getElementById('finalPairs').textContent = FIXED_PAIRS;
+
+  const {1:g,2:y,3:r} = state.lightCounts;
+  let tip;
+  if(r === 0 && y === 0){
+    tip = `本次翻到的 ${g} 種漁獲全部都是綠燈魚種，資源穩定、安心上桌，是最友善海洋的選擇！`;
+  } else if(r === 0){
+    tip = `翻到 ${g} 種綠燈與 ${y} 種黃燈魚種。黃燈魚種資源尚待觀察，下次選購時不妨多留意來源與捕撈方式。`;
+  } else {
+    tip = `這回翻到 ${r} 種紅燈魚種——它們多半生長緩慢或面臨過度捕撈，建議日常餐桌上優先選擇綠燈魚種，讓海洋資源有喘息的機會。`;
+  }
+  document.getElementById('winTip').textContent = tip;
+  document.getElementById('winOverlay').classList.add('active');
+}
+@@ENDSCRIPT_TOKEN@@
+</body>
+</html>
+
+</script>
+<script type="text/html" id="tpl-waipu">
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>海紋守護團・石滬修復九宮格</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ocean-deep:#08222d;
+    --ocean-mid:#0f3a4c;
+    --ocean-panel:#134a5e;
+    --teal:#2e93a0;
+    --cream:#f3eedc;
+    --cream-dim:#d9d2b8;
+    --green:#3fa66b;
+    --amber:#e0a83e;
+    --coral:#e2574c;
+    --gold:#c9a227;
+    --stone-ok-1:#d9b878;
+    --stone-ok-2:#a97f45;
+    --stone-bad-1:#7c8a8d;
+    --stone-bad-2:#4b5759;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;}
+  body{
+    font-family:'Noto Sans TC', sans-serif;
+    color:var(--cream);
+    background:
+      radial-gradient(circle at 15% -10%, #1a5468 0%, transparent 45%),
+      radial-gradient(circle at 90% 110%, #0b2c39 0%, transparent 55%),
+      linear-gradient(180deg, var(--ocean-deep) 0%, var(--ocean-mid) 55%, var(--ocean-deep) 100%);
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    height:100dvh;
+  }
+  .wave-layer{position:fixed;left:0;right:0;bottom:0;height:60px;pointer-events:none;opacity:.28;z-index:0;}
+  .wave-layer svg{width:200%;height:100%;animation:driftWave 22s linear infinite;}
+  @keyframes driftWave{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+  .app{position:relative;z-index:1;display:flex;flex-direction:column;flex:1;min-height:0;padding:10px 14px 16px;}
+
+  .brandline{display:none;}
+  h1.title{
+    font-family:'Noto Serif TC', serif;font-weight:900;font-size:1.05rem;
+    text-align:center;margin:0 0 2px;color:var(--cream);flex-shrink:0;
+  }
+  p.subtitle{text-align:center;color:var(--cream-dim);font-size:0.68rem;margin:0 0 8px;flex-shrink:0;}
+
+  .screen{display:none;}
+  .screen.active{display:flex;flex-direction:column;flex:1;min-height:0;animation:fadeUp .4s ease both;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+  .section-label{
+    font-family:'JetBrains Mono',monospace;font-size:0.62rem;letter-spacing:.1em;color:var(--gold);
+    margin:0 0 6px;display:flex;align-items:center;gap:8px;flex-shrink:0;
+  }
+  .section-label::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--gold),transparent);}
+
+  .diff-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;justify-content:center;flex-shrink:0;}
+  .diff-card{
+    flex:1;min-width:100px;
+    background:linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,0) 60%), var(--ocean-panel);
+    border:1px solid rgba(201,162,39,.35);border-radius:10px;padding:8px 6px;cursor:pointer;text-align:center;
+    transition:border-color .2s ease;
+  }
+  .diff-card.selected{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal) inset;}
+  .diff-card b{font-family:'Noto Serif TC',serif;font-size:0.82rem;display:block;margin-bottom:2px;}
+  .diff-card span{font-size:0.62rem;color:var(--cream-dim);}
+
+  .rule-box{
+    margin:0 0 8px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);
+    border-radius:10px;padding:8px 10px;font-size:0.66rem;color:var(--cream-dim);line-height:1.5;
+    flex-shrink:0;
+  }
+  .rule-box b{color:var(--cream);}
+
+  .start-btn{
+    display:block;margin:auto auto 4px;background:var(--teal);color:var(--ocean-deep);
+    font-family:'Noto Serif TC',serif;font-weight:700;font-size:0.85rem;border:none;padding:10px 40px;
+    border-radius:999px;cursor:pointer;box-shadow:0 6px 18px rgba(46,147,160,.4);flex-shrink:0;
+  }
+  .start-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+
+  /* ---- 遊戲畫面 ---- */
+  .game-header{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0;}
+  .game-title{font-family:'Noto Serif TC',serif;font-weight:700;font-size:0.82rem;}
+  .game-title span{display:block;font-size:0.58rem;color:var(--teal);font-family:'JetBrains Mono',monospace;font-weight:400;margin-top:1px;}
+  .stat-bar{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+  .stat{
+    background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.1);border-radius:8px;
+    padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:0.62rem;min-width:46px;text-align:center;
+  }
+  .stat b{display:block;font-size:0.76rem;color:var(--cream);}
+  .stat span{color:var(--cream-dim);font-size:0.52rem;}
+  .icon-btn{
+    background:none;border:1px solid rgba(255,255,255,.25);color:var(--cream-dim);border-radius:7px;
+    padding:5px 8px;cursor:pointer;font-size:0.62rem;font-family:'Noto Sans TC',sans-serif;
+  }
+  .icon-btn.active{border-color:var(--gold);color:var(--gold);}
+
+  .grid-wrap{display:flex;flex:1;min-height:0;align-items:center;justify-content:center;margin-bottom:6px;}
+  .grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+    width:min(300px, 72vw);
+  }
+  .cell{
+    aspect-ratio:1;border-radius:12px;cursor:pointer;position:relative;
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .15s ease;
+    background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.08), rgba(0,0,0,.15));
+    border:1px solid rgba(255,255,255,.08);
+  }
+  .cell.pulse{animation:pulse .35s ease;}
+  .cell.hint-glow{box-shadow:0 0 0 3px var(--gold), 0 0 18px 4px rgba(201,162,39,.7);animation:hintPulse 1s ease-in-out infinite;}
+  @keyframes hintPulse{0%,100%{box-shadow:0 0 0 3px var(--gold), 0 0 12px 2px rgba(201,162,39,.5);}50%{box-shadow:0 0 0 3px var(--gold), 0 0 22px 6px rgba(201,162,39,.9);}}
+  @keyframes pulse{0%{transform:scale(1);}45%{transform:scale(.9);}100%{transform:scale(1);}}
+  .cell svg{width:78%;height:78%;}
+
+  .legend-mini{display:flex;justify-content:center;gap:14px;margin-top:2px;font-size:0.62rem;color:var(--cream-dim);flex-shrink:0;}
+  .legend-mini .swatch{display:inline-block;width:10px;height:10px;border-radius:4px;margin-right:5px;vertical-align:-1px;}
+
+  #toast-wrap{position:fixed;left:0;right:0;bottom:16px;display:flex;justify-content:center;z-index:50;pointer-events:none;}
+  .toast{
+    pointer-events:auto;max-width:340px;width:calc(100% - 32px);
+    background:linear-gradient(160deg, rgba(255,255,255,.08), rgba(0,0,0,.1)), var(--ocean-panel);
+    border:1px solid var(--gold);border-radius:12px;padding:10px 14px;
+    box-shadow:0 12px 30px rgba(0,0,0,.5);animation:toastIn .35s ease;
+  }
+  @keyframes toastIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+  .toast h4{margin:0 0 3px;font-family:'Noto Serif TC',serif;font-size:0.82rem;}
+  .toast p{margin:0;font-size:0.7rem;color:var(--cream-dim);line-height:1.4;}
+
+  .overlay{position:fixed;inset:0;background:rgba(4,16,20,.75);display:none;align-items:center;justify-content:center;z-index:80;padding:16px;}
+  .overlay.active{display:flex;animation:fadeUp .3s ease both;}
+  .modal{background:var(--ocean-panel);border:1px solid var(--gold);border-radius:14px;max-width:340px;width:100%;padding:20px 20px;text-align:center;max-height:90dvh;overflow-y:auto;}
+  .modal h2{font-family:'Noto Serif TC',serif;font-size:1.15rem;margin:4px 0 3px;}
+  .modal .medal{font-size:2rem;}
+  .modal .stars{font-size:1.3rem;letter-spacing:5px;margin:6px 0 3px;}
+  .modal .result-grid{display:flex;justify-content:center;gap:14px;margin:10px 0 12px;}
+  .modal .result-grid div b{display:block;font-size:1rem;font-family:'JetBrains Mono',monospace;}
+  .modal .result-grid div span{font-size:0.62rem;color:var(--cream-dim);}
+  .modal .tip{background:rgba(0,0,0,.25);border-radius:8px;padding:9px 11px;font-size:0.7rem;color:var(--cream-dim);margin-bottom:14px;line-height:1.5;text-align:left;}
+  .modal .btn-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+
+<div class="wave-layer"><svg viewBox="0 0 1600 140" preserveAspectRatio="none"><path d="M0,60 C200,110 400,10 600,60 C800,110 1000,10 1200,60 C1400,110 1500,40 1600,60 L1600,140 L0,140 Z" fill="#2e93a0"/></svg></div>
+
+<div class="app">
+  <div class="brandline"><div class="eyebrow">Taiwan Coastal Guardians</div></div>
+  <h1 class="title">石滬修復九宮格</h1>
+  <p class="subtitle">潮間帶的石滬被風浪震鬆了，點石塊修復它——但小心，牽一塊、動全局。</p>
+
+  <!-- 畫面一：選模式 -->
+  <div class="screen active" id="screen-select">
+    <div class="section-label">選擇模式</div>
+    <div class="diff-row" id="diffRow"></div>
+
+    <div class="rule-box">
+      <b>玩法：</b>點擊任一石塊，會同時翻動<b>它自己與上下左右相鄰</b>的石塊（毀損⇄完好）。
+      目標是讓九宮格內的石塊<b>全部修復完成</b>，步數越接近最佳解，修滬評價越高！
+    </div>
+
+    <button class="start-btn" id="startBtn" disabled>下潮修滬</button>
+  </div>
+
+  <!-- 畫面二：遊戲進行 -->
+  <div class="screen" id="screen-game">
+    <div class="game-header">
+      <div class="game-title" id="gameTitle">—<span id="gameSub"></span></div>
+      <div class="stat-bar">
+        <div class="stat"><b id="statTime">00:00</b><span>時間</span></div>
+        <div class="stat"><b id="statMoves">0</b><span>步數</span></div>
+        <div class="stat"><b id="statBest">?</b><span>最佳步數</span></div>
+        <button class="icon-btn" id="hintBtn">💡 提示</button>
+        <button class="icon-btn" id="resetBtn">↺ 重來</button>
+        <button class="icon-btn" id="backBtn">⇤ 換模式</button>
+      </div>
+    </div>
+
+    <div class="grid-wrap"><div class="grid" id="grid"></div></div>
+    <div class="legend-mini">
+      <div><span class="swatch" style="background:linear-gradient(160deg,var(--stone-ok-1),var(--stone-ok-2));"></span>已修復</div>
+      <div><span class="swatch" style="background:linear-gradient(160deg,var(--stone-bad-1),var(--stone-bad-2));"></span>毀損中</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<div class="overlay" id="winOverlay">
+  <div class="modal">
+    <div class="medal">🪨</div>
+    <h2>石滬修復完成！</h2>
+    <div class="stars" id="stars">★★★</div>
+    <div class="result-grid">
+      <div><b id="finalTime">00:00</b><span>總時間</span></div>
+      <div><b id="finalMoves">0</b><span>使用步數</span></div>
+      <div><b id="finalBest">0</b><span>最佳步數</span></div>
+    </div>
+    <div class="tip" id="winTip"></div>
+    <div class="btn-row">
+      <button class="start-btn" id="playAgainBtn" style="padding:12px 30px;">再修一次</button>
+      <button class="icon-btn" id="changeDiffBtn">更換模式</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ 石滬小知識 ============ */
+const FACTS = [
+  "石滬是利用潮汐漲退、以玄武岩或珊瑚礁石堆疊成弧形石牆的陷阱，退潮時魚群受困滬內，方便漁民捕撈。",
+  "澎湖擁有全世界密度最高的石滬群，全盛時期多達數百座，因此被稱為「石滬的故鄉」。",
+  "石滬完全靠人力堆疊完成，不使用水泥黏合，全憑石塊間的重量與角度互相卡榫咬合。",
+  "每逢東北季風或颱風過後，滬堤常被沖散，需要滬主與匠師合力搬運巨石修補，是相當耗費體力的傳統工法。",
+  "隨著捕魚技術進步、匠師逐漸凋零，許多石滬一度荒廢，近年靠社區與文化組織推動修復體驗延續這項技藝。",
+  "澎湖吉貝島的「雙心石滬」因獨特的雙心造型成為最知名的地標，也是石滬文化最廣為人知的象徵。",
+  "結構完整的石滬會形成豐富的潮間帶生態，是魚、蟹、螺貝聚集的棲地，也是海洋生態教育的重要現場。"
+];
+
+/* ============ Lights-Out 核心運算 ============ */
+// 3x3 格，bit i 代表第 i 格「毀損中」(1=毀損, 0=已修復)
+function neighborsMask(i){
+  const r = Math.floor(i/3), c = i%3;
+  let mask = 1<<i;
+  if(r>0) mask |= 1<<(i-3);
+  if(r<2) mask |= 1<<(i+3);
+  if(c>0) mask |= 1<<(i-1);
+  if(c<2) mask |= 1<<(i+1);
+  return mask;
+}
+const MASKS = [...Array(9)].map((_,i)=>neighborsMask(i));
+
+// BFS 從「全部完好(state=0)」出發，算出每個 state 的最短步數
+function computeDistances(){
+  const dist = new Array(512).fill(-1);
+  const parentMove = new Array(512).fill(-1);
+  dist[0] = 0;
+  let queue = [0];
+  while(queue.length){
+    const next = [];
+    for(const s of queue){
+      for(let i=0;i<9;i++){
+        const ns = s ^ MASKS[i];
+        if(dist[ns] === -1){
+          dist[ns] = dist[s] + 1;
+          parentMove[ns] = i; // 從 ns 按下 i，就能回到距離少一步的狀態 s
+          next.push(ns);
+        }
+      }
+    }
+    queue = next;
+  }
+  return {dist, parentMove};
+}
+const {dist:DIST, parentMove:PARENT_MOVE} = computeDistances();
+
+// 依所有「非0」distance 分三段，取中間段當固定謎題難度
+const uniqueDists = [...new Set(DIST.filter(d=>d>0))].sort((a,b)=>a-b);
+const t1 = Math.ceil(uniqueDists.length/3);
+const t2 = Math.ceil(uniqueDists.length*2/3);
+const TIERS = {
+  easy: uniqueDists.slice(0, t1),
+  medium: uniqueDists.slice(t1, t2),
+  hard: uniqueDists.slice(t2)
+};
+
+const MODES = [
+  {id:"practice", label:"練習模式", desc:"不計時、最佳步數直接看，提示、重來都能用"},
+  {id:"scored",   label:"計分模式", desc:"開始計時、沒有提示也不能重來，真實挑戰自己"}
+];
+const PUZZLE_TIER = TIERS.medium; // 兩種模式都用同一個難度產生謎題，差異在規則不在難度
+
+function statesWithDist(list){
+  const arr = [];
+  for(let s=1;s<512;s++){ if(list.includes(DIST[s])) arr.push(s); }
+  return arr;
+}
+
+/* ============ 狀態 ============ */
+let selectedMode = null;
+let state = null; // {bits, moves, seconds, timerHandle, best, mode}
+
+/* ============ 選擇畫面 ============ */
+const diffRow = document.getElementById('diffRow');
+MODES.forEach(d=>{
+  const el = document.createElement('div');
+  el.className='diff-card';
+  el.innerHTML = `<b>${d.label}</b><span>${d.desc}</span>`;
+  el.addEventListener('click', ()=>{
+    document.querySelectorAll('.diff-card').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedMode = d;
+    document.getElementById('startBtn').disabled = false;
+  });
+  diffRow.appendChild(el);
+});
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('backBtn').addEventListener('click', ()=>switchScreen('screen-select'));
+document.getElementById('changeDiffBtn').addEventListener('click', ()=>{
+  document.getElementById('winOverlay').classList.remove('active');
+  switchScreen('screen-select');
+});
+document.getElementById('playAgainBtn').addEventListener('click', ()=>{
+  document.getElementById('winOverlay').classList.remove('active');
+  startGame();
+});
+document.getElementById('resetBtn').addEventListener('click', startGame);
+document.getElementById('hintBtn').addEventListener('click', ()=>{
+  if(!state || state.bits === 0) return;
+  const btn = document.getElementById('hintBtn');
+  btn.classList.add('active');
+  document.getElementById('statBest').textContent = DIST[state.bits];
+
+  const moveIdx = PARENT_MOVE[state.bits];
+  document.querySelectorAll('.cell').forEach(c=>c.classList.remove('hint-glow'));
+  const targetCell = document.querySelector(`.cell[data-i="${moveIdx}"]`);
+  if(targetCell) targetCell.classList.add('hint-glow');
+});
+
+function switchScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ============ 石塊 SVG ============ */
+function stoneSVG(damaged){
+  if(damaged){
+    return `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 38 Q6 22 22 14 Q38 4 50 18 Q58 30 46 42 Q34 54 20 48 Q10 44 10 38Z" fill="url(#badGrad)"/>
+      <path d="M18 20 L30 30 L24 40 M30 30 L40 24" stroke="#2b3436" stroke-width="2" fill="none" opacity=".7"/>
+      <defs><linearGradient id="badGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="var(--stone-bad-1)"/><stop offset="1" stop-color="var(--stone-bad-2)"/>
+      </linearGradient></defs>
+    </svg>`;
+  }
+  return `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10 38 Q6 22 22 14 Q38 4 50 18 Q58 30 46 42 Q34 54 20 48 Q10 44 10 38Z" fill="url(#okGrad)"/>
+    <circle cx="22" cy="24" r="2.2" fill="#2e93a0" opacity=".8"/>
+    <circle cx="36" cy="34" r="1.6" fill="#3fa66b" opacity=".7"/>
+    <ellipse cx="20" cy="18" rx="8" ry="4" fill="#fff" opacity=".12"/>
+    <defs><linearGradient id="okGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="var(--stone-ok-1)"/><stop offset="1" stop-color="var(--stone-ok-2)"/>
+    </linearGradient></defs>
+  </svg>`;
+}
+
+/* ============ 遊戲邏輯 ============ */
+function startGame(){
+  const candidates = statesWithDist(PUZZLE_TIER);
+  const bits = candidates[Math.floor(Math.random()*candidates.length)];
+
+  state = {
+    bits,
+    moves: 0,
+    seconds: 0,
+    timerHandle: null,
+    best: DIST[bits],
+    mode: selectedMode.id
+  };
+
+  document.getElementById('gameTitle').innerHTML = `${selectedMode.label}<span>${selectedMode.desc}</span>`;
+  document.getElementById('statTime').textContent = '00:00';
+  document.getElementById('statMoves').textContent = '0';
+  document.getElementById('hintBtn').classList.remove('active');
+
+  const isPractice = selectedMode.id === 'practice';
+  // 練習模式：不計時、最佳步數直接顯示（不用按提示才看得到）、提示跟重來都能用
+  // 計分模式：會計時、沒有提示也不能重來，最佳步數只在結算時才公布
+  document.getElementById('statTime').parentElement.style.display = isPractice ? 'none' : '';
+  document.getElementById('statBest').parentElement.style.display = isPractice ? '' : 'none';
+  document.getElementById('statBest').textContent = isPractice ? state.best : '?';
+  document.getElementById('hintBtn').style.display = isPractice ? '' : 'none';
+  document.getElementById('resetBtn').style.display = isPractice ? '' : 'none';
+
+  renderGrid();
+  switchScreen('screen-game');
+}
+
+function renderGrid(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  for(let i=0;i<9;i++){
+    const damaged = (state.bits >> i) & 1;
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.i = i;
+    cell.innerHTML = stoneSVG(damaged);
+    cell.addEventListener('click', ()=>onCellClick(i, cell));
+    grid.appendChild(cell);
+  }
+}
+
+function onCellClick(i, cell){
+  if(state.mode === 'scored' && !state.timerHandle) startTimer();
+  state.bits ^= MASKS[i];
+  state.moves++;
+  document.getElementById('statMoves').textContent = state.moves;
+  if(state.mode === 'practice' || document.getElementById('hintBtn').classList.contains('active')){
+    document.getElementById('statBest').textContent = DIST[state.bits];
+  }
+
+  renderGrid();
+  const clickedCellNew = document.querySelector(`.cell[data-i="${i}"]`);
+  if(clickedCellNew){ clickedCellNew.classList.add('pulse'); setTimeout(()=>clickedCellNew.classList.remove('pulse'),350); }
+
+  if(state.bits === 0){
+    setTimeout(finishGame, 350);
+  }
+}
+
+function startTimer(){
+  state.timerHandle = setInterval(()=>{
+    state.seconds++;
+    const m = String(Math.floor(state.seconds/60)).padStart(2,'0');
+    const s = String(state.seconds%60).padStart(2,'0');
+    document.getElementById('statTime').textContent = `${m}:${s}`;
+  },1000);
+}
+
+function showFact(){
+  const wrap = document.getElementById('toast-wrap');
+  const fact = FACTS[Math.floor(Math.random()*FACTS.length)];
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<h4>🌾 石滬小知識</h4><p>${fact}</p>`;
+  wrap.innerHTML='';
+  wrap.appendChild(t);
+  setTimeout(()=>{ if(t.parentNode) t.remove(); }, 4200);
+  return fact;
+}
+
+function finishGame(){
+  clearInterval(state.timerHandle);
+  if(state.mode === 'practice'){
+    document.getElementById('finalTime').parentElement.style.display = 'none';
+  } else {
+    document.getElementById('finalTime').parentElement.style.display = '';
+    const m = String(Math.floor(state.seconds/60)).padStart(2,'0');
+    const s = String(state.seconds%60).padStart(2,'0');
+    document.getElementById('finalTime').textContent = `${m}:${s}`;
+  }
+  document.getElementById('finalMoves').textContent = state.moves;
+  document.getElementById('finalBest').textContent = state.best;
+
+  let starCount;
+  if(state.moves <= state.best) starCount = 3;
+  else if(state.moves <= state.best + 2) starCount = 2;
+  else starCount = 1;
+  document.getElementById('stars').textContent = '★'.repeat(starCount) + '☆'.repeat(3-starCount);
+
+  const fact = FACTS[Math.floor(Math.random()*FACTS.length)];
+  document.getElementById('winTip').textContent = fact;
+  document.getElementById('winOverlay').classList.add('active');
+}
+@@ENDSCRIPT_TOKEN@@
+</body>
+</html>
+
+</script>
+<script type="text/html" id="tpl-yuangang">
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>海紋守護團・海洋廢棄物分類連連看</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ocean-deep:#08222d;
+    --ocean-mid:#0f3a4c;
+    --ocean-panel:#134a5e;
+    --teal:#2e93a0;
+    --cream:#f3eedc;
+    --cream-dim:#d9d2b8;
+    --green:#3fa66b;
+    --amber:#e0a83e;
+    --coral:#e2574c;
+    --gold:#c9a227;
+    --steel:#8fa3ac;
+    --rust:#b5651d;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;}
+  body{
+    font-family:'Noto Sans TC', sans-serif;
+    color:var(--cream);
+    background:
+      radial-gradient(circle at 15% -10%, #1a5468 0%, transparent 45%),
+      radial-gradient(circle at 90% 110%, #0b2c39 0%, transparent 55%),
+      linear-gradient(180deg, var(--ocean-deep) 0%, var(--ocean-mid) 55%, var(--ocean-deep) 100%);
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    height:100dvh;
+  }
+  .wave-layer{position:fixed;left:0;right:0;bottom:0;height:34px;pointer-events:none;opacity:.22;z-index:0;}
+  .wave-layer svg{width:200%;height:100%;animation:driftWave 22s linear infinite;}
+  @keyframes driftWave{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+  .app{position:relative;z-index:1;display:flex;flex-direction:column;flex:1;min-height:0;padding:10px 14px 44px;}
+
+  .brandline{display:none;}
+  h1.title{
+    font-family:'Noto Serif TC', serif;font-weight:900;font-size:1.05rem;
+    text-align:center;margin:0 0 2px;color:var(--cream);flex-shrink:0;
+  }
+  p.subtitle{text-align:center;color:var(--cream-dim);font-size:0.68rem;margin:0 0 8px;flex-shrink:0;}
+
+  .screen{display:none;}
+  .screen.active{display:flex;flex-direction:column;flex:1;min-height:0;animation:fadeUp .4s ease both;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+  .section-label{
+    font-family:'JetBrains Mono',monospace;font-size:0.62rem;letter-spacing:.1em;
+    color:var(--gold);margin:0 0 6px;display:flex;align-items:center;gap:8px;flex-shrink:0;
+  }
+  .section-label::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--gold),transparent);}
+
+  .diff-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;justify-content:center;flex-shrink:0;}
+  .diff-card{
+    flex:1;min-width:100px;
+    background:linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,0) 60%), var(--ocean-panel);
+    border:1px solid rgba(201,162,39,.35);border-radius:10px;
+    padding:8px 6px;cursor:pointer;text-align:center;
+    transition:border-color .2s ease;
+  }
+  .diff-card.selected{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal) inset;}
+  .diff-card b{font-family:'Noto Serif TC',serif;font-size:1.1rem;display:block;}
+  .diff-card span{font-size:0.62rem;color:var(--cream-dim);}
+
+  .rule-box{
+    margin:0 0 8px;
+    background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);
+    border-radius:10px;padding:8px 10px;font-size:0.66rem;color:var(--cream-dim);line-height:1.5;
+    flex-shrink:0;
+  }
+  .rule-box b{color:var(--cream);}
+
+  .start-btn{
+    display:block;margin:auto auto 4px;background:var(--teal);color:var(--ocean-deep);
+    font-family:'Noto Serif TC',serif;font-weight:700;font-size:0.85rem;border:none;
+    padding:10px 40px;border-radius:999px;cursor:pointer;
+    box-shadow:0 6px 18px rgba(46,147,160,.4);flex-shrink:0;
+  }
+  .start-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+
+  /* ---- 遊戲畫面 ---- */
+  .game-header{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0;}
+  .game-title{font-family:'Noto Serif TC',serif;font-weight:700;font-size:0.82rem;}
+  .stat-bar{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+  .stat{
+    background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.1);border-radius:8px;
+    padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:0.62rem;min-width:44px;text-align:center;
+  }
+  .stat b{display:block;font-size:0.76rem;color:var(--cream);}
+  .stat span{color:var(--cream-dim);font-size:0.5rem;}
+  .icon-btn{
+    background:none;border:1px solid rgba(255,255,255,.25);color:var(--cream-dim);border-radius:7px;
+    padding:5px 8px;cursor:pointer;font-size:0.62rem;font-family:'Noto Sans TC',sans-serif;
+  }
+
+  .board-wrap{position:relative;flex:1;min-height:0;display:flex;}
+  .board{
+    display:grid;grid-template-columns:96px 116px 96px;gap:14px;
+    justify-content:center;
+    width:100%;
+  }
+  #linesSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;}
+
+  .col{display:flex;flex-direction:column;gap:3px;position:relative;z-index:2;min-height:0;min-width:0;}
+  .col-label{font-family:'JetBrains Mono',monospace;font-size:0.58rem;letter-spacing:.1em;color:var(--cream-dim);margin-bottom:1px;text-align:center;flex-shrink:0;}
+
+  /* 物品放兩側（各8樣，固定16樣時剛好對半），分類籃置中 */
+  #itemColLeft, #itemColRight{justify-content:space-evenly;}
+  #catCol{justify-content:space-evenly;}
+
+  .item-card, .cat-card{
+    display:flex;align-items:center;gap:4px;
+    border:1.5px solid rgba(255,255,255,.12);
+    border-radius:8px;padding:4px 6px;cursor:pointer;
+    transition:all .18s ease;font-size:0.6rem;
+  }
+  .item-card{
+    background:var(--ocean-panel);
+  }
+  .cat-card{
+    /* 分類籃改用明顯不同色系（暖棕色）的實色背景，跟物品的藍色調一眼區分 */
+    background:linear-gradient(160deg, #3d2c14, #2a1e0e);
+    border-color:rgba(201,162,39,.45);
+  }
+  .item-card .emoji, .cat-card .emoji{font-size:0.8rem;flex-shrink:0;width:14px;text-align:center;}
+  .item-card.selected{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal) inset;}
+  .cat-card.selected{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal) inset;}
+  .item-card.matched{opacity:.4;cursor:default;border-color:var(--green);}
+  .cat-card.done{opacity:.55;cursor:default;}
+  .item-card.wrong, .cat-card.wrong{animation:shake .4s;border-color:var(--coral) !important;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+
+  .cat-card{justify-content:space-between;}
+  .cat-card .cat-name{flex:1;font-family:'Noto Serif TC',serif;font-weight:700;font-size:0.62rem;color:var(--gold);}
+  .cat-card .cat-progress{font-family:'JetBrains Mono',monospace;font-size:0.52rem;color:var(--cream-dim);}
+
+  #toast-wrap{position:fixed;left:0;right:0;bottom:16px;display:flex;justify-content:center;z-index:50;pointer-events:none;}
+  .toast{
+    pointer-events:auto;max-width:350px;width:calc(100% - 24px);
+    background:linear-gradient(160deg, rgba(255,255,255,.08), rgba(0,0,0,.1)), var(--ocean-panel);
+    border:1px solid var(--border-c, var(--teal));border-radius:12px;padding:10px 14px;
+    box-shadow:0 12px 30px rgba(0,0,0,.5);animation:toastIn .35s ease;
+  }
+  @keyframes toastIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+  .toast h4{margin:0 0 3px;font-family:'Noto Serif TC',serif;font-size:0.82rem;display:flex;align-items:center;gap:6px;}
+  .toast p{margin:0;font-size:0.68rem;color:var(--cream-dim);line-height:1.4;}
+
+  .overlay{position:fixed;inset:0;background:rgba(4,16,20,.75);display:none;align-items:center;justify-content:center;z-index:80;padding:16px;}
+  .overlay.active{display:flex;animation:fadeUp .3s ease both;}
+  .modal{background:var(--ocean-panel);border:1px solid var(--gold);border-radius:14px;max-width:340px;width:100%;padding:20px 20px;text-align:center;max-height:90dvh;overflow-y:auto;}
+  .modal h2{font-family:'Noto Serif TC',serif;font-size:1.15rem;margin:4px 0 3px;}
+  .modal .medal{font-size:2rem;}
+  .modal .result-grid{display:flex;justify-content:center;gap:14px;margin:12px 0;}
+  .modal .result-grid div b{display:block;font-size:1rem;font-family:'JetBrains Mono',monospace;}
+  .modal .result-grid div span{font-size:0.62rem;color:var(--cream-dim);}
+  .modal .tip{background:rgba(0,0,0,.25);border-radius:8px;padding:9px 11px;font-size:0.7rem;color:var(--cream-dim);margin-bottom:14px;line-height:1.5;text-align:left;}
+  .modal .btn-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+
+<div class="wave-layer"><svg viewBox="0 0 1600 140" preserveAspectRatio="none"><path d="M0,60 C200,110 400,10 600,60 C800,110 1000,10 1200,60 C1400,110 1500,40 1600,60 L1600,140 L0,140 Z" fill="#2e93a0"/></svg></div>
+
+<div class="app">
+  <div class="brandline"><div class="eyebrow">Taiwan Coastal Guardians</div></div>
+  <h1 class="title">海洋廢棄物分類連連看</h1>
+  <p class="subtitle">把海灘上撿到的東西，連到中間正確的分類籃裡吧！小心，有些其實不是垃圾喔。</p>
+
+  <!-- 畫面一：說明與開始 -->
+  <div class="screen active" id="screen-select">
+    <div class="rule-box">
+      <b>玩法：</b>先點選兩側的物品，再點選中間對應的分類籃，配對正確會連上一條線；配對錯誤則重新選擇。
+      部分物品其實是<b>自然物</b>而非廢棄物，仔細分辨再連線！本回合隨機抽 16 樣物品。
+    </div>
+
+    <button class="start-btn" id="startBtn">開始分類</button>
+  </div>
+
+  <!-- 畫面二：遊戲進行 -->
+  <div class="screen" id="screen-game">
+    <div class="game-header">
+      <div class="game-title" id="gameTitle">—</div>
+      <div class="stat-bar">
+        <div class="stat"><b id="statTime">00:00</b><span>時間</span></div>
+        <div class="stat"><b id="statMoves">0</b><span>連線次數</span></div>
+        <div class="stat"><b id="statMistake">0</b><span>錯誤次數</span></div>
+        <button class="icon-btn" id="backBtn">↺ 重新選擇</button>
+      </div>
+    </div>
+
+    <div class="board-wrap">
+      <svg id="linesSvg"></svg>
+      <div class="board">
+        <div class="col" id="itemColLeft"></div>
+        <div class="col" id="catCol"><div class="col-label">分類籃</div></div>
+        <div class="col" id="itemColRight"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<div class="overlay" id="winOverlay">
+  <div class="modal">
+    <div class="medal">🌊</div>
+    <h2>淨灘任務完成！</h2>
+    <div class="result-grid">
+      <div><b id="finalTime">00:00</b><span>總時間</span></div>
+      <div><b id="finalMoves">0</b><span>連線次數</span></div>
+      <div><b id="finalMistake">0</b><span>錯誤次數</span></div>
+    </div>
+    <div class="tip" id="winTip"></div>
+    <div class="btn-row">
+      <button class="start-btn" id="playAgainBtn" style="padding:12px 30px;">再玩一次</button>
+      <button class="icon-btn" id="changeDiffBtn">回說明頁</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ 分類與色彩 ============ */
+const CATEGORIES = [
+  {id:"plastic", name:"塑膠類",       emoji:"🧴", color:"var(--teal)"},
+  {id:"foam",    name:"保麗龍/發泡",  emoji:"⚪", color:"var(--steel)"},
+  {id:"metal",   name:"金屬類",       emoji:"🥫", color:"#9aa5ab"},
+  {id:"glass",   name:"玻璃類",       emoji:"🍾", color:"var(--green)"},
+  {id:"fishing", name:"漁業廢棄物",   emoji:"🕸️", color:"var(--rust)"},
+  {id:"other",   name:"其他特殊材質", emoji:"🚬", color:"var(--coral)"},
+  {id:"natural", name:"非廢棄物・自然物", emoji:"🐚", color:"var(--gold)"}
+];
+const catById = Object.fromEntries(CATEGORIES.map(c=>[c.id,c]));
+
+/* ============ 物品題庫 ============ */
+const ITEM_POOL = [
+  {name:"寶特瓶",   cat:"plastic", emoji:"🧴", fact:"寶特瓶完全分解約需450年，是海洋中最常見的塑膠廢棄物之一。"},
+  {name:"塑膠袋",   cat:"plastic", emoji:"🛍️", fact:"塑膠袋不易分解，常被海龜誤認成水母而誤食喪命。"},
+  {name:"吸管",     cat:"plastic", emoji:"🥤", fact:"一根吸管可能要花上百年才能分解，卻只被使用短短幾分鐘。"},
+  {name:"瓶蓋",     cat:"plastic", emoji:"🔘", fact:"瓶蓋體積小又鮮豔，容易被海鳥誤食，是海洋生物中毒的常見元凶。"},
+  {name:"塑膠湯匙", cat:"plastic", emoji:"🥄", fact:"一次性塑膠餐具通常只用幾分鐘，卻要花上百年才能分解。"},
+  {name:"免洗筷",   cat:"other",   emoji:"🥢", fact:"免洗筷多半經過漂白、上蠟等化學處理，不是單純的木材，分類上算特殊材質而非一般紙木類。"},
+  {name:"保麗龍便當盒", cat:"foam", emoji:"🍱", fact:"保麗龍幾乎不會分解，只會不斷碎裂成無數塑膠微粒。"},
+  {name:"保麗龍浮球", cat:"foam", emoji:"⚪", fact:"養殖用保麗龍浮球一旦破損，會在海上碎成大量白色顆粒。"},
+  {name:"鋁罐",     cat:"metal", emoji:"🥫", fact:"鋁罐在海水中約需200年才能完全分解。"},
+  {name:"廢電池",   cat:"metal", emoji:"🔋", fact:"廢棄電池含重金屬，滲入海水可能危害海洋生物與生態系。"},
+  {name:"玻璃瓶",   cat:"glass", emoji:"🍾", fact:"玻璃瓶幾乎不會自然分解，但能被無限次回收再利用。"},
+  {name:"玻璃碎片", cat:"glass", emoji:"🔻", fact:"海玻璃雖被海浪磨圓變美，但破碎瓶罐仍可能割傷生物與人類。"},
+  {name:"廢棄漁網", cat:"fishing", emoji:"🕸️", fact:"廢棄漁網又稱「幽靈漁網」，可能持續纏繞海洋生物長達600年。"},
+  {name:"塑膠浮球", cat:"fishing", emoji:"🔴", fact:"漁業用浮球脫落後隨洋流漂流，常大量堆積在偏遠海岸。"},
+  {name:"漁繩",     cat:"fishing", emoji:"🧵", fact:"漁繩容易纏繞珊瑚礁與海龜的四肢，造成長期傷害。"},
+  {name:"菸蒂",     cat:"other", emoji:"🚬", fact:"菸蒂濾嘴含塑膠纖維，分解約需十年，還會釋出尼古丁等毒素。"},
+  {name:"拋棄式口罩", cat:"other", emoji:"😷", fact:"口罩耳掛繩常纏住海鳥與螃蟹，分解也需要數百年。"},
+  {name:"打火機",   cat:"other", emoji:"🔥", fact:"打火機外殼多為塑膠，在海裡可能漂流上百年才分解。"},
+  {name:"廢輪胎",   cat:"other", emoji:"🛞", fact:"廢棄輪胎在海中幾乎不會分解，還可能釋出橡膠微粒。"},
+  {name:"貝殼",     cat:"natural", emoji:"🐚", fact:"這是自然物，不是廢棄物！貝殼是海洋生物留下的天然痕跡。"},
+  {name:"海藻",     cat:"natural", emoji:"🌿", fact:"這是自然物，海藻是海洋生態系重要的一環，並不屬於廢棄物。"},
+  {name:"浮木",     cat:"natural", emoji:"🪵", fact:"這是自然物，浮木可能為海岸生物提供棲息與遮蔽的空間。"},
+  {name:"珊瑚礁碎片", cat:"natural", emoji:"🪸", fact:"這是自然物，珊瑚碎片是海洋生態的一部分，請勿撿拾帶走。"}
+];
+
+const FIXED_COUNT = 16; // 固定16樣，不再讓玩家選難度
+
+/* ============ 狀態 ============ */
+let state = null;
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('backBtn').addEventListener('click', ()=>switchScreen('screen-select'));
+document.getElementById('changeDiffBtn').addEventListener('click', ()=>{
+  document.getElementById('winOverlay').classList.remove('active');
+  switchScreen('screen-select');
+});
+document.getElementById('playAgainBtn').addEventListener('click', ()=>{
+  document.getElementById('winOverlay').classList.remove('active');
+  startGame();
+});
+
+function switchScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+/* ============ 遊戲邏輯 ============ */
+function startGame(){
+  const items = shuffle(ITEM_POOL).slice(0, FIXED_COUNT).map((it,idx)=>({...it, uid:'i'+idx}));
+  const activeCatIds = [...new Set(items.map(i=>i.cat))];
+  const activeCats = shuffle(CATEGORIES.filter(c=>activeCatIds.includes(c.id)));
+
+  state = {
+    items,
+    cats: activeCats,
+    remaining: Object.fromEntries(activeCats.map(c=>[c.id, items.filter(i=>i.cat===c.id).length])),
+    matchedUids: new Set(),
+    connections: [], // {itemUid, catId, color}
+    selectedItem: null,
+    selectedCat: null,
+    moves: 0,
+    mistakes: 0,
+    seconds: 0,
+    timerHandle: null
+  };
+
+  document.getElementById('gameTitle').textContent = `本回合共 ${items.length} 項物品`;
+  document.getElementById('statTime').textContent = '00:00';
+  document.getElementById('statMoves').textContent = '0';
+  document.getElementById('statMistake').textContent = '0';
+
+  renderBoard();
+  switchScreen('screen-game');
+  window.addEventListener('resize', drawLines);
+  requestAnimationFrame(drawLines);
+}
+
+function renderBoard(){
+  const itemColLeft = document.getElementById('itemColLeft');
+  const itemColRight = document.getElementById('itemColRight');
+  const catCol = document.getElementById('catCol');
+  itemColLeft.innerHTML = '';
+  itemColRight.innerHTML = '';
+  catCol.innerHTML = '<div class="col-label">分類籃</div>';
+
+  const shuffledItems = shuffle(state.items);
+  const half = Math.ceil(shuffledItems.length / 2);
+  const leftItems = shuffledItems.slice(0, half);
+  const rightItems = shuffledItems.slice(half);
+
+  function makeItemCard(it){
+    const el = document.createElement('div');
+    el.className='item-card';
+    el.dataset.uid = it.uid;
+    el.innerHTML = `<span class="emoji">${it.emoji}</span><span>${it.name}</span>`;
+    el.addEventListener('click', ()=>onItemClick(it, el));
+    return el;
+  }
+  leftItems.forEach(it=> itemColLeft.appendChild(makeItemCard(it)));
+  rightItems.forEach(it=> itemColRight.appendChild(makeItemCard(it)));
+
+  state.cats.forEach(c=>{
+    const el = document.createElement('div');
+    el.className='cat-card';
+    el.dataset.id = c.id;
+    el.innerHTML = `<span class="emoji">${c.emoji}</span><span class="cat-name">${c.name}</span><span class="cat-progress" id="prog-${c.id}">0/${state.remaining[c.id]}</span>`;
+    el.addEventListener('click', ()=>onCatClick(c, el));
+    catCol.appendChild(el);
+  });
+}
+
+function onItemClick(item, el){
+  if(el.classList.contains('matched')) return;
+  if(!state.timerHandle) startTimer();
+
+  if(state.selectedCat){
+    attemptMatch(item, el, state.selectedCat.data, state.selectedCat.el);
+    return;
+  }
+  document.querySelectorAll('.item-card.selected').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.selectedItem = {data:item, el};
+}
+
+function onCatClick(cat, el){
+  if(el.classList.contains('done')) return;
+  if(!state.timerHandle) startTimer();
+
+  if(state.selectedItem){
+    attemptMatch(state.selectedItem.data, state.selectedItem.el, cat, el);
+    return;
+  }
+  document.querySelectorAll('.cat-card.selected').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.selectedCat = {data:cat, el};
+}
+
+function clearSelections(){
+  document.querySelectorAll('.item-card.selected, .cat-card.selected').forEach(c=>c.classList.remove('selected'));
+  state.selectedItem = null;
+  state.selectedCat = null;
+}
+
+function attemptMatch(item, itemEl, cat, catEl){
+  state.moves++;
+  document.getElementById('statMoves').textContent = state.moves;
+
+  if(item.cat === cat.id){
+    itemEl.classList.remove('selected');
+    catEl.classList.remove('selected');
+    itemEl.classList.add('matched');
+    state.matchedUids.add(item.uid);
+    state.remaining[cat.id]--;
+    document.getElementById(`prog-${cat.id}`).textContent = `${(state.items.filter(i=>i.cat===cat.id).length - state.remaining[cat.id])}/${state.items.filter(i=>i.cat===cat.id).length}`;
+    if(state.remaining[cat.id] <= 0){ catEl.classList.add('done'); }
+    state.connections.push({itemUid:item.uid, catId:cat.id, color: cat.color});
+    state.selectedItem = null; state.selectedCat = null;
+    showToast(item, cat);
+    drawLines();
+    if(state.matchedUids.size === state.items.length){
+      setTimeout(finishGame, 600);
+    }
+  } else {
+    state.mistakes++;
+    document.getElementById('statMistake').textContent = state.mistakes;
+    itemEl.classList.add('wrong'); catEl.classList.add('wrong');
+    setTimeout(()=>{
+      itemEl.classList.remove('wrong'); catEl.classList.remove('wrong');
+      clearSelections();
+    }, 500);
+  }
+}
+
+function startTimer(){
+  state.timerHandle = setInterval(()=>{
+    state.seconds++;
+    const m = String(Math.floor(state.seconds/60)).padStart(2,'0');
+    const s = String(state.seconds%60).padStart(2,'0');
+    document.getElementById('statTime').textContent = `${m}:${s}`;
+  },1000);
+}
+
+function resolveColor(cssVar){
+  if(!cssVar.startsWith('var(')) return cssVar;
+  const name = cssVar.slice(4,-1).trim();
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function drawLines(){
+  const svg = document.getElementById('linesSvg');
+  const wrap = document.querySelector('.board-wrap');
+  const itemColRight = document.getElementById('itemColRight');
+  if(!wrap) return;
+  const wrapRect = wrap.getBoundingClientRect();
+  svg.setAttribute('width', wrapRect.width);
+  svg.setAttribute('height', wrapRect.height);
+  svg.setAttribute('viewBox', `0 0 ${wrapRect.width} ${wrapRect.height}`);
+  let html = '';
+  state.connections.forEach(conn=>{
+    const itemEl = document.querySelector(`.item-card[data-uid="${conn.itemUid}"]`);
+    const catEl = document.querySelector(`.cat-card[data-id="${conn.catId}"]`);
+    if(!itemEl || !catEl) return;
+    const isRightSide = itemColRight.contains(itemEl); // 物品在右欄的話，連線方向要鏡射
+    const ir = itemEl.getBoundingClientRect();
+    const cr = catEl.getBoundingClientRect();
+    const x1 = (isRightSide ? ir.left : ir.right) - wrapRect.left;
+    const y1 = ir.top + ir.height/2 - wrapRect.top;
+    const x2 = (isRightSide ? cr.right : cr.left) - wrapRect.left;
+    const y2 = cr.top + cr.height/2 - wrapRect.top;
+    const mx = (x1+x2)/2;
+    const color = resolveColor(conn.color);
+    html += `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" stroke="${color}" stroke-width="2.5" fill="none" opacity="0.85"/>`;
+    html += `<circle cx="${x1}" cy="${y1}" r="3.5" fill="${color}"/><circle cx="${x2}" cy="${y2}" r="3.5" fill="${color}"/>`;
+  });
+  svg.innerHTML = html;
+}
+
+function showToast(item, cat){
+  const wrap = document.getElementById('toast-wrap');
+  const color = resolveColor(cat.color);
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.style.setProperty('--border-c', color);
+  t.innerHTML = `
+    <h4><span style="color:${color}">●</span> ${item.emoji} ${item.name}　→　${cat.name}</h4>
+    <p>${item.fact}</p>
+  `;
+  wrap.innerHTML='';
+  wrap.appendChild(t);
+  setTimeout(()=>{ if(t.parentNode) t.remove(); }, 3600);
+}
+
+function finishGame(){
+  clearInterval(state.timerHandle);
+  window.removeEventListener('resize', drawLines);
+  const m = String(Math.floor(state.seconds/60)).padStart(2,'0');
+  const s = String(state.seconds%60).padStart(2,'0');
+  document.getElementById('finalTime').textContent = `${m}:${s}`;
+  document.getElementById('finalMoves').textContent = state.moves;
+  document.getElementById('finalMistake').textContent = state.mistakes;
+
+  const naturalCount = state.items.filter(i=>i.cat==='natural').length;
+  let tip;
+  if(state.mistakes === 0){
+    tip = `全部一次連對！你已經是能精準分辨垃圾與自然物的海洋守護高手了。海洋廢棄物大多要數十年到數百年才能分解，減少一次性用品的使用，就是幫海洋卸下最直接的負擔。`;
+  } else if(naturalCount > 0){
+    tip = `這回合有 ${naturalCount} 項其實是自然物，不是廢棄物。淨灘時保留海灘上的貝殼、海藻與浮木，讓它們留在自己的生態角色裡，也是守護海洋的一部分。`;
+  } else {
+    tip = `辛苦了！海洋廢棄物大多要數十年到數百年才能分解，其中漁網、保麗龍與塑膠製品對海洋生物的威脅最大，隨手減塑就是最好的行動。`;
+  }
+  document.getElementById('winTip').textContent = tip;
+  document.getElementById('winOverlay').classList.add('active');
+}
+@@ENDSCRIPT_TOKEN@@
+</body>
+</html>
+
+</script>
+
+</body>
+</html>
