@@ -22,8 +22,8 @@
         #board-header { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 7px 12px; font-size: 0.72rem; color: #567; gap: 8px; background: #f7f9fb; border-bottom: 1px solid #e2e8ee; }
         #budget-topup-info { color: #2e8b57; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        #board-strip { flex-shrink: 0; display: flex; gap: 6px; padding: 8px 10px; overflow: hidden; height: clamp(92px, 17vh, 140px); background: #eef3f8; border-bottom: 2px solid #dde8f0; }
-        .strip-card { flex: 1; min-width: 0; border-radius: 10px; padding: 4px 3px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; transition: background 0.25s ease, border-color 0.25s ease; overflow: hidden; gap: 1px; }
+        #board-strip { flex-shrink: 0; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px; padding: 8px 10px; overflow: hidden; height: clamp(170px, 32vh, 260px); background: #eef3f8; border-bottom: 2px solid #dde8f0; }
+        .strip-card { flex: 1 1 30%; min-width: 0; max-width: 32%; border-radius: 10px; padding: 4px 3px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; transition: background 0.25s ease, border-color 0.25s ease; overflow: hidden; gap: 1px; }
         .strip-icon { font-size: clamp(1rem, 3.4vh, 1.5rem); line-height: 1; }
         .strip-name { font-weight: bold; font-size: clamp(0.6rem, 1.7vh, 0.76rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: #333; }
         .strip-method { font-size: clamp(0.5rem, 1.35vh, 0.6rem); color: #678; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
@@ -90,8 +90,8 @@
         @keyframes pricePulseOrange { 0% { transform: scale(1); } 40% { transform: scale(1.18); color: #ff9d5c; } 100% { transform: scale(1); color: #ffd166; } }
         .arena-price-unit { font-size: 0.5em; margin-left: 3px; color: #9fc4e0; }
 
-        .arena-ai-row { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: clamp(4px,1vh,7px); align-content: stretch; }
-        .ai-chip { background: rgba(255,255,255,0.06); border-radius: 10px; padding: 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 0.68rem; transition: transform 0.2s ease, background 0.2s ease; border: 2px solid transparent; min-height: 0; overflow: hidden; }
+        .arena-ai-row { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: clamp(3px,0.7vh,5px); align-content: stretch; }
+        .ai-chip { background: rgba(255,255,255,0.06); border-radius: 10px; padding: 1px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 0.68rem; transition: transform 0.2s ease, background 0.2s ease; border: 2px solid transparent; min-height: 0; overflow: hidden; }
         .ai-chip .ai-emoji { font-size: clamp(0.9rem, 3.2vh, 1.3rem); line-height: 1; }
         .ai-chip .ai-name { font-weight: bold; color: #cfe4f5; font-size: clamp(0.56rem, 1.5vh, 0.66rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
         .ai-chip .ai-status { color: #6f93ad; margin-top: 1px; font-size: clamp(0.5rem, 1.3vh, 0.58rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
