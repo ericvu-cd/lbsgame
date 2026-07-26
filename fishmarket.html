@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>永續魚市拍賣模擬器 V4.0（看板式）</title>
+    <style>
+        :root { --bg-color: #f0f8ff; --primary-color: #005f99; --accent-color: #ff7f50; --text-color: #333; --panel-bg: #ffffff; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Helvetica Neue", Arial, sans-serif; }
+        html, body { height: 100%; }
+        body { background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; overflow: hidden; }
+
+        #top-bar { background-color: var(--primary-color); color: white; padding: 12px 15px; z-index: 20; box-shadow: 0 2px 6px rgba(0,0,0,0.15); flex-shrink: 0; }
+        #top-bar-row1 { display: flex; justify-content: space-between; font-weight: bold; font-size: 1rem; }
+        #top-bar-row2 { display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 4px; color: #d9edff; }
+
+        #main-content { flex: 1; width: 100%; min-height: 0; background-color: var(--panel-bg); display: flex; flex-direction: column; overflow: hidden; }
+
+        h2 { font-size: 1.2rem; margin-bottom: 15px; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 5px; }
+        .list-item { background: #f9f9f9; padding: 10px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid var(--primary-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1);}
+
+        #board-header { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 7px 12px; font-size: 0.72rem; color: #567; gap: 8px; background: #f7f9fb; border-bottom: 1px solid #e2e8ee; }
+        #budget-topup-info { color: #2e8b57; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        #board-strip { flex-shrink: 0; display: flex; gap: 6px; padding: 8px 10px; overflow: hidden; height: clamp(92px, 17vh, 140px); background: #eef3f8; border-bottom: 2px solid #dde8f0; }
+        .strip-card { flex: 1; min-width: 0; border-radius: 10px; padding: 4px 3px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; transition: background 0.25s ease, border-color 0.25s ease; overflow: hidden; gap: 1px; }
+        .strip-icon { font-size: clamp(1rem, 3.4vh, 1.5rem); line-height: 1; }
+        .strip-name { font-weight: bold; font-size: clamp(0.6rem, 1.7vh, 0.76rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: #333; }
+        .strip-method { font-size: clamp(0.5rem, 1.35vh, 0.6rem); color: #678; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        .strip-status { font-size: clamp(0.5rem, 1.3vh, 0.6rem); font-weight: bold; margin-top: 1px; white-space: nowrap; }
+
+        .strip-card.pending { background: #fff; border-color: #e2e8ee; }
+        .strip-card.pending .strip-status { color: #999; }
+
+        .strip-card.active { background: #fff8dc; border-color: var(--accent-color); animation: liveGlow 1.6s ease-in-out infinite; }
+        .strip-card.active .strip-status { color: var(--accent-color); }
+        @keyframes liveGlow { 0%,100% { box-shadow: 0 0 0 2px rgba(255,127,80,0.12);} 50% { box-shadow: 0 0 0 5px rgba(255,127,80,0.25);} }
+
+        .strip-card.sold-other { background: #eef0f2; border-color: #dcdfe3; opacity: 0.7; }
+        .strip-card.sold-other .strip-icon, .strip-card.sold-other .strip-name { filter: grayscale(60%); }
+        .strip-card.sold-other .strip-status { color: #888; }
+
+        .strip-card.sold-player { background: #fffaf0; border-color: #e0a500; }
+        .strip-card.sold-player .strip-status { color: #b8860b; }
+
+        .strip-card.unsold { background: #f2f2f2; border: 2px dashed #ccc; }
+        .strip-card.unsold .strip-icon, .strip-card.unsold .strip-name { opacity: 0.5; }
+        .strip-card.unsold .strip-status { color: #999; }
+
+        .btn-bid { background-color: var(--accent-color); flex: 1; padding: 12px; font-size: 1rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-bid:disabled { background-color: #ccc; cursor: not-allowed; }
+        .btn-bid:active:not(:disabled) { opacity: 0.8; }
+
+        /* ===== 拍賣區(常駐固定區塊,不再整頁切換) ===== */
+        #auction-arena { flex: 1; min-height: 0; display: flex; flex-direction: column; background: radial-gradient(ellipse at 50% 30%, #123152 0%, #071626 70%, #030b14 100%); color: #eaf4ff; padding: 12px 14px; position: relative; overflow: hidden; }
+
+        #arena-idle { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+        #arena-idle-content { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; max-width: 380px; padding: 0 12px; }
+        .idle-emoji { font-size: clamp(2rem, 6vh, 3rem); }
+        .idle-title { font-size: clamp(1.1rem, 3.2vh, 1.4rem); font-weight: bold; color: #fff; }
+        .idle-sub { font-size: clamp(0.75rem, 2.2vh, 0.9rem); color: #9fc4e0; line-height: 1.5; }
+        .idle-btn { margin-top: 6px; padding: 14px 26px; }
+        .idle-btn-row { display: flex; gap: 8px; width: 100%; margin-top: 6px; }
+
+        #arena-live { flex: 1; min-height: 0; display: none; flex-direction: column; overflow: hidden; }
+        .arena-index-label { flex-shrink: 0; text-align: center; font-size: 0.62rem; color: #9fc4e0; padding-bottom: 3px; }
+
+        .arena-top-row { flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 2px 0 6px; }
+
+        .arena-timer-wrap { position: relative; width: clamp(48px, 11vh, 68px); height: clamp(48px, 11vh, 68px); flex-shrink: 0; }
+        #arena-ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .ring-track { fill: none; stroke: rgba(255,255,255,0.12); stroke-width: 8; }
+        .ring-progress { fill: none; stroke: #3ddc84; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 326.7; stroke-dashoffset: 0; transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease; }
+        .ring-progress.urgent { stroke: #ff4d4d; animation: ringUrgent 0.6s ease-in-out infinite; }
+        @keyframes ringUrgent { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .arena-timer-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #arena-time { font-size: clamp(0.8rem, 2.4vh, 1.05rem); font-weight: bold; font-family: monospace; }
+        #arena-phase-text { font-size: 0.52rem; color: #9fc4e0; }
+
+        .arena-fish-info { flex: 1; min-width: 0; text-align: left; }
+        .arena-fish-name { font-size: clamp(0.85rem, 2.4vh, 1.05rem); font-weight: bold; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .arena-fish-meta { font-size: clamp(0.62rem, 1.7vh, 0.74rem); color: #9fc4e0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .arena-round-line { font-size: clamp(0.56rem, 1.5vh, 0.66rem); color: #7fa5c4; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .arena-price-col { flex-shrink: 0; text-align: right; }
+        .arena-price-row { font-size: clamp(1.15rem, 4vh, 1.6rem); font-weight: bold; color: #ffd166; font-family: monospace; transition: transform 0.15s ease; }
+        .arena-price-row.pulse-player { animation: pricePulseGreen 0.35s ease; }
+        .arena-price-row.pulse-ai { animation: pricePulseOrange 0.35s ease; }
+        @keyframes pricePulseGreen { 0% { transform: scale(1); } 40% { transform: scale(1.18); color: #3ddc84; } 100% { transform: scale(1); color: #ffd166; } }
+        @keyframes pricePulseOrange { 0% { transform: scale(1); } 40% { transform: scale(1.18); color: #ff9d5c; } 100% { transform: scale(1); color: #ffd166; } }
+        .arena-price-unit { font-size: 0.5em; margin-left: 3px; color: #9fc4e0; }
+
+        .arena-ai-row { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: clamp(4px,1vh,7px); align-content: stretch; }
+        .ai-chip { background: rgba(255,255,255,0.06); border-radius: 10px; padding: 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 0.68rem; transition: transform 0.2s ease, background 0.2s ease; border: 2px solid transparent; min-height: 0; overflow: hidden; }
+        .ai-chip .ai-emoji { font-size: clamp(0.9rem, 3.2vh, 1.3rem); line-height: 1; }
+        .ai-chip .ai-name { font-weight: bold; color: #cfe4f5; font-size: clamp(0.56rem, 1.5vh, 0.66rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        .ai-chip .ai-status { color: #6f93ad; margin-top: 1px; font-size: clamp(0.5rem, 1.3vh, 0.58rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        .ai-chip.out { opacity: 0.35; }
+        .ai-chip.out .ai-name { text-decoration: line-through; }
+        .ai-chip.bid { background: rgba(255,157,92,0.22); border-color: #ff9d5c; transform: scale(1.06); }
+        .ai-chip.bid .ai-status { color: #ffb27a; }
+        .ai-chip.leader { background: rgba(255,215,0,0.22); border-color: #ffd700; transform: scale(1.08); }
+        .ai-chip.leader .ai-name, .ai-chip.leader .ai-status { color: #ffe484; }
+
+        .arena-action-btns { display: flex; gap: 10px; flex-shrink: 0; padding-top: 6px; }
+        .arena-action-btns .btn-bid { padding: 12px; font-size: 0.95rem; }
+        .btn-fast-forward { position: absolute; top: 8px; right: 10px; width: auto; flex: none; z-index: 5; background: rgba(255,255,255,0.1); color: #9fc4e0; font-size: 0.62rem; font-weight: normal; padding: 5px 9px; border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; line-height: 1.3; }
+        .btn-fast-forward:disabled { opacity: 0.35; }
+
+        #arena-sold-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(1.6rem, 6vh, 2.6rem); font-weight: 900; letter-spacing: 2px; background: rgba(3,11,20,0); color: transparent; pointer-events: none; transition: background 0.25s ease, color 0.25s ease; }
+        #arena-sold-overlay .sold-sub { font-size: 0.5em; font-weight: 700; margin-top: 6px; letter-spacing: 0; }
+        #arena-sold-overlay.show { background: rgba(3,11,20,0.72); }
+        #arena-sold-overlay.show.win { color: #ffd700; }
+        #arena-sold-overlay.show.other { color: #b9c6d0; }
+        #arena-sold-overlay.show.unsold { color: #7a8894; }
+
+        #history-fab { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; font-weight: bold; cursor: pointer; flex-shrink: 0; }
+        #history-fab:active { opacity: 0.85; }
+
+        #drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 39; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+        #drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+        #history-drawer { position: fixed; left: 0; right: 0; bottom: 0; max-height: 78vh; background: var(--panel-bg); z-index: 40; border-radius: 16px 16px 0 0; box-shadow: 0 -4px 16px rgba(0,0,0,0.25); transform: translateY(100%); transition: transform 0.25s ease; display: flex; flex-direction: column; }
+        #history-drawer.open { transform: translateY(0); }
+        #drawer-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #eee; flex-shrink: 0; }
+        #drawer-header h2 { margin: 0; border: none; padding: 0; }
+        #drawer-close { background: #eee; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1rem; cursor: pointer; color: #555; }
+        #drawer-body { overflow-y: auto; padding: 12px 16px 24px; }
+    </style>
+</head>
+<body>
+
+    <header id="top-bar">
+        <div id="top-bar-row1">
+            <div id="ui-day-season">Day 1 | 🌸 春季</div>
+            <div id="ui-budget">💰 預算: 1500元</div>
+        </div>
+        <div id="top-bar-row2">
+            <div id="ui-inventory-summary">今日尚未購入</div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div id="ui-stage-label">📋 看板整備中</div>
+                <button id="history-fab" onclick="openHistoryDrawer()">📊 紀錄</button>
+            </div>
+        </div>
+    </header>
+
+    <div id="main-content">
+
+        <div id="board-header">
+            <span>🐟 今日魚貨看板（共 <span id="today-box-count">0</span> 箱）</span>
+            <span id="budget-topup-info"></span>
+        </div>
+
+        <div id="board-strip"></div>
+
+        <div id="auction-arena">
+            <div id="arena-idle">
+                <div id="arena-idle-content"></div>
+            </div>
+
+            <div id="arena-live">
+                <div class="arena-index-label" id="arena-index-label">第 1 / 1 箱</div>
+
+                <div class="arena-top-row">
+                    <div class="arena-timer-wrap">
+                        <svg id="arena-ring" viewBox="0 0 120 120">
+                            <circle class="ring-track" cx="60" cy="60" r="52"></circle>
+                            <circle id="ring-progress" class="ring-progress" cx="60" cy="60" r="52"></circle>
+                        </svg>
+                        <div class="arena-timer-label">
+                            <div id="arena-time">3.0</div>
+                            <div id="arena-phase-text">觀察期</div>
+                        </div>
+                    </div>
+
+                    <div class="arena-fish-info">
+                        <div class="arena-fish-name"><span id="arena-fish-icon">🐟</span> <span id="arena-fish-name-text">魚名</span></div>
+                        <div class="arena-fish-meta" id="arena-fish-meta">尺寸・數量</div>
+                        <div class="arena-round-line">輪次 <span id="arena-round">0</span>/<span id="arena-round-max">10</span>　最高：<span id="arena-bidder">無</span></div>
+                    </div>
+
+                    <div class="arena-price-col">
+                        <div class="arena-price-row">
+                            <span id="arena-price">0</span><span class="arena-price-unit">元</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arena-ai-row" id="arena-ai-row"></div>
+
+                <div class="arena-action-btns">
+                    <button class="btn-bid" id="arena-btn-5" onclick="playerBid(auctionState.bidStep)">競標 +5</button>
+                    <button class="btn-bid" id="arena-btn-10" onclick="playerBid(auctionState.bidStep * 2)">競標 +10</button>
+                </div>
+                <button class="btn-fast-forward" id="arena-btn-fast" onclick="fastForwardAuction()">⏭️ 快速完成</button>
+            </div>
+
+            <div id="arena-sold-overlay"></div>
+        </div>
+
+    </div>
+
+    <div id="drawer-backdrop" onclick="closeHistoryDrawer()"></div>
+    <div id="history-drawer">
+        <div id="drawer-header">
+            <h2>歷史紀錄</h2>
+            <button id="drawer-close" onclick="closeHistoryDrawer()">✕</button>
+        </div>
+        <div id="drawer-body">
+            <div id="record-list"><div class="list-item">尚無紀錄。結算後會顯示於此。</div></div>
+        </div>
+    </div>
+
+    <script>
+        const SEASONS = ['🌸 春季', '☀️ 夏季', '🍂 秋季', '❄️ 冬季'];
+        const FISH_DB = [
+            { id: 'f1', name: '白帶魚', matureSize: 30, bestSeasons: [2, 3], ecoLevel: '建議', basePrice: 15, conservation: 'normal', method: 'friendly', methodName: '一支釣', habitat: 'coastal',
+              info: '台灣常見食用魚，生長速度快、族群資源相對穩定，多以一支釣方式在近海捕撈，對海床與其他物種的衝擊較小。' },
+            { id: 'f2', name: '野生烏魚', matureSize: 45, bestSeasons: [3], ecoLevel: '建議', basePrice: 25, conservation: 'normal', method: 'friendly', methodName: '定置網', habitat: 'coastal',
+              info: '冬季迴游性魚類，是台灣傳統烏魚子的原料魚，漁民多以定置網在其洄游路線上等待捕撈，對環境擾動較低，但仍需留意捕撈量以免影響洄游族群。' },
+            { id: 'f3', name: '養殖烏魚', matureSize: 40, bestSeasons: [0, 1, 2, 3], ecoLevel: '建議', basePrice: 18, conservation: 'normal', method: 'friendly', methodName: '箱網養殖', habitat: 'aquaculture',
+              info: '台灣重要的箱網／魚塭養殖魚種，透過人工養殖供應市場需求，能有效降低對野生烏魚族群的捕撈壓力，全年皆可穩定生產。' },
+            { id: 'f4', name: '黑鯛', matureSize: 25, bestSeasons: [0, 3], ecoLevel: '想清楚', basePrice: 18, conservation: 'normal', method: 'friendly', methodName: '手釣', habitat: 'coastal',
+              info: '棲息於沿岸礁區與河口的雜食性魚類，常以手釣方式垂釣。生長速度中等，若捕撈到體型過小的幼魚，會對族群補充造成較大影響，建議多加留意體型。' },
+            { id: 'f5', name: '真鯛（嘉鱲）', matureSize: 30, bestSeasons: [0, 1, 2, 3], ecoLevel: '建議', basePrice: 25, conservation: 'normal', method: 'friendly', methodName: '箱網養殖', habitat: 'aquaculture',
+              info: '台灣沿海重要的箱網養殖魚種之一，肉質細緻、市場需求高，人工養殖技術成熟，有助於減少對野生嘉鱲族群的捕撈依賴。' },
+            { id: 'f6', name: '花枝', matureSize: 20, bestSeasons: [0, 3], ecoLevel: '建議', basePrice: 12, conservation: 'normal', method: 'friendly', methodName: '手釣／手採', habitat: 'coastal',
+              info: '生命週期短、繁殖速度快的頭足類，族群恢復力強，多以手釣或潮間帶手採方式捕撈，對海洋棲地的破壞程度低，是相對永續的海鮮選擇。' },
+            { id: 'f7', name: '花蟹', matureSize: 15, bestSeasons: [2], ecoLevel: '避免', basePrice: 30, conservation: 'normal', method: 'destructive', methodName: '拖網', habitat: 'coastal',
+              info: '棲息於沙泥底質海床的蟹類，常以底拖網大量捕撈，容易誤捕其他底棲物種並破壞海床棲地結構；若捕到抱卵母蟹或體型過小的幼蟹，對族群衝擊更大。' },
+            { id: 'f8', name: '黑鮪魚', matureSize: 200, bestSeasons: [1], ecoLevel: '避免', basePrice: 80, conservation: 'endangered', method: 'destructive', methodName: '圍網', habitat: 'pelagic',
+              info: '大型遠洋洄游性魚類，國際自然保育聯盟（IUCN）將其列為保育關注物種。多以圍網方式在遠洋大規模捕撈，混獲其他物種的風險高，全球族群量因過度捕撈已大幅下降。' }
+        ];
+
+        const ECO_ICON = { '建議': '🟢', '想清楚': '🟡', '避免': '🔴' };
+        const DAYS_PER_SEASON = 3;
+        const OBSERVE_SECONDS = 3.0;
+        const BIDDING_SECONDS = 8.0;
+
+        const AI_PLAYERS = [
+            { id: 'ai1', name: '👨‍🍳 餐廳老闆', type: 'restaurant' },
+            { id: 'ai2', name: '🍲 快炒店', type: 'stirfry' },
+            { id: 'ai3', name: '🏭 量販採購', type: 'wholesale' },
+            { id: 'ai4', name: '🚚 批發商', type: 'distributor' },
+            { id: 'ai5', name: '🛒 魚販阿姨', type: 'auntie' },
+            { id: 'ai6', name: '🛒 魚販阿伯', type: 'uncle' }
+        ];
+
+        function fishIcon(fish) {
+            if (fish.id === 'f6') return '🦑';
+            if (fish.id === 'f7') return '🦀';
+            return '🐟';
+        }
+
+        function splitAiName(name) {
+            const parts = name.split(' ');
+            return { emoji: parts[0], label: parts.slice(1).join(' ') };
+        }
+
+        const gameState = { day: 1, seasonIndex: 0, budget: 0, todayBoxes: [], playerInventory: [], history: [], lastTopUp: 0 };
+
+        const auctionState = {
+            queue: [], currentIndex: 0, currentBox: null, currentPrice: 0,
+            timeLeft: OBSERVE_SECONDS, phase: 'observe', bidStep: 5, bidCount: 0, maxBidRounds: 10,
+            highestBidderId: null, highestBidderName: '無', lastBidBy: null, giveUp: false,
+            aiStatus: [], mainTimer: null, aiTimer: null
+        };
+
+        function setStageLabel(text) {
+            document.getElementById('ui-stage-label').innerText = text;
+        }
+
+        function openHistoryDrawer() {
+            document.getElementById('history-drawer').classList.add('open');
+            document.getElementById('drawer-backdrop').classList.add('open');
+        }
+        function closeHistoryDrawer() {
+            document.getElementById('history-drawer').classList.remove('open');
+            document.getElementById('drawer-backdrop').classList.remove('open');
+        }
+
+        function renderBoard() {
+            const strip = document.getElementById('board-strip');
+            strip.innerHTML = gameState.todayBoxes.map(box => stripCardHTML(box)).join('');
+        }
+
+        function stripCardHTML(box) {
+            const icon = fishIcon(box.fish);
+            const method = box.fish.methodName;
+            let statusText = '等待拍賣';
+            if (box.status === 'active') statusText = '🔴 拍賣中';
+            else if (box.status === 'sold-player') statusText = '⭐ 你標到';
+            else if (box.status === 'sold-other') statusText = '已售出';
+            else if (box.status === 'unsold') statusText = '流標';
+
+            return `<div class="strip-card ${box.status}">
+                <div class="strip-icon">${icon}</div>
+                <div class="strip-name">${box.fish.name}</div>
+                <div class="strip-method">🎣${method}</div>
+                <div class="strip-status">${statusText}</div>
+            </div>`;
+        }
+
+        function generateTodayBoxes() {
+            gameState.todayBoxes = [];
+            let boxCount = Math.floor(Math.random() * 3) + 4;
+            let totalValue = 0;
+            for (let i = 0; i < boxCount; i++) {
+                let randomFish = FISH_DB[Math.floor(Math.random() * FISH_DB.length)];
+                let size = randomFish.matureSize + (Math.floor(Math.random() * 20) - 10);
+                let qty = Math.floor(Math.random() * 15) + 5;
+                size = Math.max(5, size);
+                gameState.todayBoxes.push({ fish: randomFish, size: size, qty: qty, status: 'pending', soldPrice: null, soldBy: null });
+                totalValue += randomFish.basePrice * qty;
+            }
+            return totalValue;
+        }
+
+        function calcDailyBudget(totalValue, isFirstDay) {
+            // 依當天魚貨總市值計算合理預算：大約能標下四到七成的貨，並設安全上下限避免極端值
+            const ratio = isFirstDay ? (0.55 + Math.random() * 0.2) : (0.45 + Math.random() * 0.25);
+            let amount = totalValue * ratio;
+            amount = Math.round(amount / 50) * 50;
+            amount = Math.max(400, Math.min(amount, 3000));
+            return amount;
+        }
+
+        function initDay() {
+            document.getElementById('ui-day-season').innerText = `Day ${gameState.day} | ${SEASONS[gameState.seasonIndex]}`;
+            document.getElementById('ui-inventory-summary').innerText = '今日尚未購入';
+            setStageLabel('📋 看板整備中');
+
+            const totalValue = generateTodayBoxes();
+
+            if (gameState.day === 1) {
+                gameState.budget = calcDailyBudget(totalValue, true);
+                gameState.lastTopUp = 0;
+            } else {
+                const topUp = calcDailyBudget(totalValue, false);
+                gameState.budget += topUp;
+                gameState.lastTopUp = topUp;
+            }
+
+            document.getElementById('ui-budget').innerText = `💰 預算: ${gameState.budget}元`;
+
+            const topupInfo = document.getElementById('budget-topup-info');
+            if (gameState.lastTopUp) {
+                topupInfo.style.display = 'inline';
+                topupInfo.innerText = `💰 今日資金到位：+${gameState.lastTopUp} 元`;
+            } else {
+                topupInfo.style.display = 'none';
+            }
+
+            document.getElementById('today-box-count').innerText = gameState.todayBoxes.length;
+
+            renderBoard();
+            showArenaIdle(`
+                <div class="idle-emoji">🎣</div>
+                <div class="idle-title">今日看板已就緒</div>
+                <div class="idle-sub">共 ${gameState.todayBoxes.length} 箱魚貨，看板上方隨時看得到狀態。準備好開始今天的拍賣了嗎？</div>
+                <button class="btn-bid idle-btn" onclick="startDailyAuction()">開始今日拍賣</button>
+            `);
+        }
+
+        function showArenaIdle(html) {
+            document.getElementById('arena-live').style.display = 'none';
+            document.getElementById('arena-idle-content').innerHTML = html;
+            document.getElementById('arena-idle').style.display = 'flex';
+        }
+
+        function showArenaLive() {
+            document.getElementById('arena-idle').style.display = 'none';
+            document.getElementById('arena-live').style.display = 'flex';
+        }
+
+        function startDailyAuction() {
+            auctionState.queue = [...gameState.todayBoxes].sort(() => Math.random() - 0.5);
+            auctionState.currentIndex = 0;
+            setStageLabel('🔨 拍賣中');
+            showArenaLive();
+            setupNextBox();
+        }
+
+        function setupNextBox() {
+            auctionState.currentBox = auctionState.queue[auctionState.currentIndex];
+            auctionState.currentBox.status = 'active';
+            let box = auctionState.currentBox;
+            let baseBoxValue = box.fish.basePrice * box.qty;
+            auctionState.currentPrice = Math.floor(baseBoxValue * 0.7);
+            auctionState.bidStep = Math.max(5, Math.round(baseBoxValue * 0.08 / 5) * 5);
+            auctionState.bidCount = 0;
+            auctionState.maxBidRounds = 10;
+
+            auctionState.phase = 'observe';
+            auctionState.timeLeft = OBSERVE_SECONDS;
+            auctionState.highestBidderId = null;
+            auctionState.highestBidderName = '無';
+            auctionState.giveUp = false;
+
+            auctionState.aiStatus = AI_PLAYERS.map(ai => ({
+                ...ai, status: '等待開拍', out: false, bidCount: 0,
+                maxPrice: calcAIMaxPrice(ai.type, box, baseBoxValue)
+            }));
+
+            document.getElementById('arena-fish-icon').innerText = fishIcon(box.fish);
+            document.getElementById('arena-fish-name-text').innerText = box.fish.name;
+            document.getElementById('arena-fish-meta').innerText = `${box.size}cm・${box.qty}尾・🎣${box.fish.methodName}`;
+            document.getElementById('arena-index-label').innerText = `第 ${auctionState.currentIndex + 1} / ${auctionState.queue.length} 箱`;
+            document.getElementById('arena-sold-overlay').className = '';
+
+            renderBoard();
+            updateAuctionUI();
+            clearInterval(auctionState.mainTimer);
+            clearInterval(auctionState.aiTimer);
+            auctionState.mainTimer = setInterval(countdownTimer, 100);
+            auctionState.aiTimer = setInterval(aiThinkLoop, 800);
+        }
+
+        function calcAIMaxPrice(type, box, baseValue) {
+            switch (type) {
+                case 'restaurant': return box.size >= box.fish.matureSize ? baseValue * 1.5 : baseValue * 0.6;
+                case 'stirfry': return baseValue * 1.1;
+                case 'wholesale': return box.qty >= 10 ? baseValue * 1.3 : baseValue * 0.8;
+                case 'distributor': return baseValue * 1.25;
+                case 'auntie': return baseValue * 1.05;
+                case 'uncle': return box.fish.bestSeasons.includes(gameState.seasonIndex) ? baseValue * 1.4 : baseValue * 0.9;
+            }
+            return baseValue;
+        }
+
+        function calcFishScore(box) {
+            const fish = box.fish;
+            const detail = [];
+            let total = 0;
+
+            let ecoScore = fish.ecoLevel === '建議' ? 30 : (fish.ecoLevel === '想清楚' ? 10 : -25);
+            detail.push({ label: `${ECO_ICON[fish.ecoLevel] || ''} 永續等級(${fish.ecoLevel})`, score: ecoScore });
+            total += ecoScore;
+
+            let matureScore = box.size >= fish.matureSize ? 15 : -20;
+            detail.push({ label: box.size >= fish.matureSize ? '🐟 成魚' : '🐟 幼魚', score: matureScore });
+            total += matureScore;
+
+            let seasonScore = fish.bestSeasons.includes(gameState.seasonIndex) ? 15 : 0;
+            detail.push({ label: seasonScore > 0 ? '🍂 當季盛產' : '❌ 非當季', score: seasonScore });
+            total += seasonScore;
+
+            let consScore = fish.conservation === 'endangered' ? -60 : 0;
+            detail.push({ label: fish.conservation === 'endangered' ? '🚨 保育類／瀕危物種' : '✅ 非保育類物種', score: consScore });
+            total += consScore;
+
+            let methodScore = fish.method === 'friendly' ? 15 : -10;
+            detail.push({ label: fish.method === 'friendly' ? '🎣 友善漁法' : '⚠️ 非友善漁法', score: methodScore });
+            total += methodScore;
+
+            let habitatScore = fish.habitat === 'aquaculture' ? 15 : (fish.habitat === 'coastal' ? 5 : -5);
+            let habitatLabel = fish.habitat === 'aquaculture' ? '🌿 人工養殖' : (fish.habitat === 'coastal' ? '🌊 野生近海捕撈' : '🚢 遠洋捕撈（混獲風險高）');
+            detail.push({ label: habitatLabel, score: habitatScore });
+            total += habitatScore;
+
+            return { total, detail };
+        }
+
+        function getGradeComment(totalScore, hasEndangered) {
+            if (totalScore < 0 || hasEndangered) return { grade: 'F', comment: '海洋破壞者', color: '#c00' };
+            if (totalScore >= 150) return { grade: 'S', comment: '海洋保衛者', color: '#d4af37' };
+            if (totalScore >= 80) return { grade: 'A', comment: '永續推廣者', color: '#2e8b57' };
+            if (totalScore >= 30) return { grade: 'B', comment: '普通買家', color: '#005f99' };
+            return { grade: 'C', comment: '只顧賺錢', color: '#e07b00' };
+        }
+
+        function settleDay() {
+            let totalScore = 0;
+            let hasEndangered = false;
+            let spent = 0;
+            const items = gameState.playerInventory.map(inv => {
+                const { total, detail } = calcFishScore(inv.box);
+                totalScore += total;
+                spent += inv.price;
+                if (inv.box.fish.conservation === 'endangered') hasEndangered = true;
+                return {
+                    name: inv.box.fish.name, size: inv.box.size, qty: inv.box.qty, price: inv.price, total, detail,
+                    methodName: inv.box.fish.methodName,
+                    conservation: inv.box.fish.conservation,
+                    habitat: inv.box.fish.habitat,
+                    ecoLevel: inv.box.fish.ecoLevel,
+                    info: inv.box.fish.info
+                };
+            });
+
+            const gradeInfo = getGradeComment(totalScore, hasEndangered);
+
+            const record = {
+                day: gameState.day,
+                season: SEASONS[gameState.seasonIndex],
+                boxCount: items.length,
+                spent, totalScore,
+                grade: gradeInfo.grade, comment: gradeInfo.comment, color: gradeInfo.color,
+                items
+            };
+
+            gameState.history.unshift(record);
+            renderHistory();
+            return record;
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('record-list');
+            if (gameState.history.length === 0) {
+                list.innerHTML = '<div class="list-item">尚無紀錄。結算後會顯示於此。</div>';
+                return;
+            }
+
+            list.innerHTML = gameState.history.map(rec => {
+                const itemsHtml = rec.items.map(it => {
+                    const detailStr = it.detail.map(d => `${d.label} ${d.score >= 0 ? '+' : ''}${d.score}`).join(' ｜ ');
+                    const consLabel = it.conservation === 'endangered' ? '🚨 保育類／瀕危物種' : '✅ 非保育類物種';
+                    const habitatLabel = it.habitat === 'aquaculture' ? '🌿 人工養殖' : (it.habitat === 'coastal' ? '🌊 野生近海捕撈' : '🚢 遠洋捕撈（混獲風險高）');
+                    return `<div style="margin-top:6px; padding:6px; background:#fff; border-radius:6px; font-size:0.8rem;">
+                        <strong>${it.name}</strong>（${it.size}cm・${it.qty}尾・${it.price}元）→ <strong>${it.total >= 0 ? '+' : ''}${it.total} 分</strong><br>
+                        <span style="color:#777;">${detailStr}</span><br>
+                        <span style="color:#555;">🎣 漁法：${it.methodName}　｜　${consLabel}　｜　${habitatLabel}</span>
+                        <div style="margin-top:4px; padding:6px; background:#f7f7f7; border-radius:4px; color:#444; line-height:1.4;">📖 ${it.info}</div>
+                    </div>`;
+                }).join('');
+
+                return `<div class="list-item" style="border-left-color:${rec.color};">
+                    <strong>Day ${rec.day}｜${rec.season}</strong><br>
+                    購入 ${rec.boxCount} 箱，共花費 ${rec.spent} 元<br>
+                    永續總積分：<strong>${rec.totalScore} 分</strong><br>
+                    評級：<strong style="color:${rec.color};">${rec.grade}級【${rec.comment}】</strong>
+                    ${itemsHtml}
+                </div>`;
+            }).join('');
+        }
+
+        function finishAuctionDay() {
+            const record = settleDay();
+            setStageLabel('📊 結算完成');
+            showArenaIdle(`
+                <div class="idle-emoji">📊</div>
+                <div class="idle-title">今日拍賣結算</div>
+                <div class="idle-sub">
+                    本日購入 ${record.boxCount} 箱，共花費 ${record.spent} 元<br>
+                    永續總積分：<strong style="color:#fff;">${record.totalScore} 分</strong><br>
+                    評級：<strong style="color:${record.color};">${record.grade}級【${record.comment}】</strong>
+                </div>
+                <div class="idle-btn-row">
+                    <button class="btn-bid" onclick="openHistoryDrawer()">詳細紀錄</button>
+                    <button class="btn-bid" style="background:#2e8b57;" onclick="nextDay()">☀️ 前往下一天</button>
+                </div>
+            `);
+        }
+
+        function nextDay() {
+            gameState.day++;
+            gameState.playerInventory = [];
+            gameState.seasonIndex = Math.floor((gameState.day - 1) / DAYS_PER_SEASON) % SEASONS.length;
+            initDay();
+        }
+
+        function updateInventorySummary() {
+            const inv = gameState.playerInventory;
+            const spentTotal = inv.reduce((sum, it) => sum + it.price, 0);
+            document.getElementById('ui-inventory-summary').innerText =
+                inv.length === 0 ? '今日尚未購入' : `今日已購 ${inv.length} 箱・花費 ${spentTotal} 元`;
+        }
+
+        const RING_CIRCUMFERENCE = 2 * Math.PI * 52;
+
+        function updateRing() {
+            const total = auctionState.phase === 'observe' ? OBSERVE_SECONDS : BIDDING_SECONDS;
+            const ratio = Math.max(0, Math.min(1, auctionState.timeLeft / total));
+            const ring = document.getElementById('ring-progress');
+            ring.style.strokeDasharray = RING_CIRCUMFERENCE;
+            ring.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - ratio);
+            ring.classList.toggle('urgent', auctionState.phase === 'bidding' && auctionState.timeLeft <= 3);
+            if (auctionState.phase !== 'bidding' && auctionState.timeLeft > 3) ring.classList.remove('urgent');
+            if (ratio > 0.5) ring.style.stroke = '#3ddc84';
+            else if (ratio > 0.2) ring.style.stroke = '#ffb703';
+            else ring.style.stroke = '#ff4d4d';
+        }
+
+        function updateAuctionUI() {
+            const priceEl = document.getElementById('arena-price');
+            const priceChanged = priceEl.innerText !== String(auctionState.currentPrice);
+            priceEl.innerText = auctionState.currentPrice;
+
+            document.getElementById('arena-round').innerText = auctionState.bidCount;
+            document.getElementById('arena-round-max').innerText = auctionState.maxBidRounds;
+            document.getElementById('arena-time').innerText = auctionState.timeLeft.toFixed(1);
+            document.getElementById('arena-bidder').innerText = auctionState.highestBidderName;
+            document.getElementById('arena-phase-text').innerText = auctionState.phase === 'observe' ? '👁️ 觀察期' : '⏳ 競拍倒數';
+
+            if (priceChanged && auctionState.lastBidBy) {
+                const priceRow = document.getElementById('arena-price').parentElement;
+                priceRow.classList.remove('pulse-player', 'pulse-ai');
+                void priceRow.offsetWidth;
+                priceRow.classList.add(auctionState.lastBidBy === 'player' ? 'pulse-player' : 'pulse-ai');
+            }
+            auctionState.lastBidBy = null;
+
+            updateRing();
+
+            const btn5 = document.getElementById('arena-btn-5');
+            const btn10 = document.getElementById('arena-btn-10');
+            const btnFast = document.getElementById('arena-btn-fast');
+            btn5.innerText = `競標 +${auctionState.bidStep}`;
+            btn10.innerText = `競標 +${auctionState.bidStep * 2}`;
+            const disable = auctionState.phase === 'observe' || auctionState.giveUp;
+            btn5.disabled = disable;
+            btn10.disabled = disable;
+            btnFast.disabled = auctionState.phase === 'observe' ? false : auctionState.giveUp;
+            btnFast.style.display = auctionState.giveUp ? 'none' : 'block';
+
+            const aiGrid = document.getElementById('arena-ai-row');
+            aiGrid.innerHTML = '';
+            auctionState.aiStatus.forEach(ai => {
+                let cls = 'ai-chip';
+                if (ai.out) cls += ' out';
+                else if (ai.id === auctionState.highestBidderId) cls += ' leader';
+                else if (ai.status.includes('加價')) cls += ' bid';
+
+                const parts = splitAiName(ai.name);
+                const nameDisplay = ai.id === auctionState.highestBidderId ? `👑 ${parts.label}` : parts.label;
+                aiGrid.innerHTML += `<div class="${cls}"><span class="ai-emoji">${parts.emoji}</span><span class="ai-name">${nameDisplay}</span><span class="ai-status">${ai.status}</span></div>`;
+            });
+        }
+
+        function countdownTimer() {
+            auctionState.timeLeft -= 0.1;
+
+            if (auctionState.timeLeft <= 0) {
+                if (auctionState.phase === 'observe') {
+                    auctionState.phase = 'bidding';
+                    auctionState.timeLeft = BIDDING_SECONDS;
+                    auctionState.aiStatus.forEach(ai => ai.status = '觀望');
+                    updateAuctionUI();
+                } else {
+                    endCurrentBox();
+                }
+            } else {
+                document.getElementById('arena-time').innerText = Math.max(0, auctionState.timeLeft).toFixed(1);
+                updateRing();
+            }
+        }
+
+        function aiBiddingStep() {
+            if (auctionState.phase === 'observe') return false;
+
+            let activeAIs = auctionState.aiStatus.filter(ai => !ai.out && ai.id !== auctionState.highestBidderId);
+
+            activeAIs.forEach(ai => {
+                if (auctionState.currentPrice >= ai.maxPrice || (ai.type === 'uncle' && ai.bidCount >= 2)) {
+                    ai.out = true; ai.status = '放棄';
+                }
+            });
+
+            let willingAIs = activeAIs.filter(ai => !ai.out);
+
+            if (willingAIs.length > 0 && Math.random() > 0.4) {
+                let bidder = willingAIs[Math.floor(Math.random() * willingAIs.length)];
+                let bidAmount = bidder.type === 'wholesale' ? auctionState.bidStep : (Math.random() > 0.5 ? auctionState.bidStep : auctionState.bidStep * 2);
+
+                auctionState.currentPrice += bidAmount;
+                auctionState.highestBidderId = bidder.id;
+                auctionState.highestBidderName = bidder.name;
+                auctionState.timeLeft = BIDDING_SECONDS;
+                bidder.bidCount++;
+                bidder.status = `加價 +${bidAmount}`;
+
+                auctionState.aiStatus.forEach(ai => {
+                    if (!ai.out && ai.id !== bidder.id) ai.status = '觀望';
+                });
+
+                auctionState.bidCount++;
+                auctionState.lastBidBy = 'ai';
+                return true;
+            }
+            return false;
+        }
+
+        function aiThinkLoop() {
+            const bid = aiBiddingStep();
+            if (!bid) return;
+            updateAuctionUI();
+            if (auctionState.bidCount >= auctionState.maxBidRounds) {
+                endCurrentBox();
+            }
+        }
+
+        function fastForwardAuction() {
+            if (!auctionState.currentBox || auctionState.currentBox.status !== 'active') return;
+            if (auctionState.giveUp) return;
+
+            clearInterval(auctionState.mainTimer);
+            clearInterval(auctionState.aiTimer);
+            auctionState.giveUp = true;
+            auctionState.phase = 'bidding';
+
+            let guard = 0;
+            while (auctionState.bidCount < auctionState.maxBidRounds && guard < 500) {
+                guard++;
+                const activeWillingLeft = auctionState.aiStatus.some(ai => !ai.out && ai.id !== auctionState.highestBidderId && auctionState.currentPrice < ai.maxPrice);
+                const bid = aiBiddingStep();
+                if (!bid && !activeWillingLeft) break;
+            }
+
+            auctionState.timeLeft = 0;
+            updateAuctionUI();
+            endCurrentBox();
+        }
+
+        function playerBid(amount) {
+            if (auctionState.phase === 'observe') return;
+            if (gameState.budget < (auctionState.currentPrice + amount)) {
+                alert('預算不足！無法加價。');
+                return;
+            }
+
+            auctionState.currentPrice += amount;
+            auctionState.highestBidderId = 'player';
+            auctionState.highestBidderName = '⭐ 你 (👑領先)';
+            auctionState.timeLeft = BIDDING_SECONDS;
+            auctionState.bidCount++;
+            auctionState.lastBidBy = 'player';
+            updateAuctionUI();
+
+            if (auctionState.bidCount >= auctionState.maxBidRounds) {
+                endCurrentBox();
+            }
+        }
+
+        function endCurrentBox() {
+            clearInterval(auctionState.mainTimer);
+            clearInterval(auctionState.aiTimer);
+
+            const box = auctionState.currentBox;
+            const overlay = document.getElementById('arena-sold-overlay');
+            let overlayCls, overlayTitle, overlaySub;
+
+            if (auctionState.highestBidderId === 'player') {
+                gameState.budget -= auctionState.currentPrice;
+                gameState.playerInventory.push({ box: box, price: auctionState.currentPrice });
+                box.status = 'sold-player';
+                box.soldPrice = auctionState.currentPrice;
+                overlayCls = 'win'; overlayTitle = '🔨 SOLD！你得標'; overlaySub = `${auctionState.currentPrice} 元`;
+            } else if (auctionState.highestBidderId) {
+                box.status = 'sold-other';
+                box.soldPrice = auctionState.currentPrice;
+                box.soldBy = auctionState.highestBidderName;
+                overlayCls = 'other'; overlayTitle = 'SOLD'; overlaySub = `由 ${auctionState.highestBidderName} 標得`;
+            } else {
+                box.status = 'unsold';
+                overlayCls = 'unsold'; overlayTitle = '流標'; overlaySub = '無人出價';
+            }
+
+            overlay.innerHTML = `<div><div>${overlayTitle}</div><div class="sold-sub">${overlaySub}</div></div>`;
+            overlay.className = `show ${overlayCls}`;
+            setTimeout(() => { overlay.className = ''; }, 900);
+
+            document.getElementById('ui-budget').innerText = `💰 預算: ${gameState.budget}元`;
+            updateInventorySummary();
+            renderBoard();
+
+            auctionState.currentIndex++;
+            setTimeout(() => {
+                if (auctionState.currentIndex < auctionState.queue.length) {
+                    const remaining = auctionState.queue.length - auctionState.currentIndex;
+                    setStageLabel('📋 看板更新中');
+                    showArenaIdle(`
+                        <div class="idle-emoji">🔨</div>
+                        <div class="idle-title">這箱結果已更新到上方看板</div>
+                        <div class="idle-sub">還剩 ${remaining} 箱魚貨，準備好進行下一箱了嗎？</div>
+                        <button class="btn-bid idle-btn" onclick="continueNextBox()">繼續拍賣下一箱</button>
+                    `);
+                } else {
+                    finishAuctionDay();
+                }
+            }, 1100);
+        }
+
+        function continueNextBox() {
+            setStageLabel('🔨 拍賣中');
+            showArenaLive();
+            setupNextBox();
+        }
+
+        window.onload = initDay;
+    </script>
+</body>
+</html>

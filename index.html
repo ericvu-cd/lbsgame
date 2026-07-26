@@ -427,7 +427,7 @@ renderHarbors();
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>海紋守護團・永續海鮮翻牌對對碰</title>
+<title>永續海鮮翻牌對對碰</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -545,6 +545,14 @@ renderHarbors();
   .diff-btn b{display:block;font-family:'Noto Serif TC',serif;font-size:0.9rem;}
   .diff-btn.selected{background:var(--gold);color:var(--ocean-deep);border-color:var(--gold);}
 
+  .rule-box{
+    margin:0 0 8px;
+    background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);
+    border-radius:10px;padding:9px 11px;font-size:0.8rem;color:var(--cream-dim);line-height:1.5;
+    flex-shrink:0;
+  }
+  .rule-box b{color:var(--cream);}
+
   .legend-row{
     display:flex;flex-wrap:wrap;gap:8px;
     justify-content:center;
@@ -615,14 +623,14 @@ renderHarbors();
     perspective:1000px;
     flex:1;
     min-height:0;
-    align-content:center;
+    align-content:flex-start;
     align-self:center;
     width:min(320px, 88vw);
     margin-bottom:6px;
   }
   .card{
     position:relative;
-    aspect-ratio:3/3.35;
+    aspect-ratio:3/2.51;
     cursor:pointer;
   }
   .card-inner{
@@ -722,13 +730,17 @@ renderHarbors();
 
 <div class="app">
   <div class="brandline"><div class="eyebrow">Taiwan Coastal Guardians</div></div>
-  <h1 class="title">海紋守護團・永續海鮮翻牌對對碰</h1>
+  <h1 class="title">永續海鮮翻牌對對碰</h1>
   <p class="subtitle">翻牌配對：魚種配燈號，找出每種漁獲對應的永續燈號</p>
 
-  <!-- 畫面一：選擇漁港 -->
+  <!-- 畫面一：說明與開始 -->
   <div class="screen active" id="screen-select">
-    <div class="section-label">選擇出航漁港</div>
-    <div class="port-grid" id="portGrid"></div>
+    <div class="section-label">苗栗龍鳳漁港・龍鳳初航章</div>
+
+    <div class="rule-box">
+      翻開魚牌，找出牠對應的<b>永續燈號</b>卡配成一對——不是找兩張長得一樣的牌，是要記住每種魚的燈號顏色。
+      本回合隨機抽 <b>10 種</b>龍鳳漁港的常見漁獲。
+    </div>
 
     <div class="legend-row">
       <div class="legend-chip"><span class="dot g"></span>綠燈・安心食用</div>
@@ -736,7 +748,7 @@ renderHarbors();
       <div class="legend-chip"><span class="dot r"></span>紅燈・建議避免</div>
     </div>
 
-    <button class="start-btn" id="startBtn" disabled>啟航出海</button>
+    <button class="start-btn" id="startBtn">啟航出海</button>
   </div>
 
   <!-- 畫面二：遊戲進行 -->
@@ -829,11 +841,7 @@ const fishDB = [
 
 const locationDB = [
   {id:"longfeng",name:"苗栗龍鳳漁港",area:"苗栗海線",badge:"龍鳳初航章",
-    fishPool:["吳郭魚","竹筴魚","台灣鯖魚","臭肚魚","星雞魚","虱目魚","白帶魚","養殖鱸魚","皮刀","鰆魚","鯽仔","飛魚","小卷","紅魽","紅目鰱","白鯧","肉魚","黃鰭鯛","牛舌","赤鯮","午仔魚","養殖黑鯛","花枝","比目魚","海鱺","野生石斑","鯊魚","龍占","曼波魚","白海豚"]},
-  {id:"waipu",name:"苗栗外埔漁港",area:"苗栗海線",badge:"外埔潮夕章",
-    fishPool:["吳郭魚","竹筴魚","台灣鯖魚","臭肚魚","虱目魚","白帶魚","養殖鱸魚","養殖烏魚","皮刀","鰆魚","鯽仔","飛魚","小卷","紅目鰱","白鯧","肉魚","黃鰭鯛","牛舌","午仔魚","養殖黑鯛","花枝","比目魚","三點蟹","笛鯛","赤鯮","星雞魚","巴鰹","對蝦","龍占","魔鬼魚"]},
-  {id:"yuangang",name:"苑港觀光漁港",area:"苗栗海線",badge:"苑港虹橋章",
-    fishPool:["吳郭魚","竹筴魚","台灣鯖魚","星雞魚","虱目魚","白帶魚","養殖鱸魚","養殖烏魚","皮刀","鯽仔","臭肚魚","飛魚","巴鰹","小卷","紅目鰱","白鯧","午仔魚","黃鰭鯛","牛舌","比目魚","花枝","養殖黑鯛","笛鯛","三點蟹","對蝦","肉魚","秋刀魚","鬼頭刀","曼波魚","白海豚"]}
+    fishPool:["吳郭魚","竹筴魚","台灣鯖魚","臭肚魚","星雞魚","虱目魚","白帶魚","養殖鱸魚","皮刀","鰆魚","鯽仔","飛魚","小卷","紅魽","紅目鰱","白鯧","肉魚","黃鰭鯛","牛舌","赤鯮","午仔魚","養殖黑鯛","花枝","比目魚","海鱺","野生石斑","鯊魚","龍占","曼波魚","白海豚"]}
 ];
 
 const fishByName = Object.fromEntries(fishDB.map(f=>[f.n,f]));
@@ -846,7 +854,6 @@ const FIXED_PAIRS = 10; // 固定10組配對，不再讓玩家選難度
 const BOARD_COLS = 4;   // 20張卡（10組），4欄5列
 
 /* ============ 狀態 ============ */
-let selectedPort = null;
 let state = null; // {cards, flipped, matchedPairs, moves, timer, startTime}
 
 /* ============ 小魚 SVG ============ */
@@ -858,24 +865,8 @@ function fishSVG(color, size=34){
   </svg>`;
 }
 
-/* ============ 建立選擇畫面 ============ */
-const portGrid = document.getElementById('portGrid');
-locationDB.forEach(p=>{
-  const el = document.createElement('div');
-  el.className='port-card';
-  el.innerHTML = `<div class="area">${p.area}</div><div class="name">${p.name}</div><div class="badge">${p.badge}</div>`;
-  el.addEventListener('click', ()=>{
-    document.querySelectorAll('.port-card').forEach(c=>c.classList.remove('selected'));
-    el.classList.add('selected');
-    selectedPort = p;
-    checkReady();
-  });
-  portGrid.appendChild(el);
-});
-
-function checkReady(){
-  document.getElementById('startBtn').disabled = !selectedPort;
-}
+/* ============ 固定漁港（只有龍鳳，不用再選） ============ */
+const selectedPort = locationDB[0];
 
 document.getElementById('startBtn').addEventListener('click', startGame);
 document.getElementById('backBtn').addEventListener('click', ()=>switchScreen('screen-select'));
@@ -924,7 +915,7 @@ function startGame(){
     lightCounts: {1:0,2:0,3:0}
   };
 
-  document.getElementById('gamePortTitle').innerHTML = `${selectedPort.name}<span>${selectedPort.badge}</span>`;
+  document.getElementById('gamePortTitle').innerHTML = ``;
   document.getElementById('statTime').textContent = '00:00';
   document.getElementById('statMoves').textContent = '0';
   document.getElementById('statPairs').textContent = `0/${FIXED_PAIRS}`;
