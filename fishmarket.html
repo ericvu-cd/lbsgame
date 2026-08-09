@@ -195,8 +195,7 @@
         <div id="final-result-card" class="brick-panel">
             <div id="final-result-body"></div>
             <div id="final-result-btn-row">
-                <button class="btn-bid" style="background:#7C93A0; border-color:#4F6672; box-shadow:0 4px 0 #4F6672;" onclick="openHistoryDrawer()">詳細紀錄</button>
-                <button class="btn-bid" style="background:#3C8577;" onclick="closeFinalResultAndRestart()">🔄 再玩一次</button>
+                <button class="btn-bid" style="background:#3C8577;" onclick="closeFinalResultAndRestart()">關閉</button>
             </div>
         </div>
     </div>
@@ -739,10 +738,11 @@
 
         function closeFinalResultAndRestart() {
             document.getElementById('final-result-screen').classList.remove('show');
-            newGame();
+            resetGameState();
+            document.getElementById('intro-screen').style.display = 'flex';
         }
 
-        function newGame() {
+        function resetGameState() {
             gameState.round = 1;
             gameState.seasonIndex = 0;
             gameState.budget = 0;
@@ -752,6 +752,10 @@
             gameState.aiBudgets = {};
             gameState.lastTopUp = 0;
             renderHistory();
+        }
+
+        function newGame() {
+            resetGameState();
             initRound();
         }
 
