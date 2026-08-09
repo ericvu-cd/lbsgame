@@ -119,7 +119,7 @@
 
         .arena-ai-row { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); gap: clamp(4px,1vh,7px); align-content: stretch; padding: 8px; }
 
-        /* 右欄下方：我的預算 + 出價操作（與左欄「即時資訊」對調位置） */
+        /* 右欄下方：我的現金 + 出價操作（與左欄「即時資訊」對調位置） */
         .arena-bid-panel { flex-shrink: 0; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
         .arena-budget-line { font-size: 0.8rem; font-weight: bold; color: var(--primary-color); }
         .arena-budget-line span { color: var(--gold-color-dark); font-family: monospace; }
@@ -166,6 +166,20 @@
         /* 透明按鈕：疊在底圖「開始拍賣」按鈕的實際座標上（以圖片寬高比例定位，圖片比例改變時仍能對齊） */
         #intro-start-btn { position: absolute; left: 22.5%; top: 88.5%; width: 52.6%; height: 8.3%; margin: 0; padding: 0; background: rgba(255,255,255,0); border: none; cursor: pointer; -webkit-tap-highlight-color: rgba(255,255,255,0.25); }
         #intro-start-btn:active { background: rgba(255,255,255,0.18); }
+
+        /* ── 整局最終結算：改用整頁滿版顯示，內容過長可捲動，不受拍賣區小面板限制 ── */
+        #final-result-screen { position: fixed; inset: 0; z-index: 90; display: none; align-items: center; justify-content: center; padding: 3vh 4vw; background: radial-gradient(ellipse at 50% 15%, #123B44 0%, #06232B 65%, #02141A 100%); }
+        #final-result-screen.show { display: flex; }
+        #final-result-card { width: 100%; max-width: 440px; max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 34px rgba(0,0,0,0.45); }
+        #final-result-body { overflow-y: auto; padding: 22px 20px; text-align: center; color: #1F2A38; }
+        #final-result-body .idle-emoji { font-size: clamp(2rem, 6vh, 3rem); }
+        #final-result-body .idle-title { font-size: clamp(1.15rem, 3.2vh, 1.45rem); font-weight: bold; color: #012F72; margin: 4px 0 10px; }
+        #final-result-body .final-round-list { text-align: left; margin-bottom: 12px; font-size: 0.9rem; }
+        #final-result-body .final-round-list div { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px dashed rgba(31,42,56,0.18); }
+        #final-result-body .final-summary { font-size: 0.95rem; line-height: 1.9; margin-top: 6px; }
+        #final-result-body .final-grade { font-size: 1.15rem; margin-top: 8px; }
+        #final-result-btn-row { flex-shrink: 0; display: flex; gap: 10px; padding: 14px 20px 20px; border-top: 1px solid #EDE7DA; }
+        #final-result-btn-row .btn-bid { flex: 1; }
     </style>
 </head>
 <body>
@@ -177,10 +191,20 @@
         </div>
     </div>
 
+    <div id="final-result-screen">
+        <div id="final-result-card" class="brick-panel">
+            <div id="final-result-body"></div>
+            <div id="final-result-btn-row">
+                <button class="btn-bid" style="background:#7C93A0; border-color:#4F6672; box-shadow:0 4px 0 #4F6672;" onclick="openHistoryDrawer()">詳細紀錄</button>
+                <button class="btn-bid" style="background:#3C8577;" onclick="closeFinalResultAndRestart()">🔄 再玩一次</button>
+            </div>
+        </div>
+    </div>
+
     <header id="top-bar">
         <div id="top-bar-row1">
             <div id="ui-day-season">🌸春季</div>
-            <div id="ui-budget">💰 預算: 1500元</div>
+            <div id="ui-budget">💰 現金: 1500元</div>
         </div>
         <div id="top-bar-row2">
             <div id="ui-inventory-summary">本季尚未購入</div>
@@ -234,7 +258,7 @@
                         </div>
                     </div>
 
-                    <!-- 右欄（3）：6位買家宮格、我的預算/出價操作 -->
+                    <!-- 右欄（3）：6位買家宮格、我的現金/出價操作 -->
                     <div class="arena-col-right">
                         <div class="arena-ai-row brick-panel" id="arena-ai-row"></div>
 
@@ -455,7 +479,7 @@
                 gameState.lastTopUp = 0;
             }
 
-            document.getElementById('ui-budget').innerText = `💰 預算: ${gameState.budget}元`;
+            document.getElementById('ui-budget').innerText = `💰 現金: ${gameState.budget}元`;
 
             document.getElementById('today-box-count').innerText = gameState.todayBoxes.length;
 
@@ -664,8 +688,7 @@
                 <div class="idle-title">第${record.round}回合（${record.season}）結算</div>
                 <div class="idle-sub">
                     本季購入 ${record.boxCount} 箱，共花費 ${record.spent} 元<br>
-                    永續積分：<strong style="color:#012F72;">${record.totalScore >= 0 ? '+' : ''}${record.totalScore} 分</strong><br>
-                    <span style="font-size:0.85em; opacity:0.75;">（評等將於四回合結束後的最終結算統一計算）</span>
+                    永續積分：<strong style="color:#012F72;">${record.totalScore >= 0 ? '+' : ''}${record.totalScore} 分</strong>
                 </div>
                 <div class="idle-btn-row">
                     <button class="btn-bid" onclick="openHistoryDrawer()">詳細紀錄</button>
@@ -693,7 +716,7 @@
                     totalScore += rec.totalScore;
                     totalSpent += rec.spent;
                     if (rec.hasEndangered) hasEndangered = true;
-                    return `<div style="display:flex; justify-content:space-between; gap:8px; padding:3px 0; border-bottom:1px dashed rgba(255,255,255,0.15);">
+                    return `<div>
                         <span>第${rec.round}回合・${rec.season}</span>
                         <span>${rec.totalScore >= 0 ? '+' : ''}${rec.totalScore} 分／花費 ${rec.spent} 元</span>
                     </div>`;
@@ -701,20 +724,22 @@
 
             const gradeInfo = getGradeComment(totalScore, hasEndangered);
 
-            showArenaIdle(`
+            document.getElementById('final-result-body').innerHTML = `
                 <div class="idle-emoji">🏆</div>
                 <div class="idle-title">整局最終結算</div>
-                <div class="idle-sub" style="width:100%; max-width:340px;">
-                    <div style="text-align:left; margin-bottom:8px;">${roundLines}</div>
-                    總花費：<strong style="color:#012F72;">${totalSpent} 元</strong>　｜　剩餘資金：<strong style="color:#fff;">${gameState.budget} 元</strong><br>
-                    永續總積分：<strong style="color:#012F72; font-size:1.2em;">${totalScore} 分</strong><br>
-                    最終評級：<strong style="color:${gradeInfo.color}; font-size:1.1em;">${gradeInfo.grade}級【${gradeInfo.comment}】</strong>
+                <div class="final-round-list">${roundLines}</div>
+                <div class="final-summary">
+                    總花費：<strong style="color:#012F72;">${totalSpent} 元</strong>　｜　剩餘現金：<strong style="color:#012F72;">${gameState.budget} 元</strong><br>
+                    永續總積分：<strong style="color:#012F72; font-size:1.2em;">${totalScore} 分</strong>
                 </div>
-                <div class="idle-btn-row">
-                    <button class="btn-bid" onclick="openHistoryDrawer()">詳細紀錄</button>
-                    <button class="btn-bid" style="background:#3C8577;" onclick="newGame()">🔄 再玩一次</button>
-                </div>
-            `);
+                <div class="final-grade">最終評級：<strong style="color:${gradeInfo.color};">${gradeInfo.grade}級【${gradeInfo.comment}】</strong></div>
+            `;
+            document.getElementById('final-result-screen').classList.add('show');
+        }
+
+        function closeFinalResultAndRestart() {
+            document.getElementById('final-result-screen').classList.remove('show');
+            newGame();
         }
 
         function newGame() {
@@ -882,7 +907,7 @@
             if (auctionState.phase === 'observe') return;
             if (auctionState.highestBidderId === 'player') return; // 已經領先，不需要跟自己加價
             if (gameState.budget < (auctionState.currentPrice + amount)) {
-                alert('預算不足！無法加價。');
+                alert('現金不足！無法加價。');
                 return;
             }
 
@@ -928,7 +953,7 @@
             overlay.className = `show ${overlayCls}`;
             setTimeout(() => { overlay.className = ''; }, 900);
 
-            document.getElementById('ui-budget').innerText = `💰 預算: ${gameState.budget}元`;
+            document.getElementById('ui-budget').innerText = `💰 現金: ${gameState.budget}元`;
             updateInventorySummary();
             renderBoard();
 
