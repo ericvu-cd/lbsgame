@@ -43,7 +43,7 @@
 
         #board-strip { flex-shrink: 0; display: grid; grid-template-rows: repeat(2, 1fr); grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; padding: 8px 10px; overflow: hidden; height: clamp(160px, 30vh, 260px); background-color: #AED4EB; background-image: radial-gradient(circle, rgba(255,255,255,0.45) 0 4px, transparent 4.5px); background-size: 20px 20px; border-bottom: 2px solid #8FC1F2; }
         .strip-card { min-width: 0; min-height: 0; border-radius: 10px; padding: 4px 3px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease; overflow: hidden; gap: 1px; }
-        .strip-name { font-weight: bold; font-size: clamp(0.68rem, 1.9vh, 0.85rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: #1F2A38; }
+        .strip-name { font-weight: bold; font-size: clamp(0.82rem, 2.4vh, 1.05rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: #1F2A38; }
         .strip-size { font-size: clamp(0.58rem, 1.5vh, 0.66rem); color: #52758D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
         .strip-method { font-size: clamp(0.58rem, 1.55vh, 0.68rem); color: #315F7B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
         .strip-status { font-size: clamp(0.58rem, 1.5vh, 0.68rem); font-weight: bold; margin-top: 1px; white-space: nowrap; }
@@ -88,7 +88,6 @@
         .idle-btn-row { display: flex; gap: 8px; width: 100%; margin-top: 6px; }
 
         #arena-live { flex: 1; min-height: 0; display: none; flex-direction: column; overflow: hidden; }
-        .arena-index-label { flex-shrink: 0; text-align: center; font-size: 0.7rem; color: #1B3B52; width: fit-content; margin: 0 auto 3px; background: rgba(255,255,255,0.62); padding: 2px 12px; border-radius: 999px; }
 
         /* 兩欄式主要區域：左欄(魚貨/價格/即時資訊) : 右欄(6買家宮格/出價) = 2 : 3 */
         .arena-columns { flex: 1; min-height: 0; display: grid; grid-template-columns: 2fr 3fr; gap: 8px; overflow: hidden; }
@@ -107,14 +106,14 @@
         .arena-timer-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #arena-time { font-size: clamp(0.8rem, 2.4vh, 1.05rem); font-weight: bold; font-family: monospace; }
 
-        .arena-fish-info { flex: 1; min-width: 0; text-align: left; background: rgba(255,255,255,0.6); border-radius: 10px; padding: 4px 10px; }
-        .arena-fish-name { font-size: clamp(0.85rem, 2.4vh, 1.05rem); font-weight: bold; color: #012F72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .arena-fish-meta { font-size: clamp(0.7rem, 1.9vh, 0.84rem); color: #315F7B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .arena-round-line { font-size: clamp(0.64rem, 1.7vh, 0.76rem); color: #52758D; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .arena-fish-info { flex: 1; min-height: 0; width: 100%; text-align: left; background: rgba(255,255,255,0.6); border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; gap: 2px; overflow: hidden; }
+        .arena-fish-name { font-size: clamp(1.05rem, 3.4vh, 1.4rem); font-weight: bold; color: #012F72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .arena-fish-meta { font-size: clamp(0.78rem, 2.1vh, 0.92rem); color: #315F7B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .arena-round-line { font-size: clamp(0.7rem, 1.9vh, 0.82rem); color: #52758D; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .arena-price-block { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--panel-bg); border: 2px solid var(--gold-color-dark); border-radius: 10px; padding: 4px 8px; }
-        .arena-price-label { font-size: 0.68rem; color: #315F7B; }
-        .arena-price-row { font-size: clamp(1.6rem, 6vh, 2.4rem); font-weight: bold; color: #B87900; font-family: monospace; transition: transform 0.15s ease; }
+        .arena-price-block { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--panel-bg); border: 2px solid var(--gold-color-dark); border-radius: 10px; padding: 3px 6px; }
+        .arena-price-label { font-size: 0.62rem; color: #315F7B; }
+        .arena-price-row { font-size: clamp(1rem, 3.2vh, 1.3rem); font-weight: bold; color: #B87900; font-family: monospace; transition: transform 0.15s ease; }
         .arena-price-row.pulse-player { animation: pricePulseGreen 0.35s ease; }
         .arena-price-row.pulse-ai { animation: pricePulseOrange 0.35s ease; }
         @keyframes pricePulseGreen { 0% { transform: scale(1); } 40% { transform: scale(1.18); color: #4FD1A8; } 100% { transform: scale(1); color: #F2B84D; } }
@@ -137,10 +136,10 @@
         .ai-chip.leader { background: rgba(242,193,78,0.22); border-color: #F2C14E; transform: scale(1.08); }
         .ai-chip.leader .ai-name, .ai-chip.leader .ai-status { color: #F7DDA0; }
 
-        .arena-action-btns { display: flex; gap: 10px; flex-shrink: 0; padding-top: 6px; }
-        .arena-action-btns .btn-bid { padding: 12px; font-size: 0.95rem; }
-        .btn-fast-forward { position: absolute; top: 8px; right: 10px; width: auto; flex: none; z-index: 5; background: rgba(255,255,255,0.62); color: #315F7B; font-size: 0.7rem; font-weight: normal; padding: 5px 9px; border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; line-height: 1.3; }
-        .btn-fast-forward:disabled { opacity: 0.35; }
+        .arena-action-btns { display: flex; gap: 8px; flex-shrink: 0; padding-top: 6px; }
+        .arena-action-btns .btn-bid { padding: 12px 6px; font-size: 0.9rem; }
+        .btn-giveup { background-color: #7C93A0; border-color: #4F6672; box-shadow: 0 4px 0 #4F6672; }
+        .btn-giveup:disabled { background-color: #C9C6BC; border-color: #A6A39A; box-shadow: 0 4px 0 #A6A39A; }
 
         #arena-sold-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(1.6rem, 6vh, 2.6rem); font-weight: 900; letter-spacing: 2px; background: rgba(1,47,114,0); color: transparent; pointer-events: none; transition: background 0.25s ease, color 0.25s ease; }
         #arena-sold-overlay .stamp { display: inline-block; padding: 10px 26px; border: 3px solid currentColor; outline: 1.5px solid currentColor; outline-offset: 5px; border-radius: 8px; transform: rotate(-6deg); }
@@ -211,10 +210,9 @@
             </div>
 
             <div id="arena-live">
-                <div class="arena-index-label" id="arena-index-label">第 1 / 1 箱</div>
 
                 <div class="arena-columns">
-                    <!-- 左欄（2）：魚貨資訊、目前價格 -->
+                    <!-- 左欄（2）：計時/價格、魚貨資訊 -->
                     <div class="arena-col-left brick-panel">
                         <div class="arena-top-row">
                             <div class="arena-timer-wrap">
@@ -227,18 +225,18 @@
                                 </div>
                             </div>
 
-                            <div class="arena-fish-info">
-                                <div class="arena-fish-name"><span id="arena-fish-icon">🐟</span> <span id="arena-fish-name-text">魚名</span></div>
-                                <div class="arena-fish-meta" id="arena-fish-meta">尺寸・數量</div>
-                                <div class="arena-round-line">最高：<span id="arena-bidder">無</span></div>
+                            <div class="arena-price-block">
+                                <div class="arena-price-label">目前價格</div>
+                                <div class="arena-price-row">
+                                    <span id="arena-price">0</span><span class="arena-price-unit">元</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="arena-price-block">
-                            <div class="arena-price-label">目前價格</div>
-                            <div class="arena-price-row">
-                                <span id="arena-price">0</span><span class="arena-price-unit">元</span>
-                            </div>
+                        <div class="arena-fish-info">
+                            <div class="arena-fish-name"><span id="arena-fish-icon">🐟</span> <span id="arena-fish-name-text">魚名</span></div>
+                            <div class="arena-fish-meta" id="arena-fish-meta">尺寸・數量</div>
+                            <div class="arena-round-line">最高：<span id="arena-bidder">無</span></div>
                         </div>
                     </div>
 
@@ -250,12 +248,11 @@
                             <div class="arena-action-btns">
                                 <button class="btn-bid" id="arena-btn-5" onclick="playerBid(auctionState.bidStep)">競標 +5</button>
                                 <button class="btn-bid" id="arena-btn-10" onclick="playerBid(auctionState.bidStep * 2)">競標 +10</button>
+                                <button class="btn-bid btn-giveup" id="arena-btn-fast" onclick="fastForwardAuction()">放棄</button>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <button class="btn-fast-forward" id="arena-btn-fast" onclick="fastForwardAuction()">⏭️ 快速完成</button>
             </div>
 
             <div id="arena-sold-overlay"></div>
@@ -527,7 +524,6 @@
             document.getElementById('arena-fish-icon').innerText = fishIcon(box.fish);
             document.getElementById('arena-fish-name-text').innerText = box.fish.name;
             document.getElementById('arena-fish-meta').innerText = `${box.size}cm・${box.qty}尾・🎣${box.fish.methodName}`;
-            document.getElementById('arena-index-label').innerText = `第 ${auctionState.currentIndex + 1} / ${auctionState.queue.length} 箱`;
             document.getElementById('arena-sold-overlay').className = '';
 
             renderBoard();
@@ -785,13 +781,12 @@
             const btn10 = document.getElementById('arena-btn-10');
             const btnFast = document.getElementById('arena-btn-fast');
             const isPlayerLeading = auctionState.highestBidderId === 'player';
-            btn5.innerText = isPlayerLeading ? '👑 領先中' : `競標 +${auctionState.bidStep}`;
-            btn10.innerText = isPlayerLeading ? '👑 領先中' : `競標 +${auctionState.bidStep * 2}`;
+            btn5.innerText = isPlayerLeading ? '領先中' : `競標 +${auctionState.bidStep}`;
+            btn10.innerText = isPlayerLeading ? '領先中' : `競標 +${auctionState.bidStep * 2}`;
             const disable = auctionState.phase === 'observe' || auctionState.giveUp || isPlayerLeading;
             btn5.disabled = disable;
             btn10.disabled = disable;
-            btnFast.disabled = auctionState.phase === 'observe' ? false : auctionState.giveUp;
-            btnFast.style.display = auctionState.giveUp ? 'none' : 'block';
+            btnFast.disabled = auctionState.giveUp;
 
             const aiGrid = document.getElementById('arena-ai-row');
             aiGrid.innerHTML = '';
@@ -802,7 +797,7 @@
                 else if (ai.status.includes('加價')) cls += ' bid';
 
                 const parts = splitAiName(ai.name);
-                const nameDisplay = ai.id === auctionState.highestBidderId ? `👑 ${parts.label}` : parts.label;
+                const nameDisplay = parts.label;
                 aiGrid.innerHTML += `<div class="${cls}"><span class="ai-name">${nameDisplay}</span><span class="ai-status">${ai.status}</span></div>`;
             });
         }
@@ -901,7 +896,7 @@
 
             auctionState.currentPrice += amount;
             auctionState.highestBidderId = 'player';
-            auctionState.highestBidderName = '⭐ 你 (👑領先)';
+            auctionState.highestBidderName = '⭐ 你 (領先)';
             auctionState.timeLeft = BIDDING_SECONDS;
             auctionState.lastBidBy = 'player';
             pushBidLog('⭐ 你', auctionState.currentPrice);
