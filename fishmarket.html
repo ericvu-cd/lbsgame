@@ -807,7 +807,7 @@
             const disable = auctionState.phase === 'observe' || auctionState.giveUp || isPlayerLeading;
             btn5.disabled = disable;
             btn10.disabled = disable;
-            btnFast.disabled = auctionState.giveUp;
+            btnFast.disabled = auctionState.giveUp || isPlayerLeading;
 
             const aiGrid = document.getElementById('arena-ai-row');
             aiGrid.innerHTML = '';
@@ -888,6 +888,7 @@
         function fastForwardAuction() {
             if (!auctionState.currentBox || auctionState.currentBox.status !== 'active') return;
             if (auctionState.giveUp) return;
+            if (auctionState.highestBidderId === 'player') return; // 領先中不能放棄
 
             clearInterval(auctionState.mainTimer);
             clearInterval(auctionState.aiTimer);
