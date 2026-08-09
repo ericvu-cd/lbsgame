@@ -32,7 +32,7 @@
 
         #top-bar { background-color: var(--primary-color); color: white; padding: 12px 15px; z-index: 20; box-shadow: 0 3px 0 rgba(0,20,50,0.35), 0 4px 8px rgba(0,0,0,0.2); flex-shrink: 0; border-bottom: 3px solid #003A82; }
         #top-bar-row1 { display: flex; justify-content: space-between; font-weight: bold; font-size: 1rem; }
-        #top-bar-row2 { display: flex; justify-content: space-between; font-size: 0.85rem; margin-top: 4px; color: #D6ECFA; }
+        #top-bar-row2 { display: flex; justify-content: space-between; font-size: 0.82rem; margin-top: 4px; color: #D6ECFA; }
 
         #main-content { flex: 1; width: 100%; min-height: 0; background-color: var(--bg-color); background-image: radial-gradient(circle, rgba(255,255,255,0.5) 0 4px, transparent 4.5px); background-size: 20px 20px; display: flex; flex-direction: column; overflow: hidden; }
 
@@ -346,12 +346,12 @@
 
         // AI對手：budgetRatio 用來換算「這回合這位對手總共有多少錢可花」（相對於當回合魚貨總市值）
         const AI_PLAYERS = [
-            { id: 'ai1', name: '👨‍🍳 餐廳老闆', type: 'restaurant', budgetRatio: 0.45, priceMultiplier: 6 },
-            { id: 'ai2', name: '🍲 快炒店', type: 'stirfry', budgetRatio: 0.4, priceMultiplier: 5 },
-            { id: 'ai3', name: '🏭 量販採購', type: 'wholesale', budgetRatio: 0.5, priceMultiplier: 5 },
-            { id: 'ai4', name: '🚚 批發商', type: 'distributor', budgetRatio: 0.6, priceMultiplier: 5 },
-            { id: 'ai5', name: '🛒 魚販阿姨', type: 'auntie', budgetRatio: 0.3, priceMultiplier: 4 },
-            { id: 'ai6', name: '🛒 魚販阿伯', type: 'uncle', budgetRatio: 0.3, priceMultiplier: 4 }
+            { id: 'ai1', name: '👨‍🍳 餐廳老闆', type: 'restaurant', budgetRatio: 0.35, priceMultiplier: 4 },
+            { id: 'ai2', name: '🍲 快炒店', type: 'stirfry', budgetRatio: 0.3, priceMultiplier: 3 },
+            { id: 'ai3', name: '🏭 量販採購', type: 'wholesale', budgetRatio: 0.4, priceMultiplier: 3 },
+            { id: 'ai4', name: '🚚 批發商', type: 'distributor', budgetRatio: 0.5, priceMultiplier: 3 },
+            { id: 'ai5', name: '🛒 魚販阿姨', type: 'auntie', budgetRatio: 0.25, priceMultiplier: 2 },
+            { id: 'ai6', name: '🛒 魚販阿伯', type: 'uncle', budgetRatio: 0.25, priceMultiplier: 2 }
         ];
 
         function fishIcon(fish) {
@@ -445,11 +445,11 @@
         }
 
         function calcInitialBudget() {
-            // 玩家整局只發一次的起始資金：抓「4回合預期總市值」的 65%，上限 4000 元
+            // 玩家整局只發一次的起始資金：抓「4回合預期總市值」的 60%，上限 3500 元
             const expectedTotalValue = calcExpectedGameValue();
-            let amount = expectedTotalValue * 0.65;
+            let amount = expectedTotalValue * 0.6;
             amount = Math.round(amount / 50) * 50;
-            amount = Math.min(amount, 4000);
+            amount = Math.min(amount, 3500);
             return amount;
         }
 
@@ -457,7 +457,7 @@
             // 每回合開始時，重新依當回合魚貨總市值分配各AI對手的資金上限（不跨回合結轉）
             const budgets = {};
             AI_PLAYERS.forEach(ai => {
-                let amount = totalValue * ai.budgetRatio * (0.85 + Math.random() * 0.3);
+                let amount = totalValue * ai.budgetRatio * (0.75 + Math.random() * 0.3);
                 budgets[ai.id] = Math.round(amount / 10) * 10;
             });
             return budgets;
@@ -484,7 +484,6 @@
 
             renderBoard();
             showArenaIdle(`
-                <div class="idle-emoji">🎣</div>
                 <div class="idle-title">${SEASONS[gameState.seasonIndex]}看板已就緒</div>
                 <div class="idle-sub">共 ${gameState.todayBoxes.length} 箱魚貨，看板上方隨時看得到狀態。準備好開始這回合的拍賣了嗎？</div>
                 <button class="btn-bid idle-btn" onclick="startRoundAuction()">開始本季拍賣</button>
