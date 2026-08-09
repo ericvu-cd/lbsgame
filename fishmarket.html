@@ -40,11 +40,9 @@
         .list-item { background: #FAF7EF; padding: 10px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid var(--primary-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1);}
 
         #board-header { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 7px 12px; font-size: 0.8rem; color: #31556F; gap: 8px; background: #DCEEF9; border-bottom: 1px solid #A9D3EE; }
-        #budget-topup-info { color: #2D8A73; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        #board-strip { flex-shrink: 0; display: flex; gap: 6px; padding: 8px 10px; overflow: hidden; height: clamp(92px, 17vh, 140px); background-color: #AED4EB; background-image: radial-gradient(circle, rgba(255,255,255,0.45) 0 4px, transparent 4.5px); background-size: 20px 20px; border-bottom: 2px solid #8FC1F2; }
-        .strip-card { flex: 1; min-width: 0; border-radius: 10px; padding: 4px 3px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease; overflow: hidden; gap: 1px; }
-        .strip-badge { position: absolute; top: 3px; right: 3px; font-size: 0.66rem; line-height: 1; padding: 2px 5px; border-radius: 999px; font-weight: 900; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
+        #board-strip { flex-shrink: 0; display: grid; grid-template-rows: repeat(2, 1fr); grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; padding: 8px 10px; overflow: hidden; height: clamp(160px, 30vh, 260px); background-color: #AED4EB; background-image: radial-gradient(circle, rgba(255,255,255,0.45) 0 4px, transparent 4.5px); background-size: 20px 20px; border-bottom: 2px solid #8FC1F2; }
+        .strip-card { min-width: 0; min-height: 0; border-radius: 10px; padding: 4px 3px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease; overflow: hidden; gap: 1px; }
         .strip-icon { font-size: clamp(1.1rem, 3.6vh, 1.6rem); line-height: 1; }
         .strip-name { font-weight: bold; font-size: clamp(0.68rem, 1.9vh, 0.85rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: #1F2A38; }
         .strip-size { font-size: clamp(0.58rem, 1.5vh, 0.66rem); color: #52758D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
@@ -53,12 +51,10 @@
 
         .strip-card.pending { background: #D9ECF8; border-color: #8EC3E4; }
         .strip-card.pending .strip-status { color: #31556F; }
-        .strip-card.pending .strip-badge { background: #C7E1F2; color: #234C6B; }
 
         .strip-card.active { background: var(--accent-color); border-color: #A6321F; transform: scale(1.06); box-shadow: 0 4px 16px rgba(214,67,46,0.55); animation: liveGlow 1.1s ease-in-out infinite; z-index: 3; }
         .strip-card.active .strip-name, .strip-card.active .strip-size, .strip-card.active .strip-method { color: #fff; }
         .strip-card.active .strip-status { color: #FFE9C2; font-weight: 900; }
-        .strip-card.active .strip-badge { background: #fff; color: var(--accent-color); animation: badgePulse 0.9s ease-in-out infinite; }
         @keyframes badgePulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.8; } }
         @keyframes liveGlow { 0%,100% { box-shadow: 0 4px 16px rgba(214,67,46,0.4);} 50% { box-shadow: 0 4px 22px rgba(214,67,46,0.75);} }
 
@@ -67,19 +63,16 @@
         .strip-card.sold-other .strip-name { filter: grayscale(100%); color: #4E564A; text-decoration: line-through; text-decoration-color: #4E564A; }
         .strip-card.sold-other .strip-size, .strip-card.sold-other .strip-method { opacity: 0.6; }
         .strip-card.sold-other .strip-status { color: #4E564A; font-weight: 900; }
-        .strip-card.sold-other .strip-badge { background: #4E564A; color: #fff; }
 
         .strip-card.sold-player { background: var(--gold-color); border-width: 3px; border-color: #B9791F; box-shadow: 0 4px 14px rgba(232,163,61,0.55); transform: scale(1.02); }
         .strip-card.sold-player .strip-name, .strip-card.sold-player .strip-size, .strip-card.sold-player .strip-method { color: #4A2E00; }
         .strip-card.sold-player .strip-status { color: #4A2E00; font-weight: 900; }
-        .strip-card.sold-player .strip-badge { background: #fff; color: #B9791F; }
 
         .strip-card.unsold { background: #7C93A0; border: 2px dashed #4F6672; }
         .strip-card.unsold .strip-icon { opacity: 0.5; }
         .strip-card.unsold .strip-name { color: #fff; opacity: 0.75; }
         .strip-card.unsold .strip-size, .strip-card.unsold .strip-method { color: #E3EBEE; opacity: 0.75; }
         .strip-card.unsold .strip-status { color: #fff; font-weight: 900; }
-        .strip-card.unsold .strip-badge { background: #fff; color: #4F6672; }
 
         .btn-bid { background-color: var(--accent-color); flex: 1; padding: 14px 12px 12px; font-size: 1rem; font-weight: bold; border: 2px solid var(--accent-color-dark); border-radius: 10px; cursor: pointer; color: white; transition: transform 0.08s ease, box-shadow 0.08s ease; box-shadow: 0 4px 0 var(--accent-color-dark); position: relative; }
         .btn-bid::before { content: ""; position: absolute; top: 4px; left: 50%; transform: translateX(-50%); width: 34px; height: 6px; background-image: radial-gradient(circle, rgba(255,255,255,0.55) 0 3px, transparent 3.5px); background-size: 12px 6px; background-repeat: repeat-x; pointer-events: none; }
@@ -220,7 +213,6 @@
 
         <div id="board-header">
             <span>🐟 本回合魚貨看板（共 <span id="today-box-count">0</span> 箱）</span>
-            <span id="budget-topup-info"></span>
         </div>
 
         <div id="board-strip"></div>
@@ -412,14 +404,12 @@
             const icon = fishIcon(box.fish);
             const method = box.fish.methodName;
             let statusText = '等待拍賣';
-            let badge = '⏳';
-            if (box.status === 'active') { statusText = '🔴 拍賣中'; badge = '🔴'; }
-            else if (box.status === 'sold-player') { statusText = '⭐ 你標到'; badge = '⭐'; }
-            else if (box.status === 'sold-other') { statusText = '已售出'; badge = '✔'; }
-            else if (box.status === 'unsold') { statusText = '流標'; badge = '✕'; }
+            if (box.status === 'active') { statusText = '🔴 拍賣中'; }
+            else if (box.status === 'sold-player') { statusText = '⭐ 你標到'; }
+            else if (box.status === 'sold-other') { statusText = '已售出'; }
+            else if (box.status === 'unsold') { statusText = '流標'; }
 
             return `<div class="strip-card ${box.status}">
-                <div class="strip-badge">${badge}</div>
                 <div class="strip-icon">${icon}</div>
                 <div class="strip-name">${box.fish.name}</div>
                 <div class="strip-size">📏${box.size}cm</div>
@@ -495,14 +485,6 @@
             }
 
             document.getElementById('ui-budget').innerText = `💰 預算: ${gameState.budget}元`;
-
-            const topupInfo = document.getElementById('budget-topup-info');
-            if (gameState.round === 1) {
-                topupInfo.style.display = 'inline';
-                topupInfo.innerText = `💰 本局初始資金：${gameState.lastTopUp} 元（開局僅發放一次，之後靠結餘延續）`;
-            } else {
-                topupInfo.style.display = 'none';
-            }
 
             document.getElementById('today-box-count').innerText = gameState.todayBoxes.length;
 
@@ -706,7 +688,7 @@
             const isLastRound = gameState.round >= TOTAL_ROUNDS;
             const nextBtnHtml = isLastRound
                 ? `<button class="btn-bid" style="background:#3C8577;" onclick="showFinalResult()">🏁 查看最終結算</button>`
-                : `<button class="btn-bid" style="background:#3C8577;" onclick="nextRound()">${SEASONS[gameState.seasonIndex === 3 ? 0 : gameState.seasonIndex + 1]} 前往下一回合</button>`;
+                : `<button class="btn-bid" style="background:#3C8577;" onclick="nextRound()">前往下一季</button>`;
 
             showArenaIdle(`
                 <div class="idle-emoji">📊</div>
