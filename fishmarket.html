@@ -43,7 +43,6 @@
 
         #board-strip { flex-shrink: 0; display: grid; grid-template-rows: repeat(2, 1fr); grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; padding: 8px 10px; overflow: hidden; height: clamp(160px, 30vh, 260px); background-color: #AED4EB; background-image: radial-gradient(circle, rgba(255,255,255,0.45) 0 4px, transparent 4.5px); background-size: 20px 20px; border-bottom: 2px solid #8FC1F2; }
         .strip-card { min-width: 0; min-height: 0; border-radius: 10px; padding: 4px 3px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease; overflow: hidden; gap: 1px; }
-        .strip-icon { font-size: clamp(1.1rem, 3.6vh, 1.6rem); line-height: 1; }
         .strip-name { font-weight: bold; font-size: clamp(0.68rem, 1.9vh, 0.85rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: #1F2A38; }
         .strip-size { font-size: clamp(0.58rem, 1.5vh, 0.66rem); color: #52758D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
         .strip-method { font-size: clamp(0.58rem, 1.55vh, 0.68rem); color: #315F7B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
@@ -59,7 +58,6 @@
         @keyframes liveGlow { 0%,100% { box-shadow: 0 4px 16px rgba(214,67,46,0.4);} 50% { box-shadow: 0 4px 22px rgba(214,67,46,0.75);} }
 
         .strip-card.sold-other { background: #B9C0B4; border-color: #9BA398; }
-        .strip-card.sold-other .strip-icon { filter: grayscale(100%); opacity: 0.55; }
         .strip-card.sold-other .strip-name { filter: grayscale(100%); color: #4E564A; text-decoration: line-through; text-decoration-color: #4E564A; }
         .strip-card.sold-other .strip-size, .strip-card.sold-other .strip-method { opacity: 0.6; }
         .strip-card.sold-other .strip-status { color: #4E564A; font-weight: 900; }
@@ -69,7 +67,6 @@
         .strip-card.sold-player .strip-status { color: #4A2E00; font-weight: 900; }
 
         .strip-card.unsold { background: #7C93A0; border: 2px dashed #4F6672; }
-        .strip-card.unsold .strip-icon { opacity: 0.5; }
         .strip-card.unsold .strip-name { color: #fff; opacity: 0.75; }
         .strip-card.unsold .strip-size, .strip-card.unsold .strip-method { color: #E3EBEE; opacity: 0.75; }
         .strip-card.unsold .strip-status { color: #fff; font-weight: 900; }
@@ -109,28 +106,20 @@
         @keyframes ringUrgent { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
         .arena-timer-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #arena-time { font-size: clamp(0.8rem, 2.4vh, 1.05rem); font-weight: bold; font-family: monospace; }
-        #arena-phase-text { font-size: 0.6rem; color: #1B3B52; background: rgba(255,255,255,0.7); padding: 1px 5px; border-radius: 6px; margin-top: 2px; }
 
         .arena-fish-info { flex: 1; min-width: 0; text-align: left; background: rgba(255,255,255,0.6); border-radius: 10px; padding: 4px 10px; }
         .arena-fish-name { font-size: clamp(0.85rem, 2.4vh, 1.05rem); font-weight: bold; color: #012F72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .arena-fish-meta { font-size: clamp(0.7rem, 1.9vh, 0.84rem); color: #315F7B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .arena-round-line { font-size: clamp(0.64rem, 1.7vh, 0.76rem); color: #52758D; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .arena-price-block { flex-shrink: 0; background: var(--panel-bg); border: 2px solid var(--gold-color-dark); border-radius: 10px; padding: 4px 8px; }
+        .arena-price-block { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--panel-bg); border: 2px solid var(--gold-color-dark); border-radius: 10px; padding: 4px 8px; }
         .arena-price-label { font-size: 0.68rem; color: #315F7B; }
-        .arena-price-row { font-size: clamp(1.05rem, 3.6vh, 1.4rem); font-weight: bold; color: #B87900; font-family: monospace; transition: transform 0.15s ease; }
+        .arena-price-row { font-size: clamp(1.6rem, 6vh, 2.4rem); font-weight: bold; color: #B87900; font-family: monospace; transition: transform 0.15s ease; }
         .arena-price-row.pulse-player { animation: pricePulseGreen 0.35s ease; }
         .arena-price-row.pulse-ai { animation: pricePulseOrange 0.35s ease; }
         @keyframes pricePulseGreen { 0% { transform: scale(1); } 40% { transform: scale(1.18); color: #4FD1A8; } 100% { transform: scale(1); color: #F2B84D; } }
         @keyframes pricePulseOrange { 0% { transform: scale(1); } 40% { transform: scale(1.18); color: #ff9d5c; } 100% { transform: scale(1); color: #F2B84D; } }
         .arena-price-unit { font-size: 0.58em; margin-left: 3px; color: #52758D; }
-
-        /* 即時資訊：最新出價紀錄（固定顯示 3 筆），位於左欄底部（與右欄「我的預算/出價」對調位置） */
-        .arena-feed-panel { flex-shrink: 0; background: var(--panel-bg); border: 2px solid var(--primary-color); border-radius: 10px; padding: 6px 8px; display: flex; flex-direction: column; }
-        .arena-feed-title { flex-shrink: 0; font-size: 0.76rem; font-weight: bold; color: var(--primary-color); margin-bottom: 3px; }
-        .arena-feed-list { flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; min-height: 2.6em; }
-        .arena-feed-item { font-size: clamp(0.66rem, 1.7vh, 0.78rem); color: #31556F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .arena-feed-empty { font-size: 0.7rem; color: #7C93A0; }
 
         .arena-ai-row { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); gap: clamp(4px,1vh,7px); align-content: stretch; padding: 8px; }
 
@@ -139,7 +128,6 @@
         .arena-budget-line { font-size: 0.8rem; font-weight: bold; color: var(--primary-color); }
         .arena-budget-line span { color: var(--gold-color-dark); font-family: monospace; }
         .ai-chip { background: rgba(255,255,255,0.58); border-radius: 10px; padding: 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 0.76rem; transition: transform 0.2s ease, background 0.2s ease; border: 2px solid transparent; min-height: 0; overflow: hidden; }
-        .ai-chip .ai-emoji { font-size: clamp(0.9rem, 3.2vh, 1.3rem); line-height: 1; }
         .ai-chip .ai-name { font-weight: bold; color: #163E5B; font-size: clamp(0.64rem, 1.7vh, 0.75rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
         .ai-chip .ai-status { color: #52758D; margin-top: 1px; font-size: clamp(0.58rem, 1.5vh, 0.66rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
         .ai-chip.out { opacity: 0.35; }
@@ -226,7 +214,7 @@
                 <div class="arena-index-label" id="arena-index-label">第 1 / 1 箱</div>
 
                 <div class="arena-columns">
-                    <!-- 左欄（2）：魚貨資訊、目前價格、即時資訊（最新出價紀錄） -->
+                    <!-- 左欄（2）：魚貨資訊、目前價格 -->
                     <div class="arena-col-left brick-panel">
                         <div class="arena-top-row">
                             <div class="arena-timer-wrap">
@@ -236,7 +224,6 @@
                                 </svg>
                                 <div class="arena-timer-label">
                                     <div id="arena-time">3.0</div>
-                                    <div id="arena-phase-text">觀察期</div>
                                 </div>
                             </div>
 
@@ -252,11 +239,6 @@
                             <div class="arena-price-row">
                                 <span id="arena-price">0</span><span class="arena-price-unit">元</span>
                             </div>
-                        </div>
-
-                        <div class="arena-feed-panel">
-                            <div class="arena-feed-title">📋 即時資訊</div>
-                            <div class="arena-feed-list" id="arena-feed-list"><div class="arena-feed-empty">尚無出價</div></div>
                         </div>
                     </div>
 
@@ -401,7 +383,6 @@
         }
 
         function stripCardHTML(box) {
-            const icon = fishIcon(box.fish);
             const method = box.fish.methodName;
             let statusText = '等待拍賣';
             if (box.status === 'active') { statusText = '🔴 拍賣中'; }
@@ -410,9 +391,8 @@
             else if (box.status === 'unsold') { statusText = '流標'; }
 
             return `<div class="strip-card ${box.status}">
-                <div class="strip-icon">${icon}</div>
                 <div class="strip-name">${box.fish.name}</div>
-                <div class="strip-size">📏${box.size}cm</div>
+                <div class="strip-size">📏${box.size}cm・📦${box.qty}尾</div>
                 <div class="strip-method">🎣${method}</div>
                 <div class="strip-status">${statusText}</div>
             </div>`;
@@ -790,7 +770,6 @@
 
             document.getElementById('arena-time').innerText = auctionState.timeLeft.toFixed(1);
             document.getElementById('arena-bidder').innerText = auctionState.highestBidderName;
-            document.getElementById('arena-phase-text').innerText = auctionState.phase === 'observe' ? '👁️ 觀察期' : '⏳ 競拍倒數';
 
             if (priceChanged && auctionState.lastBidBy) {
                 const priceRow = document.getElementById('arena-price').parentElement;
@@ -824,13 +803,8 @@
 
                 const parts = splitAiName(ai.name);
                 const nameDisplay = ai.id === auctionState.highestBidderId ? `👑 ${parts.label}` : parts.label;
-                aiGrid.innerHTML += `<div class="${cls}"><span class="ai-emoji">${parts.emoji}</span><span class="ai-name">${nameDisplay}</span><span class="ai-status">${ai.status}</span></div>`;
+                aiGrid.innerHTML += `<div class="${cls}"><span class="ai-name">${nameDisplay}</span><span class="ai-status">${ai.status}</span></div>`;
             });
-
-            const feedList = document.getElementById('arena-feed-list');
-            feedList.innerHTML = auctionState.bidLog.length
-                ? auctionState.bidLog.map(line => `<div class="arena-feed-item">${line}</div>`).join('')
-                : '<div class="arena-feed-empty">尚無出價</div>';
         }
 
         function countdownTimer() {
