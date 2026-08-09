@@ -95,9 +95,7 @@
         .arena-col-left { min-height: 0; display: flex; flex-direction: column; gap: 6px; padding: 10px; overflow: hidden; }
         .arena-col-right { min-height: 0; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
 
-        .arena-top-row { flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 2px 0 6px; }
-
-        .arena-timer-wrap { position: relative; width: clamp(38px, 8vh, 54px); height: clamp(38px, 8vh, 54px); flex-shrink: 0; }
+        .arena-timer-wrap { position: relative; width: clamp(44px, 9vh, 60px); height: clamp(44px, 9vh, 60px); flex-shrink: 0; margin: 0 auto; }
         #arena-ring { width: 100%; height: 100%; transform: rotate(-90deg); }
         .ring-track { fill: none; stroke: rgba(1,47,114,0.16); stroke-width: 8; }
         .ring-progress { fill: none; stroke: #4FD1A8; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 326.7; stroke-dashoffset: 0; transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease; }
@@ -111,9 +109,9 @@
         .arena-fish-meta { font-size: clamp(0.78rem, 2.1vh, 0.92rem); color: #315F7B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .arena-round-line { font-size: clamp(0.7rem, 1.9vh, 0.82rem); color: #52758D; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .arena-price-block { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--panel-bg); border: 2px solid var(--gold-color-dark); border-radius: 10px; padding: 3px 6px; }
-        .arena-price-label { font-size: 0.62rem; color: #315F7B; }
-        .arena-price-row { font-size: clamp(1rem, 3.2vh, 1.3rem); font-weight: bold; color: #B87900; font-family: monospace; transition: transform 0.15s ease; }
+        .arena-price-block { flex-shrink: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--panel-bg); border: 2px solid var(--gold-color-dark); border-radius: 10px; padding: 4px 8px; }
+        .arena-price-label { font-size: 0.66rem; color: #315F7B; }
+        .arena-price-row { font-size: clamp(1.1rem, 3.6vh, 1.5rem); font-weight: bold; color: #B87900; font-family: monospace; transition: transform 0.15s ease; }
         .arena-price-row.pulse-player { animation: pricePulseGreen 0.35s ease; }
         .arena-price-row.pulse-ai { animation: pricePulseOrange 0.35s ease; }
         @keyframes pricePulseGreen { 0% { transform: scale(1); } 40% { transform: scale(1.18); color: #4FD1A8; } 100% { transform: scale(1); color: #F2B84D; } }
@@ -186,7 +184,7 @@
             <div id="ui-budget">💰 預算: 1500元</div>
         </div>
         <div id="top-bar-row2">
-            <div id="ui-inventory-summary">本回合尚未購入</div>
+            <div id="ui-inventory-summary">本季尚未購入</div>
             <div style="display:flex; align-items:center; gap:10px;">
                 <div id="ui-stage-label">📋 看板整備中</div>
                 <button id="history-fab" onclick="openHistoryDrawer()">📊 紀錄</button>
@@ -199,7 +197,7 @@
     <div id="main-content">
 
         <div id="board-header">
-            <span>🐟 本回合魚貨看板（共 <span id="today-box-count">0</span> 箱）</span>
+            <span>🐟 本季魚貨看板（共 <span id="today-box-count">0</span> 箱）</span>
         </div>
 
         <div id="board-strip"></div>
@@ -212,31 +210,29 @@
             <div id="arena-live">
 
                 <div class="arena-columns">
-                    <!-- 左欄（2）：計時/價格、魚貨資訊 -->
+                    <!-- 左欄（2）：魚貨資訊、目前價格、倒數計時 -->
                     <div class="arena-col-left brick-panel">
-                        <div class="arena-top-row">
-                            <div class="arena-timer-wrap">
-                                <svg id="arena-ring" viewBox="0 0 120 120">
-                                    <circle class="ring-track" cx="60" cy="60" r="52"></circle>
-                                    <circle id="ring-progress" class="ring-progress" cx="60" cy="60" r="52"></circle>
-                                </svg>
-                                <div class="arena-timer-label">
-                                    <div id="arena-time">3.0</div>
-                                </div>
-                            </div>
-
-                            <div class="arena-price-block">
-                                <div class="arena-price-label">目前價格</div>
-                                <div class="arena-price-row">
-                                    <span id="arena-price">0</span><span class="arena-price-unit">元</span>
-                                </div>
-                            </div>
-                        </div>
-
                         <div class="arena-fish-info">
                             <div class="arena-fish-name"><span id="arena-fish-icon">🐟</span> <span id="arena-fish-name-text">魚名</span></div>
                             <div class="arena-fish-meta" id="arena-fish-meta">尺寸・數量</div>
                             <div class="arena-round-line">最高：<span id="arena-bidder">無</span></div>
+                        </div>
+
+                        <div class="arena-price-block">
+                            <div class="arena-price-label">目前價格</div>
+                            <div class="arena-price-row">
+                                <span id="arena-price">0</span><span class="arena-price-unit">元</span>
+                            </div>
+                        </div>
+
+                        <div class="arena-timer-wrap">
+                            <svg id="arena-ring" viewBox="0 0 120 120">
+                                <circle class="ring-track" cx="60" cy="60" r="52"></circle>
+                                <circle id="ring-progress" class="ring-progress" cx="60" cy="60" r="52"></circle>
+                            </svg>
+                            <div class="arena-timer-label">
+                                <div id="arena-time">3.0</div>
+                            </div>
                         </div>
                     </div>
 
@@ -389,7 +385,7 @@
 
             return `<div class="strip-card ${box.status}">
                 <div class="strip-name">${box.fish.name}</div>
-                <div class="strip-size">📏${box.size}cm・📦${box.qty}尾</div>
+                <div class="strip-size">📏${box.size}cm・${box.qty}尾</div>
                 <div class="strip-method">🎣${method}</div>
                 <div class="strip-status">${statusText}</div>
             </div>`;
@@ -448,7 +444,7 @@
 
         function initRound() {
             document.getElementById('ui-day-season').innerText = SEASONS[gameState.seasonIndex];
-            document.getElementById('ui-inventory-summary').innerText = '本回合尚未購入';
+            document.getElementById('ui-inventory-summary').innerText = '本季尚未購入';
             setStageLabel('📋 看板整備中');
 
             const totalValue = generateTodayBoxes();
@@ -470,7 +466,7 @@
                 <div class="idle-emoji">🎣</div>
                 <div class="idle-title">${SEASONS[gameState.seasonIndex]}看板已就緒</div>
                 <div class="idle-sub">共 ${gameState.todayBoxes.length} 箱魚貨，看板上方隨時看得到狀態。準備好開始這回合的拍賣了嗎？</div>
-                <button class="btn-bid idle-btn" onclick="startRoundAuction()">開始本回合拍賣</button>
+                <button class="btn-bid idle-btn" onclick="startRoundAuction()">開始本季拍賣</button>
             `);
         }
 
@@ -659,7 +655,7 @@
 
         function finishAuctionRound() {
             const record = settleRound();
-            setStageLabel('📊 本回合結算完成');
+            setStageLabel('📊 本季結算完成');
 
             const isLastRound = gameState.round >= TOTAL_ROUNDS;
             const nextBtnHtml = isLastRound
@@ -670,7 +666,7 @@
                 <div class="idle-emoji">📊</div>
                 <div class="idle-title">第${record.round}回合（${record.season}）結算</div>
                 <div class="idle-sub">
-                    本回合購入 ${record.boxCount} 箱，共花費 ${record.spent} 元<br>
+                    本季購入 ${record.boxCount} 箱，共花費 ${record.spent} 元<br>
                     永續積分：<strong style="color:#012F72;">${record.totalScore >= 0 ? '+' : ''}${record.totalScore} 分</strong><br>
                     <span style="font-size:0.85em; opacity:0.75;">（評等將於四回合結束後的最終結算統一計算）</span>
                 </div>
@@ -741,7 +737,7 @@
             const inv = gameState.playerInventory;
             const spentTotal = inv.reduce((sum, it) => sum + it.price, 0);
             document.getElementById('ui-inventory-summary').innerText =
-                inv.length === 0 ? '本回合尚未購入' : `本回合已購 ${inv.length} 箱・花費 ${spentTotal} 元`;
+                inv.length === 0 ? '本季尚未購入' : `本季已購 ${inv.length} 箱・花費 ${spentTotal} 元`;
         }
 
         const RING_CIRCUMFERENCE = 2 * Math.PI * 52;
