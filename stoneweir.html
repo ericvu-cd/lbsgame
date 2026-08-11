@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>石滬修復</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --ocean-deep:#0a4f86;
@@ -82,7 +82,7 @@
   .app{position:relative;z-index:1;display:flex;flex-direction:column;flex:1;min-height:0;padding:10px 14px 16px;}
 
   h1.title{
-    font-family:'ZCOOL KuaiLe', 'Noto Sans TC', sans-serif;font-weight:400;font-size:1.5rem;letter-spacing:2px;
+    font-family:'Noto Sans TC', sans-serif;font-weight:900;font-size:1.5rem;letter-spacing:2px;
     text-align:center;margin:0 0 2px;color:var(--gold);flex-shrink:0;
     -webkit-text-stroke:2px var(--outline);paint-order:stroke fill;
     text-shadow:0 3px 0 var(--outline);
@@ -111,7 +111,7 @@
 
   .start-btn{
     display:block;margin:10px auto 4px;background:linear-gradient(180deg,#ffe27a 0%, var(--gold) 55%, var(--gold-dark) 100%);
-    color:var(--ink);font-family:'ZCOOL KuaiLe','Noto Sans TC',sans-serif;font-weight:400;font-size:1.05rem;letter-spacing:1px;
+    color:var(--ink);font-family:'Noto Sans TC',sans-serif;font-weight:900;font-size:1.05rem;letter-spacing:1px;
     border:3px solid var(--outline);padding:11px 40px;border-radius:999px;cursor:pointer;
     box-shadow:0 5px 0 var(--outline), 0 7px 14px rgba(0,0,0,.35);flex-shrink:0;
     transition:transform .08s ease, box-shadow .08s ease;
@@ -120,9 +120,9 @@
 
   /* ---- 遊戲畫面 ---- */
   .game-header{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0;}
-  .game-title{font-family:'ZCOOL KuaiLe','Noto Sans TC',sans-serif;font-weight:400;font-size:1.05rem;color:var(--cream);
+  .game-title{font-family:'Noto Sans TC',sans-serif;font-weight:900;font-size:1.05rem;color:var(--cream);
     -webkit-text-stroke:1.4px var(--outline);paint-order:stroke fill;text-shadow:0 2px 0 var(--outline);}
-  .game-title span{display:block;font-size:0.7rem;color:var(--cream);-webkit-text-stroke:0;text-shadow:none;
+  .game-title span{display:block;font-size:0.7rem;color:var(--ink);-webkit-text-stroke:0;text-shadow:none;
     font-family:'JetBrains Mono',monospace;font-weight:600;margin-top:1px;opacity:.9;}
   .stat-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
   .stat{
@@ -196,7 +196,7 @@
     border:4px solid var(--outline);border-radius:20px;max-width:340px;width:100%;padding:20px 20px;text-align:center;
     max-height:90dvh;overflow-y:auto;box-shadow:0 8px 0 var(--outline), 0 12px 26px rgba(0,0,0,.4);
   }
-  .modal h2{font-family:'ZCOOL KuaiLe','Noto Sans TC',sans-serif;font-weight:400;font-size:1.4rem;margin:4px 0 3px;color:var(--ink);
+  .modal h2{font-family:'Noto Sans TC',sans-serif;font-weight:900;font-size:1.4rem;margin:4px 0 3px;color:var(--ink);
     -webkit-text-stroke:1.2px var(--outline);paint-order:stroke fill;}
   .modal .medal{font-size:2.2rem;filter:drop-shadow(0 3px 0 rgba(0,0,0,.25));}
   .modal .stars{font-size:1.3rem;letter-spacing:5px;margin:6px 0 3px;}
@@ -213,7 +213,22 @@
   .modal .result-grid{display:flex;justify-content:center;gap:12px;margin:10px 0 12px;flex-wrap:wrap;}
   .modal .result-grid div b{display:block;font-size:1.1rem;font-family:'JetBrains Mono',monospace;color:var(--ink);}
   .modal .result-grid div span{font-size:0.72rem;color:var(--ink-dim);}
-  .modal .tip{background:rgba(0,0,0,.05);border-radius:8px;padding:9px 11px;font-size:0.8rem;color:var(--ink-dim);margin-bottom:14px;line-height:1.5;text-align:left;}
+  .modal .tip-carousel{
+    display:flex;align-items:flex-start;gap:9px;background:rgba(0,0,0,.05);border:2px solid rgba(0,0,0,.1);
+    border-radius:10px;padding:9px 12px 10px;margin-bottom:14px;text-align:left;
+    touch-action:pan-y;user-select:none;cursor:grab;
+  }
+  .modal .tip-carousel:active{cursor:grabbing;}
+  .tip-icon{font-size:1.15rem;line-height:1.5;flex-shrink:0;filter:drop-shadow(0 1px 0 rgba(0,0,0,.2));}
+  .tip-body{flex:1;min-width:0;}
+  .tip-text{font-size:0.8rem;color:var(--ink-dim);line-height:1.5;min-height:2.4em;}
+  .tip-text.slide-next{animation:tipSlideNext .28s ease both;}
+  .tip-text.slide-prev{animation:tipSlidePrev .28s ease both;}
+  @keyframes tipSlideNext{0%{opacity:0;transform:translateX(14px);}100%{opacity:1;transform:translateX(0);}}
+  @keyframes tipSlidePrev{0%{opacity:0;transform:translateX(-14px);}100%{opacity:1;transform:translateX(0);}}
+  .tip-dots{display:flex;gap:4px;margin-top:7px;}
+  .tip-dots span{width:5px;height:5px;border-radius:50%;background:rgba(0,0,0,.18);flex-shrink:0;transition:background .2s ease, transform .2s ease;}
+  .tip-dots span.active{background:var(--gold-dark);transform:scale(1.3);}
   .modal .btn-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
   .modal-lose{background:linear-gradient(180deg,#ffe0d6 0%, #f3c1ae 100%);}
   .modal-lose h2{color:var(--coral-dark2);}
@@ -248,7 +263,7 @@
   <div class="screen" id="screen-game">
     <h1 class="title">石滬修復</h1>
     <div class="game-header">
-      <div class="game-title">搶修進行中<span id="gameSub">每隔一段時間漲潮</span></div>
+      <div class="game-title">搶修進行中<span id="gameSub">點擊石塊來修堤，注意海浪來襲會沖潰毀損</span></div>
       <div class="stat-bar">
         <div class="stat"><b id="statTime">00:00</b><span>時間</span></div>
         <div class="stat"><b id="statMoves">0</b><span>步數</span></div>
@@ -309,7 +324,13 @@
       <div><b id="finalMoves">0</b><span>使用步數</span></div>
     </div>
     <div class="score-breakdown" id="scoreBreakdown"></div>
-    <div class="tip" id="winTip"></div>
+    <div class="tip-carousel" id="winTipCarousel">
+      <div class="tip-icon">💡</div>
+      <div class="tip-body">
+        <div class="tip-text" id="winTipText"></div>
+        <div class="tip-dots" id="winTipDots"></div>
+      </div>
+    </div>
     <div class="btn-row">
       <button class="start-btn" id="playAgainBtn" style="padding:12px 30px;">再修一次</button>
       <button class="icon-btn" id="changeDiffBtn">回到說明</button>
@@ -326,7 +347,13 @@
       <div><b id="failTime">00:00</b><span>撐過時間</span></div>
       <div><b id="failMoves">0</b><span>使用步數</span></div>
     </div>
-    <div class="tip" id="loseTip"></div>
+    <div class="tip-carousel" id="loseTipCarousel">
+      <div class="tip-icon">💡</div>
+      <div class="tip-body">
+        <div class="tip-text" id="loseTipText"></div>
+        <div class="tip-dots" id="loseTipDots"></div>
+      </div>
+    </div>
     <div class="btn-row">
       <button class="start-btn" id="retryBtn" style="padding:12px 30px;">再修一次</button>
       <button class="icon-btn" id="loseBackBtn">回到說明</button>
@@ -370,6 +397,48 @@ const FACTS = [
   "近年地方社區與文化團體推動石滬修復及體驗活動，讓傳統技藝重新走入生活。",
   "石滬也是潮間帶生態棲地，魚、蟹、螺貝等生物可在石縫間棲息，兼具生態價值。"
 ];
+
+/* 石滬小知識輪播：icon + 文字可用滑鼠拖曳／觸控滑動左右切換，圓點指示目前位置 */
+function makeTipCarousel(rootId, textId, dotsId){
+  const root = document.getElementById(rootId);
+  const textEl = document.getElementById(textId);
+  const dotsEl = document.getElementById(dotsId);
+  let idx = 0;
+
+  function render(dir){
+    textEl.textContent = FACTS[idx];
+    textEl.classList.remove('slide-next','slide-prev');
+    void textEl.offsetWidth;
+    textEl.classList.add(dir === 'prev' ? 'slide-prev' : 'slide-next');
+    dotsEl.innerHTML = FACTS.map((_,i)=>`<span class="${i===idx?'active':''}"></span>`).join('');
+  }
+  function go(delta){
+    idx = (idx + delta + FACTS.length) % FACTS.length;
+    render(delta < 0 ? 'prev' : 'next');
+  }
+
+  let startX = 0, startY = 0, dragging = false;
+  root.addEventListener('pointerdown', e=>{
+    dragging = true; startX = e.clientX; startY = e.clientY;
+  });
+  root.addEventListener('pointerup', e=>{
+    if(!dragging) return;
+    dragging = false;
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    if(Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1);
+  });
+  root.addEventListener('pointercancel', ()=>{ dragging = false; });
+  root.addEventListener('pointerleave', ()=>{ dragging = false; });
+
+  return {
+    showRandom(){
+      idx = Math.floor(Math.random()*FACTS.length);
+      render('next');
+    }
+  };
+}
+const winTipCarousel = makeTipCarousel('winTipCarousel','winTipText','winTipDots');
+const loseTipCarousel = makeTipCarousel('loseTipCarousel','loseTipText','loseTipDots');
 
 /* ============ 佈局：內外雙層弧形滬堤 ============ */
 const N = 11;          // 每層石塊數
@@ -647,8 +716,7 @@ function failGame(){
   stopTimers();
   document.getElementById('failTime').textContent = formatTime(state.seconds);
   document.getElementById('failMoves').textContent = state.moves;
-  const fact = FACTS[Math.floor(Math.random()*FACTS.length)];
-  document.getElementById('loseTip').textContent = fact;
+  loseTipCarousel.showRandom();
   document.getElementById('loseOverlay').classList.add('active');
 }
 
@@ -853,11 +921,20 @@ function tideStrike(){
   // 這樣保證局面永遠停留在玩家點擊操作可到達的「可解子空間」內，
   // 不會產生無論怎麼點都解不完的死局；同時因為疊加了兩處連動效果，
   // 通常不會剛好等於任何單一顆石頭的點擊遮罩，玩家也無法一鍵抵銷。
+  const oldBits = state.bits;
   let idx1 = Math.floor(Math.random()*TOTAL);
   let idx2 = pickNearbyIndex(idx1);
   state.bits ^= MASKS[idx1] ^ MASKS[idx2];
   renderBoard();
   updateLiveScore();
+
+  // 所有被這次漲潮衝擊影響（狀態翻轉）的石塊，都套用跟點擊修復一樣的特效，
+  // 讓玩家清楚看到海浪具體沖到了哪些石塊。
+  for(let sid=0; sid<TOTAL; sid++){
+    const was = (oldBits >> sid) & 1;
+    const now = (state.bits >> sid) & 1;
+    if(was !== now) playRepairEffect(sid);
+  }
 
   // 撞擊瞬間：水面波光加亮（水位本身已在倒數期間緩緩升到最高點）
   const ocean = document.getElementById('ocean');
@@ -906,8 +983,7 @@ function finishGame(){
     <div class="sb-row sb-total"><span>總分</span><span>${total}</span></div>
   `;
 
-  const fact = FACTS[Math.floor(Math.random()*FACTS.length)];
-  document.getElementById('winTip').textContent = fact;
+  winTipCarousel.showRandom();
   document.getElementById('winOverlay').classList.add('active');
 }
 </script>
