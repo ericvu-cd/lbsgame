@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>石滬修復</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ocean-deep:#0a4f86;
+    --ocean-mid:#1783c2;
+    --ocean-panel:#2196d6;
+    --ocean-glow:#5ecbf0;
+    --teal:#3fc6d6;
+    --teal-dark:#1c7788;
+    --cream:#fff6dd;
+    --cream-dim:#f0e2b8;
+    --green:#4caf50;
+    --amber:#ffd23f;
+    --coral:#ff5c39;
+    --coral-dark:#c23a1f;
+    --gold:#ffd23f;
+    --stone-ok-1:#f6cf6a;
+    --stone-ok-2:#c9871f;
+    --stone-bad-1:#9aa7ae;
+    --stone-bad-2:#4c5860;
+    --sky-top:#5ec8f0;
+    --sky-horizon:#8fdcf4;
+    --land-upper:#e8c877;
+    --land-lower:#d1a94f;
+    --gold-dark:#c98a12;
+    --coral-dark2:#c23a1f;
+    --ink:#1a2942;
+    --ink-dim:#4a5568;
+    --outline:#1a1a1a;
+    --wood:#a9662c;
+    --wood-dark:#7a4318;
+    --rock:#9aa7ae;
+    --rock-dark:#5c6670;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;}
+  body{
+    font-family:'Noto Sans TC', sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 15% 4%, rgba(255,255,255,.55) 0%, transparent 22%),
+      radial-gradient(circle at 82% 8%, rgba(255,255,255,.4) 0%, transparent 20%),
+      linear-gradient(180deg, var(--sky-top) 0%, var(--sky-horizon) 32%, var(--land-upper) 60%, var(--land-lower) 100%);
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    height:100dvh;
+  }
+  #ocean{
+    position:fixed;left:0;right:0;bottom:0;height:62vh;z-index:0;pointer-events:none;
+    transform:translateY(48vh);
+  }
+  #ocean .crest{position:absolute;top:-1px;left:0;width:200%;height:64px;}
+  #ocean .crest-back{animation:driftWave 24s linear infinite;opacity:.9;}
+  #ocean .crest-mid{animation:driftWave 18s linear infinite;opacity:.7;}
+  #ocean .crest-front{animation:driftWave 13s linear infinite reverse;opacity:.85;}
+  #ocean .crest-foam{animation:driftWave 13s linear infinite reverse;opacity:.9;filter:drop-shadow(0 0 6px rgba(255,255,255,.6));}
+  @keyframes driftWave{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+  #ocean .fill{position:absolute;left:0;right:0;top:58px;bottom:-10vh;
+    background:linear-gradient(180deg, var(--teal-dark) 0%, var(--ocean-mid) 45%, var(--ocean-deep) 100%);}
+  #ocean.impact-flash .crest{filter:brightness(1.9) saturate(1.5) drop-shadow(0 0 16px rgba(63,198,214,.75));transition:filter .15s ease;}
+
+  #tideFlash{position:fixed;inset:0;pointer-events:none;z-index:60;background:radial-gradient(circle at 50% 100%, rgba(255,94,70,.35), rgba(63,198,214,.18) 55%, transparent 80%);opacity:0;}
+  #tideFlash.hit{animation:flashHit .6s ease;}
+  @keyframes flashHit{0%{opacity:0;}18%{opacity:1;}100%{opacity:0;}}
+
+  .shake{animation:shakeBoard .5s cubic-bezier(.36,.07,.19,.97) both;}
+  @keyframes shakeBoard{
+    10%,90%{transform:translateX(-1px);}
+    20%,80%{transform:translateX(2px);}
+    30%,50%,70%{transform:translateX(-4px);}
+    40%,60%{transform:translateX(4px);}
+  }
+
+  .app{position:relative;z-index:1;display:flex;flex-direction:column;flex:1;min-height:0;padding:10px 14px 16px;}
+
+  h1.title{
+    font-family:'ZCOOL KuaiLe', 'Noto Sans TC', sans-serif;font-weight:400;font-size:1.5rem;letter-spacing:2px;
+    text-align:center;margin:0 0 2px;color:var(--gold);flex-shrink:0;
+    -webkit-text-stroke:2px var(--outline);paint-order:stroke fill;
+    text-shadow:0 3px 0 var(--outline);
+  }
+
+
+  .screen{display:none;}
+  .screen.active{display:flex;flex-direction:column;flex:1;min-height:0;animation:fadeUp .4s ease both;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+  /* ---- 說明首頁：整張圖滿版鋪滿 + 疊加的 GO 按鈕 ---- */
+  #screen-intro{margin:-10px -14px -16px;}
+  .intro-frame{
+    position:relative;flex:1;min-height:0;overflow:hidden;
+  }
+  .intro-media{position:relative;width:100%;height:100%;}
+  .intro-media img{
+    width:100%;height:100%;object-fit:fill;display:block;
+  }
+  .intro-go-btn{
+    position:absolute;left:0;top:0;width:29%;height:19%;
+    background:transparent;border:none;cursor:pointer;padding:0;
+    border-radius:50%;
+  }
+  .intro-go-btn:active{transform:scale(.94);}
+
+  .start-btn{
+    display:block;margin:10px auto 4px;background:linear-gradient(180deg,#ffe27a 0%, var(--gold) 55%, var(--gold-dark) 100%);
+    color:var(--ink);font-family:'ZCOOL KuaiLe','Noto Sans TC',sans-serif;font-weight:400;font-size:1.05rem;letter-spacing:1px;
+    border:3px solid var(--outline);padding:11px 40px;border-radius:999px;cursor:pointer;
+    box-shadow:0 5px 0 var(--outline), 0 7px 14px rgba(0,0,0,.35);flex-shrink:0;
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .start-btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--outline), 0 2px 6px rgba(0,0,0,.3);}
+
+  /* ---- 遊戲畫面 ---- */
+  .game-header{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0;}
+  .game-title{font-family:'ZCOOL KuaiLe','Noto Sans TC',sans-serif;font-weight:400;font-size:1.05rem;color:var(--cream);
+    -webkit-text-stroke:1.4px var(--outline);paint-order:stroke fill;text-shadow:0 2px 0 var(--outline);}
+  .game-title span{display:block;font-size:0.7rem;color:var(--cream);-webkit-text-stroke:0;text-shadow:none;
+    font-family:'JetBrains Mono',monospace;font-weight:600;margin-top:1px;opacity:.9;}
+  .stat-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .stat{
+    background:linear-gradient(180deg,#fff6dd 0%, #e9d8a3 100%);border:2.5px solid var(--outline);border-radius:9px;
+    padding:5px 9px 6px;font-family:'JetBrains Mono',monospace;font-size:0.76rem;min-width:44px;text-align:center;
+    box-shadow:0 3px 0 var(--outline), inset 0 -3px 0 rgba(0,0,0,.08);
+  }
+  .stat b{display:block;font-size:1rem;color:var(--ink);font-weight:800;}
+  .stat span{color:var(--ink-dim);font-size:0.62rem;font-weight:600;}
+  .stat.score-stat{border-color:var(--outline);background:linear-gradient(180deg,#fff0b0 0%, var(--gold) 100%);}
+  .stat.score-stat b{color:var(--gold-dark);}
+  .stat.fish-stat{border-color:var(--outline);background:linear-gradient(180deg,#d6f3fb 0%, #8fd9ee 100%);}
+  .stat.fish-stat b{color:var(--ocean-deep);}
+  .icon-btn{
+    background:linear-gradient(180deg,#e9c186 0%, var(--wood) 100%);border:2.5px solid var(--outline);color:var(--cream);
+    border-radius:8px;padding:6px 10px;cursor:pointer;font-size:0.78rem;font-weight:700;font-family:'Noto Sans TC',sans-serif;
+    box-shadow:0 3px 0 var(--outline);-webkit-text-stroke:.6px var(--outline);text-shadow:0 1px 0 var(--outline);
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .icon-btn:active{transform:translateY(3px);box-shadow:0 0 0 var(--outline);}
+
+  .board-wrap{display:flex;flex:1;min-height:0;align-items:center;justify-content:center;margin-bottom:6px;}
+  #board{width:min(340px, 88vw);height:auto;overflow:visible;}
+  .stone-cell{cursor:pointer;}
+  .stone-visual{transform-box:fill-box;transform-origin:center;transition:transform .15s ease;}
+  .stone-visual.pulse{animation:pulse .35s ease;}
+  @keyframes pulse{0%{transform:scale(1);}45%{transform:scale(.82);}100%{transform:scale(1);}}
+  .stone-cell .hit{fill:transparent;}
+  .connector-line{stroke:var(--outline);stroke-width:2;stroke-linecap:round;opacity:.3;}
+  .fish-icon{opacity:.95;}
+  .repair-ring{fill:none;stroke:var(--gold);stroke-width:5;opacity:.95;pointer-events:none;}
+  .repair-glow{fill:var(--gold);opacity:.85;pointer-events:none;}
+  .repair-sparkle{fill:var(--coral);stroke:var(--outline);stroke-width:.6;opacity:1;pointer-events:none;}
+  @keyframes repairPop{
+    0%{transform:scale(1);}
+    35%{transform:scale(1.35);}
+    62%{transform:scale(.92);}
+    100%{transform:scale(1);}
+  }
+  .stone-visual.repair-pop{animation:repairPop .55s cubic-bezier(.34,1.56,.64,1);}
+
+  .float-text{
+    position:fixed;transform:translate(-50%,0);
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1rem;
+    pointer-events:none;z-index:90;text-shadow:0 1px 3px rgba(0,0,0,.35);
+    animation:floatUp 1.15s ease-out forwards;
+  }
+  @keyframes floatUp{
+    0%{opacity:0;transform:translate(-50%,4px) scale(.75);}
+    18%{opacity:1;transform:translate(-50%,-8px) scale(1.2);}
+    100%{opacity:0;transform:translate(-50%,-38px) scale(1);}
+  }
+  .stat.fish-stat.flash-gain{animation:statFlashGain .7s ease;}
+  .stat.fish-stat.flash-loss{animation:statFlashLoss .7s ease;}
+  @keyframes statFlashGain{
+    0%{background:rgba(75,209,145,.55);transform:scale(1.12);}
+    100%{background:rgba(224,247,247,.9);transform:scale(1);}
+  }
+  @keyframes statFlashLoss{
+    0%{background:rgba(255,94,70,.5);transform:scale(1.12);}
+    100%{background:rgba(224,247,247,.9);transform:scale(1);}
+  }
+
+  .legend-mini{display:flex;justify-content:center;gap:14px;margin-top:2px;font-size:0.74rem;color:var(--ink);flex-shrink:0;font-weight:700;}
+  .legend-mini .swatch{display:inline-block;width:11px;height:11px;border-radius:4px;margin-right:5px;vertical-align:-1px;border:2px solid var(--outline);}
+
+  .overlay{position:fixed;inset:0;background:rgba(10,30,45,.7);display:none;align-items:center;justify-content:center;z-index:80;padding:16px;}
+  .overlay.active{display:flex;animation:fadeUp .3s ease both;}
+  .modal{
+    background:linear-gradient(180deg,#fff6dd 0%, #ecdcae 100%);color:var(--ink);
+    border:4px solid var(--outline);border-radius:20px;max-width:340px;width:100%;padding:20px 20px;text-align:center;
+    max-height:90dvh;overflow-y:auto;box-shadow:0 8px 0 var(--outline), 0 12px 26px rgba(0,0,0,.4);
+  }
+  .modal h2{font-family:'ZCOOL KuaiLe','Noto Sans TC',sans-serif;font-weight:400;font-size:1.4rem;margin:4px 0 3px;color:var(--ink);
+    -webkit-text-stroke:1.2px var(--outline);paint-order:stroke fill;}
+  .modal .medal{font-size:2.2rem;filter:drop-shadow(0 3px 0 rgba(0,0,0,.25));}
+  .modal .stars{font-size:1.3rem;letter-spacing:5px;margin:6px 0 3px;}
+  .score-rank{display:flex;align-items:baseline;justify-content:center;gap:6px;margin:10px 0 8px;}
+  .score-rank b{font-family:'JetBrains Mono',monospace;font-size:2.1rem;font-weight:800;color:var(--gold-dark);-webkit-text-stroke:1px var(--outline);paint-order:stroke fill;}
+  .score-rank .score-unit{font-size:0.85rem;color:var(--ink-dim);font-weight:700;}
+  .score-breakdown{
+    background:rgba(0,0,0,.06);border:2px solid rgba(0,0,0,.15);border-radius:10px;
+    padding:8px 12px;margin-bottom:10px;font-family:'JetBrains Mono',monospace;font-size:0.74rem;
+    color:var(--ink-dim);text-align:left;line-height:1.7;
+  }
+  .score-breakdown .sb-row{display:flex;justify-content:space-between;}
+  .score-breakdown .sb-total{color:var(--gold-dark);border-top:2px dashed rgba(0,0,0,.2);margin-top:3px;padding-top:3px;font-weight:800;}
+  .modal .result-grid{display:flex;justify-content:center;gap:12px;margin:10px 0 12px;flex-wrap:wrap;}
+  .modal .result-grid div b{display:block;font-size:1.1rem;font-family:'JetBrains Mono',monospace;color:var(--ink);}
+  .modal .result-grid div span{font-size:0.72rem;color:var(--ink-dim);}
+  .modal .tip{background:rgba(0,0,0,.05);border-radius:8px;padding:9px 11px;font-size:0.8rem;color:var(--ink-dim);margin-bottom:14px;line-height:1.5;text-align:left;}
+  .modal .btn-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+  .modal-lose{background:linear-gradient(180deg,#ffe0d6 0%, #f3c1ae 100%);}
+  .modal-lose h2{color:var(--coral-dark2);}
+  .lose-msg{font-size:0.85rem;color:var(--ink);font-weight:600;margin:0 0 10px;line-height:1.6;}
+  .stat.danger{border-color:var(--outline);background:linear-gradient(180deg,#ffcdbd 0%, var(--coral) 100%);}
+  .stat.danger b{color:#fff;-webkit-text-stroke:.6px var(--outline);}
+</style>
+</head>
+<body>
+
+<div id="ocean">
+  <svg class="crest crest-back" viewBox="0 0 1600 140" preserveAspectRatio="none"><path d="M0,60 C200,110 400,10 600,60 C800,110 1000,10 1200,60 C1400,110 1500,40 1600,60 L1600,140 L0,140 Z" fill="var(--teal)" stroke="var(--outline)" stroke-width="3"/></svg>
+  <svg class="crest crest-mid" viewBox="0 0 1600 140" preserveAspectRatio="none"><path d="M0,50 C220,20 420,100 640,55 C860,10 1060,100 1280,55 C1440,20 1540,70 1600,55 L1600,140 L0,140 Z" fill="var(--ocean-glow)" opacity=".85" stroke="var(--outline)" stroke-width="2.5"/></svg>
+  <svg class="crest crest-front" viewBox="0 0 1600 140" preserveAspectRatio="none"><path d="M0,80 C180,30 380,120 580,70 C780,20 980,120 1180,70 C1380,20 1500,90 1600,70 L1600,140 L0,140 Z" fill="var(--teal-dark)" opacity=".9" stroke="var(--outline)" stroke-width="3"/></svg>
+  <svg class="crest crest-foam" viewBox="0 0 1600 140" preserveAspectRatio="none"><path d="M0,72 C180,22 380,112 580,62 C780,12 980,112 1180,62 C1380,12 1500,82 1600,62" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/></svg>
+  <div class="fill"></div>
+</div>
+<div id="tideFlash"></div>
+
+<div class="app">
+  <!-- 畫面一：說明（整張說明圖 + 疊加在「GO!」石頭上的透明按鈕） -->
+  <div class="screen active" id="screen-intro">
+    <div class="intro-frame">
+    <div class="intro-media">
+      <img src="srbg.png" alt="石滬修復玩法說明">
+      <button class="intro-go-btn" id="startBtn" aria-label="開始遊戲" title="開始遊戲"></button>
+    </div>
+    </div>
+  </div>
+
+  <!-- 畫面二：遊戲進行 -->
+  <div class="screen" id="screen-game">
+    <h1 class="title">石滬修復</h1>
+    <div class="game-header">
+      <div class="game-title">搶修進行中<span id="gameSub">每隔一段時間漲潮</span></div>
+      <div class="stat-bar">
+        <div class="stat"><b id="statTime">00:00</b><span>時間</span></div>
+        <div class="stat"><b id="statMoves">0</b><span>步數</span></div>
+        <div class="stat fish-stat"><b id="statFish">0</b><span>魚獲</span></div>
+        <div class="stat score-stat"><b id="statScore">1000</b><span>分數</span></div>
+        <button class="icon-btn" id="restartBtn">↺ 重來</button>
+      </div>
+    </div>
+
+    <div class="board-wrap"><svg id="board" viewBox="0 0 526 476">
+      <defs>
+        <linearGradient id="okGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--stone-ok-1)"/><stop offset="1" stop-color="var(--stone-ok-2)"/>
+        </linearGradient>
+        <linearGradient id="badGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--stone-bad-1)"/><stop offset="1" stop-color="var(--stone-bad-2)"/>
+        </linearGradient>
+        <symbol id="stoneOk" viewBox="0 0 60 60">
+          <path d="M10 38 Q6 22 22 14 Q38 4 50 18 Q58 30 46 42 Q34 54 20 48 Q10 44 10 38Z" fill="url(#okGrad)" stroke="var(--outline)" stroke-width="2.6" stroke-linejoin="round"/>
+          <circle cx="22" cy="24" r="2.4" fill="#a8641c" opacity=".7"/>
+          <circle cx="36" cy="34" r="1.8" fill="#a8641c" opacity=".6"/>
+          <ellipse cx="19" cy="17" rx="7" ry="3.6" fill="#fff" opacity=".55"/>
+        </symbol>
+        <symbol id="stoneBad" viewBox="0 0 60 60">
+          <path d="M10 38 Q6 22 22 14 Q38 4 50 18 Q58 30 46 42 Q34 54 20 48 Q10 44 10 38Z" fill="url(#badGrad)" stroke="var(--outline)" stroke-width="2.6" stroke-linejoin="round"/>
+          <path d="M18 20 L30 30 L24 40 M30 30 L40 24" stroke="#232b2e" stroke-width="2.4" fill="none" opacity=".85" stroke-linecap="round"/>
+          <ellipse cx="19" cy="17" rx="7" ry="3.6" fill="#fff" opacity=".18"/>
+        </symbol>
+        <symbol id="fishIcon" viewBox="0 0 32 20">
+          <path d="M20 10 L30 3 L25 10 L30 17 Z" fill="currentColor" stroke="var(--outline)" stroke-width="1" stroke-linejoin="round" opacity=".95"/>
+          <ellipse cx="13" cy="10" rx="9" ry="5.4" fill="currentColor" stroke="var(--outline)" stroke-width="1.2"/>
+          <path d="M10 5 L13 0 L15.5 5 Z" fill="currentColor" opacity=".9"/>
+          <path d="M9 15 L12 19.5 L14.5 15 Z" fill="currentColor" opacity=".8"/>
+          <path d="M4.5 10 Q7 12.5 9.5 11" stroke="currentColor" stroke-width="1" fill="none" opacity=".5"/>
+          <circle cx="6.3" cy="9" r="1.5" fill="var(--outline)"/>
+          <circle cx="6.7" cy="8.6" r=".5" fill="#fff"/>
+        </symbol>
+      </defs>
+      <g id="connectorLayer"></g>
+      <g id="fishLayer"></g>
+      <g id="stoneLayer"></g>
+    </svg></div>
+
+    <div class="legend-mini">
+      <div><span class="swatch" style="background:linear-gradient(160deg,var(--stone-ok-1),var(--stone-ok-2));"></span>已修復</div>
+      <div><span class="swatch" style="background:linear-gradient(160deg,var(--stone-bad-1),var(--stone-bad-2));"></span>毀損中</div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="winOverlay">
+  <div class="modal">
+    <div class="medal">🪨</div>
+    <h2>石滬修復完成！</h2>
+    <div class="score-rank"><b id="finalScore">1000</b><span class="score-unit">分</span></div>
+    <div class="result-grid">
+      <div><b id="finalTime">00:00</b><span>總時間</span></div>
+      <div><b id="finalMoves">0</b><span>使用步數</span></div>
+    </div>
+    <div class="score-breakdown" id="scoreBreakdown"></div>
+    <div class="tip" id="winTip"></div>
+    <div class="btn-row">
+      <button class="start-btn" id="playAgainBtn" style="padding:12px 30px;">再修一次</button>
+      <button class="icon-btn" id="changeDiffBtn">回到說明</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="loseOverlay">
+  <div class="modal modal-lose">
+    <div class="medal">🌊</div>
+    <h2>滬堤決堤了……</h2>
+    <p class="lose-msg">分數已歸零，海水衝破了滬堤，這次搶修失敗了。</p>
+    <div class="result-grid">
+      <div><b id="failTime">00:00</b><span>撐過時間</span></div>
+      <div><b id="failMoves">0</b><span>使用步數</span></div>
+    </div>
+    <div class="tip" id="loseTip"></div>
+    <div class="btn-row">
+      <button class="start-btn" id="retryBtn" style="padding:12px 30px;">再修一次</button>
+      <button class="icon-btn" id="loseBackBtn">回到說明</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* 說明圖用 object-fit:fill 直接拉伸滿版，寬高各自獨立縮放，無裁切，
+   據此換算「GO!」按鈕在畫面上的實際像素位置。 */
+(function(){
+  const imgEl = document.querySelector('.intro-media img');
+  const btn = document.getElementById('startBtn');
+  const NATURAL_W = 600, NATURAL_H = 900;
+  // 「GO!」石頭在原圖（600x900）中的像素範圍
+  const ROCK = { x0:405, x1:560, y0:718, y1:878 };
+
+  function layoutIntro(){
+    const cw = imgEl.clientWidth, ch = imgEl.clientHeight;
+    if(!cw || !ch) return;
+    const scaleX = cw / NATURAL_W, scaleY = ch / NATURAL_H;
+    btn.style.left = (ROCK.x0 * scaleX) + 'px';
+    btn.style.top = (ROCK.y0 * scaleY) + 'px';
+    btn.style.width = ((ROCK.x1 - ROCK.x0) * scaleX) + 'px';
+    btn.style.height = ((ROCK.y1 - ROCK.y0) * scaleY) + 'px';
+  }
+  if(imgEl.complete) layoutIntro();
+  imgEl.addEventListener('load', layoutIntro);
+  window.addEventListener('resize', layoutIntro);
+  window.addEventListener('orientationchange', layoutIntro);
+})();
+
+/* ============ 石滬小知識 ============ */
+const FACTS = [
+  "石滬利用潮汐漲退，以天然石材堆成石牆。漲潮時魚群進入，退潮後受困滬內，方便捕撈。",
+  "石滬多以玄武岩、珊瑚礁等天然石材建造，展現澎湖居民善用海岸資源的智慧。",
+  "石滬採乾砌工法，不使用水泥，依石塊形狀、重量與堆疊方式彼此固定。",
+  "石滬長年承受潮汐、海浪與季風侵襲，石牆損壞後需要定期修補與維護。",
+  "修造石滬需要豐富經驗，匠師依石材大小與形狀堆砌，展現傳統漁業工藝智慧。",
+  "隨著漁業技術改變，石滬逐漸失去捕魚功能，部分石滬也因缺乏維護而荒廢。",
+  "近年地方社區與文化團體推動石滬修復及體驗活動，讓傳統技藝重新走入生活。",
+  "石滬也是潮間帶生態棲地，魚、蟹、螺貝等生物可在石縫間棲息，兼具生態價值。"
+];
+
+/* ============ 佈局：內外雙層弧形滬堤 ============ */
+const N = 11;          // 每層石塊數
+const R_OUT = 213, R_IN = 135;  // 半徑加大，讓開口與石塊間距有足夠空間
+const CX = 263, CY = 211;
+const OPENING = 84;             // 滬口開口角度（原本60度，加大到84度）
+const STEP = (360 - OPENING) / (N - 1);
+const START_ANGLE = (90 - OPENING/2) - STEP*(N-1); // 讓開口以正上方為中心對稱
+
+function angleRad(i){ return (START_ANGLE + STEP * i) * Math.PI / 180; }
+
+const STONES = [];
+for(let i=0;i<N;i++){
+  const a = angleRad(i);
+  STONES.push({ id:i, layer:'outer', pos:i, x: CX + R_OUT*Math.cos(a), y: CY - R_OUT*Math.sin(a) });
+}
+for(let i=0;i<N;i++){
+  const a = angleRad(i);
+  STONES.push({ id:N+i, layer:'inner', pos:i, x: CX + R_IN*Math.cos(a), y: CY - R_IN*Math.sin(a) });
+}
+const TOTAL = STONES.length; // 22
+
+/* 相鄰石塊間的連接線（同層鏈狀連接 + 內外層對應的鏡射連接），只需畫一次，不隨損壞狀態改變 */
+/* 通道：純粹用來計算魚群逃脫比例的邏輯定義，不影響畫面上的連接線。
+   一內層石塊 + 一外層石塊的配對。
+   直線通道：內外層同一角度對齊的配對（inner[i]-outer[i]）。
+   斜線通道：內外層錯開一格的配對（inner[i]-outer[i+1] 與 inner[i+1]-outer[i]）。
+   直線11條 + 斜線20條 = 共31條通道。 */
+function buildChannels(){
+  const channels = [];
+  for(let i=0;i<N;i++){
+    channels.push([i, N+i]); // 直線：outer[i] - inner[i]
+  }
+  for(let i=0;i<N-1;i++){
+    channels.push([N+i, i+1]);   // 斜線：inner[i] - outer[i+1]
+    channels.push([N+i+1, i]);   // 斜線：inner[i+1] - outer[i]
+  }
+  return channels;
+}
+const CHANNELS = buildChannels();
+
+/* 相鄰石塊間的連接線（同層鏈狀連接 + 內外層對應的鏡射連接），只是畫面上的視覺呈現，
+   跟上面的「通道」邏輯定義無關，只需畫一次，不隨損壞狀態改變 */
+function renderConnectors(){
+  const layer = document.getElementById('connectorLayer');
+  let html = '';
+  for(let i=0;i<N-1;i++){
+    const o1 = STONES[i], o2 = STONES[i+1];
+    html += `<line x1="${o1.x}" y1="${o1.y}" x2="${o2.x}" y2="${o2.y}" class="connector-line"/>`;
+    const in1 = STONES[N+i], in2 = STONES[N+i+1];
+    html += `<line x1="${in1.x}" y1="${in1.y}" x2="${in2.x}" y2="${in2.y}" class="connector-line"/>`;
+  }
+  for(let i=0;i<N;i++){
+    const o = STONES[i], inn = STONES[N+i];
+    html += `<line x1="${o.x}" y1="${o.y}" x2="${inn.x}" y2="${inn.y}" class="connector-line"/>`;
+  }
+  layer.innerHTML = html;
+}
+renderConnectors();
+
+const MAX_FISH_SHOWN = 14;
+let fishIdSeq = 0;
+const FISH_COLORS = ['#3fc6d6','#f0b93e','#ff8a5c','#4bd191','#7ea8ff','#e888c2','#ffd166','#5cc9a7'];
+
+// 魚群進出的錨點：畫布下緣，對應畫面下方真正的海水（不是版面上方的滬口位置）
+const BOARD_VIEW_H = 476; // 需與 <svg viewBox="0 0 526 476"> 的高度一致
+const GAP_X = CX;
+const GAP_Y = BOARD_VIEW_H + 60;
+
+function clearFish(){
+  document.getElementById('fishLayer').innerHTML = '';
+  if(state) state.fishList = [];
+}
+
+/* 漲潮：新魚從海水那一側慢慢游進來，游到牠們各自的落點；動畫時長跟水位上升的時間同步 */
+function spawnFish(n, riseDurationMs){
+  if(!state) return;
+  const layer = document.getElementById('fishLayer');
+  const room = MAX_FISH_SHOWN - state.fishList.length;
+  const toSpawn = Math.max(0, Math.min(n, room));
+  const posDurS = (Math.max(600, riseDurationMs || 900) / 1000).toFixed(2);
+  for(let i=0;i<toSpawn;i++){
+    const r = Math.random() * (R_IN - 45);
+    const ang = Math.random() * Math.PI * 2;
+    const x = CX + r*Math.cos(ang);
+    const y = CY + r*Math.sin(ang);
+    const rot = Math.floor(Math.random()*360);
+    const id = 'fish-' + (fishIdSeq++);
+    const color = FISH_COLORS[Math.floor(Math.random()*FISH_COLORS.length)];
+    const bobDur = (2 + Math.random()*1.6).toFixed(2);
+    const bobBegin = (-Math.random()*bobDur).toFixed(2);
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('id', id);
+    g.setAttribute('class','fish-icon');
+    g.style.transform = `translate(${GAP_X}px,${GAP_Y}px) rotate(${rot}deg) scale(.5)`;
+    g.style.opacity = '0';
+    g.innerHTML = `<use href="#fishIcon" x="-26" y="-16" width="52" height="32" style="color:${color}">
+      <animateTransform attributeName="transform" type="translate" values="0,0; 3,-2; 0,0" dur="${bobDur}s" begin="${bobBegin}s" repeatCount="indefinite"/>
+    </use>`;
+    layer.appendChild(g);
+    void g.getBoundingClientRect();
+    g.style.transition = `transform ${posDurS}s ease-in-out, opacity 1.4s ease`;
+    g.style.transform = `translate(${x}px,${y}px) rotate(${rot}deg) scale(1)`;
+    g.style.opacity = '1';
+
+    state.fishList.push({ id, x, y, rot });
+  }
+}
+
+/* 退潮：從目前留在滬內的魚裡隨機挑出要逃走的，跟著水位後退的時間慢慢游回海水側後淡出移除 */
+function despawnFish(n, recedeDurationMs){
+  if(!state) return;
+  const toRemove = Math.max(0, Math.min(n, state.fishList.length));
+  const durMs = Math.max(400, recedeDurationMs || 900);
+  const durS = (durMs/1000).toFixed(2);
+  for(let i=0;i<toRemove;i++){
+    const idx = Math.floor(Math.random()*state.fishList.length);
+    const fish = state.fishList.splice(idx,1)[0];
+    const el = document.getElementById(fish.id);
+    if(!el) continue;
+    el.style.transition = `transform ${durS}s ease-in, opacity ${durS}s ease-in`;
+    el.style.transform = `translate(${GAP_X}px,${GAP_Y}px) rotate(${fish.rot}deg) scale(.35)`;
+    el.style.opacity = '0';
+    setTimeout(()=>{ if(el.parentNode) el.remove(); }, durMs + 60);
+  }
+}
+
+/* 魚獲增減時，在「魚獲」欄位上方彈出 +N / -N 的浮動文字，並讓欄位閃一下顏色，讓變化更明顯 */
+function showFishDelta(delta){
+  const statEl = document.getElementById('statFish').closest('.stat');
+  if(!statEl) return;
+  const rect = statEl.getBoundingClientRect();
+  const div = document.createElement('div');
+  div.className = 'float-text';
+  div.textContent = (delta > 0 ? '+' : '') + delta + ' 🐟';
+  div.style.left = (rect.left + rect.width/2) + 'px';
+  div.style.top = rect.top + 'px';
+  div.style.color = delta > 0 ? 'var(--teal-dark)' : 'var(--coral-dark2)';
+  document.body.appendChild(div);
+  setTimeout(()=>div.remove(), 1200);
+
+  statEl.classList.remove('flash-gain','flash-loss');
+  void statEl.offsetWidth;
+  statEl.classList.add(delta > 0 ? 'flash-gain' : 'flash-loss');
+}
+
+// 翻動遮罩：自己 + 同層左右相鄰 + 對面另一層
+const MASKS = new Array(TOTAL).fill(0);
+for(let i=0;i<N;i++){
+  let m = (1<<i);
+  if(i>0) m |= (1<<(i-1));
+  if(i<N-1) m |= (1<<(i+1));
+  m |= (1<<(N+i));
+  MASKS[i] = m;
+}
+for(let i=0;i<N;i++){
+  let m = (1<<(N+i));
+  if(i>0) m |= (1<<(N+i-1));
+  if(i<N-1) m |= (1<<(N+i+1));
+  m |= (1<<i);
+  MASKS[N+i] = m;
+}
+
+/* ============ 計分基準 ============ */
+const BASE_SCORE = 1000;
+const PENALTY_PER_SEC = 6;     // 每秒扣分
+const PENALTY_PER_MOVE = 10;   // 每步扣分
+const BONUS_PER_FISH = 10;     // 每尾留在滬內的魚加分
+
+function computeScore(seconds, moves, fishCaught){
+  const timePenalty = seconds * PENALTY_PER_SEC;
+  const movePenalty = moves * PENALTY_PER_MOVE;
+  const fishBonus = (fishCaught||0) * BONUS_PER_FISH;
+  const total = Math.max(0, BASE_SCORE - timePenalty - movePenalty + fishBonus);
+  return { timePenalty, movePenalty, fishBonus, total };
+}
+
+/* 依照「通道」（畫面上看得到的直線+斜線連接線，CHANNELS）計算目前有幾處缺口：
+   每條通道都是一內層+一外層的配對，只要任一端石頭毀損，這條通道就算是破口。
+   缺口比率 = 破口通道數 / 全部通道數，取代單純用「毀損顆數/22」的算法 */
+function countGapRatio(bits){
+  let breached = 0;
+  CHANNELS.forEach(([a,b])=>{
+    if(((bits>>a)&1) || ((bits>>b)&1)) breached++;
+  });
+  return breached / CHANNELS.length;
+}
+
+/* ============ 狀態 ============ */
+let state = null; // {bits, moves, seconds, timerHandle, tideHandle}
+
+function switchScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('restartBtn').addEventListener('click', ()=>{ stopTimers(); switchScreen('screen-intro'); });
+document.getElementById('changeDiffBtn').addEventListener('click', ()=>{
+  document.getElementById('winOverlay').classList.remove('active');
+  switchScreen('screen-intro');
+});
+document.getElementById('playAgainBtn').addEventListener('click', ()=>{
+  document.getElementById('winOverlay').classList.remove('active');
+  startGame();
+});
+document.getElementById('loseBackBtn').addEventListener('click', ()=>{
+  document.getElementById('loseOverlay').classList.remove('active');
+  switchScreen('screen-intro');
+});
+document.getElementById('retryBtn').addEventListener('click', ()=>{
+  document.getElementById('loseOverlay').classList.remove('active');
+  startGame();
+});
+
+/* ============ 遊戲邏輯 ============ */
+function randomPuzzle(){
+  let bits = 0;
+  const scrambleMoves = 20 + Math.floor(Math.random()*6); // 20~25 次隨機翻動，保證有解
+  for(let k=0;k<scrambleMoves;k++){
+    const idx = Math.floor(Math.random()*TOTAL);
+    bits ^= MASKS[idx];
+  }
+  if(bits === 0) bits ^= MASKS[Math.floor(Math.random()*TOTAL)];
+  return bits;
+}
+
+function stopTimers(){
+  if(state){
+    clearInterval(state.timerHandle);
+    clearTimeout(state.tideHandle);
+    clearTimeout(state.shakeWaitHandle);
+    clearTimeout(state.recedeHandle);
+  }
+}
+
+/* ---- 水位控制：倒數期間緩緩上升，撞擊後快速退回 ---- */
+const OCEAN_LOW = '48vh';
+const OCEAN_PEAK = '6vh';
+
+function setOceanTransition(css){
+  document.getElementById('ocean').style.transition = css;
+}
+function setOceanLevel(vh){
+  document.getElementById('ocean').style.transform = `translateY(${vh})`;
+}
+function resetOceanInstant(){
+  setOceanTransition('none');
+  setOceanLevel(OCEAN_LOW);
+  void document.getElementById('ocean').offsetWidth;
+}
+function riseOceanOverDelay(delayMs){
+  setOceanTransition(`transform ${delayMs}ms linear`);
+  void document.getElementById('ocean').offsetWidth;
+  setOceanLevel(OCEAN_PEAK);
+}
+function recedeOceanQuickly(){
+  setOceanTransition('transform .9s cubic-bezier(.34,1.2,.4,1)');
+  setOceanLevel(OCEAN_LOW);
+}
+
+function updateLiveScore(){
+  const { total } = computeScore(state.seconds, state.moves, state.fishCaught);
+  const scoreEl = document.getElementById('statScore');
+  scoreEl.textContent = total;
+  scoreEl.parentElement.classList.toggle('danger', total <= 150);
+  if(total <= 0 && !state.over){
+    failGame();
+  }
+}
+
+function failGame(){
+  state.over = true;
+  stopTimers();
+  document.getElementById('failTime').textContent = formatTime(state.seconds);
+  document.getElementById('failMoves').textContent = state.moves;
+  const fact = FACTS[Math.floor(Math.random()*FACTS.length)];
+  document.getElementById('loseTip').textContent = fact;
+  document.getElementById('loseOverlay').classList.add('active');
+}
+
+const SHAKE_MS = 500;   // 需與 .shake 的CSS動畫時長一致
+const RECEDE_MS = 900;  // 需與 recedeOceanQuickly() 的transition時長一致
+
+function scheduleTide(){
+  const delay = (12 + Math.random()*3) * 1000; // 12~15 秒隨機
+  riseOceanOverDelay(delay); // 水位在整段倒數期間緩緩爬升，撞擊瞬間到達最高點
+
+  // 魚群跟著水位一起慢慢游進來，不是瞬間出現；動畫時長跟這次上升的秒數一致
+  const fishIn = 2 + Math.floor(Math.random()*4); // 每次漲潮帶入2~5尾
+  state.fishCaught += fishIn;
+  document.getElementById('statFish').textContent = state.fishCaught;
+  spawnFish(fishIn, delay);
+  showFishDelta(fishIn);
+
+  state.tideHandle = setTimeout(()=>{
+    tideStrike();
+    if(state && !state.over && state.bits !== 0){
+      // 畫面震動播完之後，海水才開始往下退
+      state.shakeWaitHandle = setTimeout(()=>{
+        if(!state || state.over) return;
+        recedeOceanQuickly();
+        ebbFish(RECEDE_MS); // 海水開始後退的瞬間，依照當下的毀損比例讓魚群跟著缺口逃走，動畫時長跟退潮同步
+        state.recedeHandle = setTimeout(()=>{
+          if(state && !state.over && state.bits !== 0) scheduleTide();
+        }, RECEDE_MS);
+      }, SHAKE_MS);
+    }
+  }, delay);
+}
+
+function startGame(){
+  stopTimers();
+  state = {
+    bits: randomPuzzle(),
+    moves: 0,
+    seconds: 0,
+    fishCaught: 0,
+    fishList: [],
+    over: false,
+    timerHandle: null,
+    tideHandle: null
+  };
+  document.getElementById('statTime').textContent = '00:00';
+  document.getElementById('statMoves').textContent = '0';
+  document.getElementById('statFish').textContent = '0';
+  document.getElementById('statScore').textContent = String(BASE_SCORE);
+  document.getElementById('statScore').parentElement.classList.remove('danger');
+  resetOceanInstant();
+
+  renderBoard();
+  clearFish();
+  switchScreen('screen-game');
+
+  state.timerHandle = setInterval(()=>{
+    state.seconds++;
+    document.getElementById('statTime').textContent = formatTime(state.seconds);
+    updateLiveScore();
+  }, 1000);
+
+  scheduleTide();
+}
+
+function formatTime(sec){
+  const m = String(Math.floor(sec/60)).padStart(2,'0');
+  const s = String(sec%60).padStart(2,'0');
+  return `${m}:${s}`;
+}
+
+function renderBoard(){
+  const layer = document.getElementById('stoneLayer');
+  layer.innerHTML = '';
+  STONES.forEach(s=>{
+    const damaged = (state.bits >> s.id) & 1;
+    const isOuter = s.layer === 'outer';
+    const size = isOuter ? 76.5 : 51;
+    const half = size / 2;
+    const hitR = isOuter ? 46.5 : 31;
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','stone-cell');
+    g.setAttribute('transform', `translate(${s.x},${s.y})`);
+    g.dataset.id = s.id;
+    g.innerHTML = `
+      <g class="stone-visual">
+        <circle class="hit" r="${hitR}"></circle>
+        <use href="${damaged ? '#stoneBad' : '#stoneOk'}" x="${-half}" y="${-half}" width="${size}" height="${size}"></use>
+      </g>
+    `;
+    g.addEventListener('click', ()=>onCellClick(s.id, g));
+    layer.appendChild(g);
+  });
+}
+
+/* 修復特效：中心金色閃光 + 雙層擴散光環 + 星星火花四散 + 石塊本身彈跳一下 */
+function playRepairEffect(sid){
+  const cell = document.querySelector(`.stone-cell[data-id="${sid}"]`);
+  if(!cell) return;
+  const isOuter = STONES[sid].layer === 'outer';
+  const startR = isOuter ? 40 : 27;
+
+  // 石塊本身彈跳（放大再回彈），比一般點擊縮放更明顯
+  const visual = cell.querySelector('.stone-visual');
+  if(visual){
+    visual.classList.remove('repair-pop');
+    void visual.getBoundingClientRect();
+    visual.classList.add('repair-pop');
+    setTimeout(()=>visual.classList.remove('repair-pop'), 600);
+  }
+
+  // 中心閃光：快速炸開又消失
+  const glow = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  glow.setAttribute('class','repair-glow');
+  glow.setAttribute('cx','0'); glow.setAttribute('cy','0');
+  glow.setAttribute('r', startR*0.3);
+  glow.innerHTML = `
+    <animate attributeName="r" from="${startR*0.3}" to="${startR*1.15}" dur="0.35s" fill="freeze"/>
+    <animate attributeName="opacity" from="0.9" to="0" dur="0.4s" fill="freeze"/>
+  `;
+  cell.appendChild(glow);
+  setTimeout(()=>{ if(glow.parentNode) glow.remove(); }, 450);
+
+  // 雙層擴散光環，時間稍微錯開
+  [0, 0.12].forEach(delay=>{
+    const ring = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    ring.setAttribute('class','repair-ring');
+    ring.setAttribute('cx','0'); ring.setAttribute('cy','0');
+    ring.setAttribute('r', startR);
+    ring.innerHTML = `
+      <animate attributeName="r" from="${startR}" to="${startR*2.1}" dur="0.7s" begin="${delay}s" fill="freeze"/>
+      <animate attributeName="opacity" from="0.95" to="0" dur="0.7s" begin="${delay}s" fill="freeze"/>
+      <animate attributeName="stroke-width" from="5" to="0.5" dur="0.7s" begin="${delay}s" fill="freeze"/>
+    `;
+    cell.appendChild(ring);
+    setTimeout(()=>{ if(ring.parentNode) ring.remove(); }, (0.7+delay)*1000 + 100);
+  });
+
+  // 星星火花向外飛散
+  const sparkleCount = 5;
+  for(let i=0;i<sparkleCount;i++){
+    const ang = (Math.PI*2/sparkleCount)*i + (Math.random()*0.5 - 0.25);
+    const dist = startR * (1.4 + Math.random()*0.6);
+    const dx = (Math.cos(ang)*dist).toFixed(1);
+    const dy = (Math.sin(ang)*dist).toFixed(1);
+    const spark = document.createElementNS('http://www.w3.org/2000/svg','path');
+    spark.setAttribute('class','repair-sparkle');
+    spark.setAttribute('d','M0,-5 L1.3,-1.3 L5,0 L1.3,1.3 L0,5 L-1.3,1.3 L-5,0 L-1.3,-1.3 Z');
+    spark.innerHTML = `
+      <animateTransform attributeName="transform" type="translate" from="0,0" to="${dx},${dy}" dur="0.55s" fill="freeze"/>
+      <animate attributeName="opacity" from="1" to="0" dur="0.55s" fill="freeze"/>
+    `;
+    cell.appendChild(spark);
+    setTimeout(()=>{ if(spark.parentNode) spark.remove(); }, 620);
+  }
+}
+
+function onCellClick(id, g){
+  if(!state || state.over) return;
+  const oldBits = state.bits;
+  state.bits ^= MASKS[id];
+  state.moves++;
+  document.getElementById('statMoves').textContent = state.moves;
+  updateLiveScore();
+  if(state.over) return; // 這一步就把分數扣到0了，失敗結算已觸發，不再翻面
+  renderBoard();
+
+  for(let sid=0; sid<TOTAL; sid++){
+    const wasDamaged = (oldBits >> sid) & 1;
+    const nowDamaged = (state.bits >> sid) & 1;
+    if(wasDamaged && !nowDamaged) playRepairEffect(sid);
+  }
+
+  const fresh = document.querySelector(`.stone-cell[data-id="${id}"] .stone-visual`);
+  if(fresh){ fresh.classList.add('pulse'); setTimeout(()=>fresh.classList.remove('pulse'), 350); }
+
+  if(state.bits === 0) finishGame();
+}
+
+/* 漲潮的第二個撞擊點，位置限制在第一個撞擊點的 ±2 塊範圍內（同一角度位置、層別不拘），
+   讓兩波撞擊的受影響區域集中在同一段滬堤，而不是隨機散落在整個弧形上 */
+function pickNearbyIndex(idx1){
+  const pos1 = idx1 % N;
+  let idx2 = idx1;
+  let attempts = 0;
+  while(idx2 === idx1 && attempts < 20){
+    const offset = Math.floor(Math.random()*5) - 2; // -2 ~ +2
+    const pos2 = Math.max(0, Math.min(N-1, pos1 + offset));
+    const layerBase = Math.random() < 0.5 ? 0 : N;
+    idx2 = layerBase + pos2;
+    attempts++;
+  }
+  if(idx2 === idx1) idx2 = (idx1 + 1) % TOTAL; // 保險：極端情況下的備援
+  return idx2;
+}
+
+function tideStrike(){
+  if(!state || state.over || state.bits === undefined) return;
+
+  // 漲潮等同「兩次點擊」疊加的效果（而非單顆石頭直接翻面），且第二個撞擊點
+  // 限制在第一個撞擊點 ±2 塊距離內，讓破壞範圍集中、更像單一波浪的衝擊。
+  // 這樣保證局面永遠停留在玩家點擊操作可到達的「可解子空間」內，
+  // 不會產生無論怎麼點都解不完的死局；同時因為疊加了兩處連動效果，
+  // 通常不會剛好等於任何單一顆石頭的點擊遮罩，玩家也無法一鍵抵銷。
+  let idx1 = Math.floor(Math.random()*TOTAL);
+  let idx2 = pickNearbyIndex(idx1);
+  state.bits ^= MASKS[idx1] ^ MASKS[idx2];
+  renderBoard();
+  updateLiveScore();
+
+  // 撞擊瞬間：水面波光加亮（水位本身已在倒數期間緩緩升到最高點）
+  const ocean = document.getElementById('ocean');
+  ocean.classList.add('impact-flash');
+  setTimeout(()=>ocean.classList.remove('impact-flash'), 500);
+
+  // 畫面閃光
+  const flash = document.getElementById('tideFlash');
+  flash.classList.remove('hit'); void flash.offsetWidth; flash.classList.add('hit');
+
+  // 棋盤震動
+  const boardWrap = document.querySelector('.board-wrap');
+  boardWrap.classList.remove('shake'); void boardWrap.offsetWidth; boardWrap.classList.add('shake');
+
+  if(state.bits === 0) finishGame();
+}
+
+/* 退潮時：滬堤缺口（直線+斜線連接的破損比率）越多，魚群就會跟著海水逃出去越多；escapeDurationMs跟退潮動畫時長同步 */
+function ebbFish(escapeDurationMs){
+  if(!state || state.over) return;
+  const escapeRatio = countGapRatio(state.bits);
+  const escaped = Math.round(state.fishCaught * escapeRatio);
+  if(escaped > 0){
+    state.fishCaught = Math.max(0, state.fishCaught - escaped);
+    document.getElementById('statFish').textContent = state.fishCaught;
+    despawnFish(escaped, escapeDurationMs);
+    updateLiveScore();
+    showFishDelta(-escaped);
+  }
+}
+
+function finishGame(){
+  state.over = true;
+  stopTimers();
+  document.getElementById('finalTime').textContent = formatTime(state.seconds);
+  document.getElementById('finalMoves').textContent = state.moves;
+
+  const { timePenalty, movePenalty, fishBonus, total } = computeScore(state.seconds, state.moves, state.fishCaught);
+  document.getElementById('finalScore').textContent = total;
+
+  document.getElementById('scoreBreakdown').innerHTML = `
+    <div class="sb-row"><span>基礎分</span><span>${BASE_SCORE}</span></div>
+    <div class="sb-row"><span>耗時扣分 (${state.seconds}秒 × ${PENALTY_PER_SEC})</span><span>-${timePenalty}</span></div>
+    <div class="sb-row"><span>步數扣分 (${state.moves}步 × ${PENALTY_PER_MOVE})</span><span>-${movePenalty}</span></div>
+    <div class="sb-row"><span>魚獲加分 (${state.fishCaught}尾 × ${BONUS_PER_FISH})</span><span>+${fishBonus}</span></div>
+    <div class="sb-row sb-total"><span>總分</span><span>${total}</span></div>
+  `;
+
+  const fact = FACTS[Math.floor(Math.random()*FACTS.length)];
+  document.getElementById('winTip').textContent = fact;
+  document.getElementById('winOverlay').classList.add('active');
+}
+</script>
+</body>
+</html>
