@@ -57,14 +57,20 @@
     position:fixed;left:0;right:0;bottom:0;height:62vh;z-index:0;pointer-events:none;
     transform:translateY(48vh);
   }
-  #ocean .crest{position:absolute;top:-1px;left:0;width:200%;height:64px;}
-  #ocean .crest-back{animation:driftWave 24s linear infinite;opacity:.9;}
-  #ocean .crest-mid{animation:driftWave 18s linear infinite;opacity:.7;}
-  #ocean .crest-front{animation:driftWave 13s linear infinite reverse;opacity:.85;}
+  #ocean .crest{position:absolute;top:-1px;left:0;width:200%;height:64px;transform-origin:center bottom;}
+  #ocean .crest-back{animation:driftWave 24s linear infinite, breatheWave 6.5s ease-in-out infinite;opacity:.92;}
+  #ocean .crest-mid{animation:driftWave 18s linear infinite, breatheWave 5s ease-in-out infinite reverse;opacity:.8;}
+  #ocean .crest-front{animation:driftWave 13s linear infinite reverse, breatheWave 4s ease-in-out infinite;opacity:.92;}
   #ocean .crest-foam{animation:driftWave 13s linear infinite reverse;opacity:.9;filter:drop-shadow(0 0 6px rgba(255,255,255,.6));}
   @keyframes driftWave{from{transform:translateX(0);}to{transform:translateX(-50%);}}
-  #ocean .fill{position:absolute;left:0;right:0;top:58px;bottom:-10vh;
-    background:linear-gradient(180deg, var(--teal-dark) 0%, var(--ocean-mid) 45%, var(--ocean-deep) 100%);}
+  @keyframes breatheWave{0%,100%{transform:scaleY(1) translateY(0);}50%{transform:scaleY(1.06) translateY(-2px);}}
+  #ocean .fill{position:absolute;left:0;right:0;top:50px;bottom:-10vh;
+    background:
+      radial-gradient(130% 70% at 18% 0%, rgba(255,255,255,.16) 0%, transparent 55%),
+      radial-gradient(90% 55% at 78% 6%, rgba(255,255,255,.12) 0%, transparent 50%),
+      linear-gradient(180deg, var(--teal-dark) 0%, var(--ocean-panel) 16%, var(--ocean-mid) 46%, var(--ocean-deep) 82%, #063a63 100%);
+    -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 10px);
+    mask-image:linear-gradient(to bottom, transparent 0, #000 10px);}
   #ocean.impact-flash .crest{filter:brightness(1.9) saturate(1.5) drop-shadow(0 0 16px rgba(63,198,214,.75));transition:filter .15s ease;}
 
   #tideFlash{position:fixed;inset:0;pointer-events:none;z-index:60;background:radial-gradient(circle at 50% 100%, rgba(255,94,70,.35), rgba(63,198,214,.18) 55%, transparent 80%);opacity:0;}
@@ -238,9 +244,18 @@
 <body>
 
 <div id="ocean">
-  <svg class="crest crest-back" viewBox="0 0 1600 140" preserveAspectRatio="none"><path d="M0,60 C200,110 400,10 600,60 C800,110 1000,10 1200,60 C1400,110 1500,40 1600,60 L1600,140 L0,140 Z" fill="var(--teal)" stroke="var(--outline)" stroke-width="3"/></svg>
-  <svg class="crest crest-mid" viewBox="0 0 1600 140" preserveAspectRatio="none"><path d="M0,50 C220,20 420,100 640,55 C860,10 1060,100 1280,55 C1440,20 1540,70 1600,55 L1600,140 L0,140 Z" fill="var(--ocean-glow)" opacity=".85" stroke="var(--outline)" stroke-width="2.5"/></svg>
-  <svg class="crest crest-front" viewBox="0 0 1600 140" preserveAspectRatio="none"><path d="M0,80 C180,30 380,120 580,70 C780,20 980,120 1180,70 C1380,20 1500,90 1600,70 L1600,140 L0,140 Z" fill="var(--teal-dark)" opacity=".9" stroke="var(--outline)" stroke-width="3"/></svg>
+  <svg class="crest crest-back" viewBox="0 0 1600 140" preserveAspectRatio="none">
+    <defs><linearGradient id="waveGradBack" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--teal)"/><stop offset="78%" stop-color="var(--teal)"/><stop offset="100%" stop-color="var(--teal-dark)"/></linearGradient></defs>
+    <path d="M0,60 C200,110 400,10 600,60 C800,110 1000,10 1200,60 C1400,110 1500,40 1600,60 L1600,140 L0,140 Z" fill="url(#waveGradBack)"/>
+    <path d="M0,60 C200,110 400,10 600,60 C800,110 1000,10 1200,60 C1400,110 1500,40 1600,60" fill="none" stroke="var(--outline)" stroke-width="3"/></svg>
+  <svg class="crest crest-mid" viewBox="0 0 1600 140" preserveAspectRatio="none">
+    <defs><linearGradient id="waveGradMid" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--ocean-glow)"/><stop offset="78%" stop-color="var(--ocean-glow)"/><stop offset="100%" stop-color="var(--teal-dark)"/></linearGradient></defs>
+    <path d="M0,50 C220,20 420,100 640,55 C860,10 1060,100 1280,55 C1440,20 1540,70 1600,55 L1600,140 L0,140 Z" fill="url(#waveGradMid)" opacity=".85"/>
+    <path d="M0,50 C220,20 420,100 640,55 C860,10 1060,100 1280,55 C1440,20 1540,70 1600,55" fill="none" opacity=".85" stroke="var(--outline)" stroke-width="2.5"/></svg>
+  <svg class="crest crest-front" viewBox="0 0 1600 140" preserveAspectRatio="none">
+    <defs><linearGradient id="waveGradFront" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--teal-dark)"/><stop offset="100%" stop-color="var(--teal-dark)"/></linearGradient></defs>
+    <path d="M0,80 C180,30 380,120 580,70 C780,20 980,120 1180,70 C1380,20 1500,90 1600,70 L1600,140 L0,140 Z" fill="url(#waveGradFront)" opacity=".9"/>
+    <path d="M0,80 C180,30 380,120 580,70 C780,20 980,120 1180,70 C1380,20 1500,90 1600,70" fill="none" opacity=".9" stroke="var(--outline)" stroke-width="3"/></svg>
   <svg class="crest crest-foam" viewBox="0 0 1600 140" preserveAspectRatio="none"><path d="M0,72 C180,22 380,112 580,62 C780,12 980,112 1180,62 C1380,12 1500,82 1600,62" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/></svg>
   <div class="fill"></div>
 </div>
