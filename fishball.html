@@ -267,8 +267,32 @@
   #endOverlay{
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
+    touch-action:pan-y;
+    position:fixed;
+    background:
+      linear-gradient(120deg, rgba(255,255,255,0.20) 0%, transparent 24%),
+      linear-gradient(300deg, rgba(255,255,255,0.14) 0%, transparent 28%),
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.08) 0 3px, transparent 3px 18px),
+      repeating-linear-gradient(90deg, rgba(0,20,60,0.06) 0 3px, transparent 3px 18px),
+      radial-gradient(circle at 88% 90%, rgba(0,30,80,0.30) 0%, transparent 45%),
+      linear-gradient(180deg, #1E4FA8 0%, #2F6FE0 30%, #4C93F2 62%, #8FD0FF 100%);
   }
-  #endOverlay .overlay-inner{ justify-content:flex-start; padding-top:6vh; }
+  #endOverlay::after{
+    content:"";
+    position:fixed; left:0; right:0; bottom:0; height:16px;
+    background:repeating-linear-gradient(90deg, #164a94 0 12px, #0f386f 12px 13px);
+    border-top:3px solid var(--ink);
+    z-index:0;
+  }
+  .end-bg-deco{
+    position:absolute;
+    font-size:24px;
+    opacity:0.32;
+    filter:drop-shadow(1px 1px 0 rgba(0,0,0,0.2));
+    pointer-events:none;
+    z-index:0;
+  }
+  #endOverlay .overlay-inner{ justify-content:flex-start; padding-top:3vh; }
   .start-bg-wrap{
     position:relative;
     width:100%;
@@ -300,6 +324,8 @@
     display:flex; flex-direction:column; align-items:center; gap:8px;
     width:100%;
     justify-content:center;
+    position:relative;
+    z-index:1;
   }
   .overlay-inner .big-emoji, .overlay-inner h1, .overlay-inner .legend, .overlay-inner .btn{
     flex-shrink:0;
@@ -383,12 +409,14 @@
   .btn:active{ transform:translateY(4px); box-shadow:0 1px 0 var(--block-yellow-dark), 0 1px 0 3px var(--ink); }
 
   .end-card{
-    width:100%; max-width:310px;
+    width:100%; max-width:340px;
     background:var(--white);
     border:4px solid var(--ink);
     box-shadow:6px 6px 0 rgba(0,0,0,0.35);
     text-align:left;
     flex-shrink:0;
+    position:relative;
+    z-index:1;
   }
   .end-card-head{
     background:
@@ -404,42 +432,74 @@
     filter:drop-shadow(2px 2px 0 rgba(0,0,0,0.45));
   }
   .end-card-head h1{
-    font-size:14px; margin:6px 0 0; color:var(--coin-gold);
+    font-size:17px; margin:6px 0 0; color:var(--coin-gold);
     text-shadow:2px 2px 0 var(--ink), -1px -1px 0 var(--ink), 1px -1px 0 var(--ink), -1px 1px 0 var(--ink);
   }
   .end-card-body{ padding:14px 16px 16px; }
   .stat-row{
     display:flex; align-items:center; justify-content:space-between;
-    font-size:13px; padding:7px 0;
+    font-size:15px; padding:7px 0;
     border-bottom:2px dashed #ddd;
   }
   .stat-row:first-child{ padding-top:0; }
   .stat-row .stat-label{ display:flex; align-items:center; gap:6px; color:var(--ink); }
   .stat-row .stat-value{ font-weight:700; color:var(--ink); }
   .final-score{
-    margin-top:12px; padding:10px 12px;
+    margin-top:10px; padding:10px 12px;
     display:flex; align-items:center; justify-content:space-between;
     background:linear-gradient(180deg, #fff6c0, var(--coin-gold));
     border:3px solid var(--coin-gold-dark);
     box-shadow:inset 0 -3px 0 rgba(0,0,0,0.15);
   }
-  .final-score .final-label{ font-size:11px; color:#5a3d00; font-weight:700; letter-spacing:0.5px; }
+  .final-score .final-label{ font-size:13px; color:#5a3d00; font-weight:700; letter-spacing:0.5px; }
   .final-score .final-value{
-    font-family:'Press Start 2P','Noto Sans TC',sans-serif; font-size:16px;
+    font-family:'Press Start 2P','Noto Sans TC',sans-serif; font-size:19px;
     color:var(--danger-red-dark);
   }
   .end-reason{
-    margin-top:10px; padding:7px 9px;
+    margin-top:9px; padding:7px 10px;
     background:#f4f4f4; border-left:4px solid var(--danger-red);
-    font-size:12px; color:#555; line-height:1.5;
+    font-size:13px; color:#444; line-height:1.5;
   }
   .lore-block{
-    margin-top:10px; padding:8px 10px;
+    margin-top:10px; padding:8px 9px 7px;
     background:#FFF8E1; border:2px dashed var(--block-yellow-dark);
-    font-size:11.5px; color:#5a4300; line-height:1.6;
+    color:#5a4300;
   }
-  .lore-block b{ display:block; margin-bottom:3px; color:var(--danger-red-dark); font-size:11.5px; }
-  .lore-block p{ margin:0; }
+  .lore-block .lore-title{
+    display:flex; align-items:center; gap:5px;
+    margin-bottom:4px; color:var(--danger-red-dark);
+    font-size:12.5px; font-weight:700;
+  }
+  .lore-track{
+    display:flex;
+    overflow-x:auto;
+    scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;
+    touch-action:pan-x;
+    gap:0;
+    scrollbar-width:none;
+  }
+  .lore-track::-webkit-scrollbar{ display:none; }
+  .lore-card{
+    scroll-snap-align:start;
+    flex:0 0 100%;
+    min-width:100%;
+    box-sizing:border-box;
+    padding-right:4px;
+    font-size:14px;
+    line-height:1.65;
+    color:#5a4300;
+  }
+  .lore-dots{
+    display:flex; justify-content:center; gap:5px;
+    margin-top:5px;
+  }
+  .lore-dot{
+    width:5px; height:5px; border-radius:50%;
+    background:#e2cd8f; transition:all .2s;
+  }
+  .lore-dot.active{ background:var(--block-yellow-dark); width:13px; border-radius:3px; }
 </style>
 </head>
 <body>
@@ -487,6 +547,12 @@
 
   <!-- GAME OVER (full screen) -->
   <div class="overlay hidden" id="endOverlay">
+   <span class="end-bg-deco" style="top:8%;left:8%;">🐟</span>
+   <span class="end-bg-deco" style="top:14%;right:10%;font-size:22px;">🫧</span>
+   <span class="end-bg-deco" style="top:38%;left:5%;font-size:20px;">🫧</span>
+   <span class="end-bg-deco" style="bottom:16%;right:8%;">🍥</span>
+   <span class="end-bg-deco" style="bottom:6%;left:10%;font-size:22px;">🌊</span>
+   <span class="end-bg-deco" style="top:60%;right:6%;font-size:18px;">🫧</span>
    <div class="overlay-inner">
     <div class="end-card">
       <div class="end-card-head">
@@ -769,7 +835,10 @@
 
   const FISHBALL_LORE = [
     '苑裡沿海早年鯊魚產量豐富，但交通不便、魚肉不耐久放，盛產時常常供過於求，漁民便把鯊魚做成魚丸，Q彈鮮美，成了全台知名的苑裡特產。',
-    '現實中的鯊魚資源可不是取之不盡：台灣鯊魚漁獲量在1990年代一度逼近7.5萬公噸，到2010年只剩2萬多公噸，2012年起更禁止進口魚翅——這正是遊戲裡「🌱 永續分數」機制想傳達的提醒。'
+    '現實中的鯊魚資源可不是取之不盡：台灣鯊魚漁獲量在1990年代一度逼近7.5萬公噸，到2010年只剩2萬多公噸，2012年起更禁止進口魚翅——這正是遊戲裡「🌱 永續分數」機制想傳達的提醒。',
+    '傳統魚丸多以鯊魚漿製成，肉質細緻不易糊爛，久煮也能維持Q彈口感，因此常被做成關東煮、火鍋料裡最耐煮的班底。',
+    '幼魚還沒機會長大繁殖就被捕撈，會讓魚群數量一年比一年少；留住幼魚、抓大放小，才能讓漁場「年年有魚」，這也是遊戲裡幼魚會扣分的原因。',
+    '「保育類魚種」代表牠們的族群數量已經很稀少，一旦被捕撈就很難恢復，各國漁業法規多半明文禁捕或限捕，違者可能面臨罰則。'
   ];
 
   function gameOver(reason){
@@ -785,15 +854,36 @@
     endEmoji.textContent = emoji;
     endTitle.textContent = title;
 
-    const lore = FISHBALL_LORE[Math.floor(Math.random()*FISHBALL_LORE.length)];
     resultBoard.innerHTML =
       `<div class="stat-row"><span class="stat-label"><span class="coin-icon"></span>魚丸</span><span class="stat-value">${ballEaten} 顆</span></div>`+
       `<div class="stat-row"><span class="stat-label">🐟 漁獲</span><span class="stat-value">${fishEaten} 尾</span></div>`+
       `<div class="stat-row"><span class="stat-label">🌱 永續分數</span><span class="stat-value">${Math.max(0,sustain)}</span></div>`+
       `<div class="final-score"><span class="final-label">🏆 最終分數</span><span class="final-value">${finalScore()}</span></div>`+
       `<div class="end-reason">${reason}</div>`+
-      `<div class="lore-block"><b>🐟 魚丸身世小知識</b><p>${lore}</p></div>`;
+      buildKnowledgeBlock();
     endOverlay.classList.remove('hidden');
+    initLoreCarousel();
+  }
+
+  function buildKnowledgeBlock(){
+    const cards = FISHBALL_LORE.map(t => `<div class="lore-card">${t}</div>`).join('');
+    const dots = FISHBALL_LORE.map((_,i) => `<span class="lore-dot${i===0?' active':''}"></span>`).join('');
+    return `<div class="lore-block">`+
+      `<div class="lore-title">💡 魚丸小知識</div>`+
+      `<div class="lore-track" id="loreTrack">${cards}</div>`+
+      `<div class="lore-dots" id="loreDots">${dots}</div>`+
+    `</div>`;
+  }
+
+  function initLoreCarousel(){
+    const track = document.getElementById('loreTrack');
+    const dotsWrap = document.getElementById('loreDots');
+    if(!track || !dotsWrap) return;
+    const dots = dotsWrap.children;
+    track.addEventListener('scroll', ()=>{
+      const idx = Math.round(track.scrollLeft / track.clientWidth);
+      for(let i=0;i<dots.length;i++) dots[i].classList.toggle('active', i===idx);
+    }, {passive:true});
   }
 
   function finalScore(){
