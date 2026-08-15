@@ -138,6 +138,23 @@
   .timer.warn{ color:var(--danger-red); animation:pulse 0.5s infinite; }
   @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.3;} }
 
+  .mute-btn{
+    flex-shrink:0;
+    margin-left:6px;
+    width:26px; height:26px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px;
+    background:rgba(255,255,255,0.08);
+    border:2px solid rgba(255,255,255,0.28);
+    border-radius:5px;
+    color:var(--white);
+    cursor:pointer;
+    padding:0;
+    line-height:1;
+  }
+  .mute-btn:active{ background:rgba(255,255,255,0.2); }
+  .mute-btn.is-muted{ color:var(--cream-dim); opacity:0.6; }
+
   /* ---------- BOARD ---------- */
   #boardWrap{
     flex:1;
@@ -319,6 +336,24 @@
     -webkit-tap-highlight-color:transparent;
   }
   .start-bg-btn:active{ transform:translateY(2px); }
+  .start-mute-btn{
+    position:absolute;
+    top:calc(10px + env(safe-area-inset-top));
+    right:10px;
+    z-index:10;
+    width:32px; height:32px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px;
+    background:rgba(16,16,16,0.55);
+    border:2px solid rgba(255,255,255,0.55);
+    border-radius:6px;
+    color:var(--white);
+    cursor:pointer;
+    padding:0;
+    line-height:1;
+  }
+  .start-mute-btn:active{ background:rgba(16,16,16,0.75); }
+  .start-mute-btn.is-muted{ color:var(--cream-dim); opacity:0.7; }
   .overlay-inner{
     flex:1; min-height:0;
     display:flex; flex-direction:column; align-items:center; gap:8px;
@@ -407,6 +442,20 @@
     letter-spacing:1px;
   }
   .btn:active{ transform:translateY(4px); box-shadow:0 1px 0 var(--block-yellow-dark), 0 1px 0 3px var(--ink); }
+
+  .end-btn-row{
+    display:flex; flex-direction:row; align-items:center; justify-content:center; gap:10px;
+    width:100%;
+  }
+  .btn-outline{
+    font-size:12.5px;
+    padding:8px 18px;
+    background:rgba(255,255,255,0.85);
+    background-image:none;
+    color:var(--ink);
+    box-shadow:0 4px 0 rgba(0,0,0,0.28), 0 4px 0 3px var(--ink);
+  }
+  .btn-outline:active{ box-shadow:0 1px 0 rgba(0,0,0,0.28), 0 1px 0 3px var(--ink); }
 
   .end-card{
     width:100%; max-width:340px;
@@ -512,6 +561,7 @@
       <div class="stat-pill ball"><span class="n pixel" id="ballN">0</span><span class="l">魚丸</span></div>
       <div class="stat-pill sus"><span class="n pixel" id="susN">100</span><span class="l">永續</span></div>
       <div class="timer pixel" id="timerDisplay">180</div>
+      <button type="button" id="muteBtn" class="mute-btn" aria-label="音效開關" aria-pressed="false">🔊</button>
     </div>
   </header>
 
@@ -534,11 +584,12 @@
     <div class="legend-chip"><span class="icon coin" style="background:var(--c-ball); border-color:var(--c-ball-ring)">🍥</span><span class="name">魚丸</span><span class="val" style="color:#7CFF9E">+20</span></div>
     <div class="legend-chip"><span class="icon" style="background:var(--c-juv); border-color:var(--c-juv-ring)">🐠</span><span class="name">幼魚</span><span class="val" style="color:#FF8FA0">-5</span></div>
     <div class="legend-chip"><span class="icon" style="background:var(--c-protected); border-color:var(--c-protected-ring)">🚫</span><span class="name">保育魚</span><span class="val" style="color:#FF8FA0">-20</span></div>
-    <div class="legend-chip"><span class="icon" style="background:var(--c-ice); border-color:var(--c-ice-ring)">🧊</span><span class="name">保鮮冰塊</span><span class="val" style="color:#8FD9FF">永續+10</span></div>
+    <div class="legend-chip"><span class="icon" style="background:var(--c-ice); border-color:var(--c-ice-ring)">🧊</span><span class="name">冰塊</span><span class="val" style="color:#8FD9FF">永續+10</span></div>
   </div>
 
   <!-- START (full screen) -->
   <div class="overlay" id="startOverlay">
+   <button type="button" id="startMuteBtn" class="start-mute-btn" aria-label="音效開關" aria-pressed="false">🔊</button>
    <div class="start-bg-wrap" id="startBgWrap">
     <img src="fbbg.png" alt="魚丸追追樂 勇闖海洋冒險" class="start-bg-img" id="startBgImg" draggable="false">
     <button class="start-bg-btn" id="startBtn" aria-label="START"></button>
@@ -561,7 +612,10 @@
       </div>
       <div class="end-card-body" id="resultBoard"></div>
     </div>
-    <button class="btn pixel" id="restartBtn">再玩一次</button>
+    <div class="end-btn-row">
+      <button class="btn pixel" id="restartBtn">再玩一次</button>
+      <button class="btn btn-outline pixel" id="backToInstructionsBtn">回到說明</button>
+    </div>
    </div>
   </div>
 
@@ -570,6 +624,132 @@
 <script>
 (function(){
   "use strict";
+
+  // ---------- SFX (procedural Web Audio, no external files) ----------
+  const SFX = (function(){
+    let actx = null;
+    let muted = false;
+
+    function ensureCtx(){
+      if(!actx){
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if(!AC) return null;
+        actx = new AC();
+      }
+      if(actx.state === 'suspended') actx.resume();
+      return actx;
+    }
+
+    function tone(freq, dur, opts){
+      opts = opts || {};
+      if(muted) return;
+      const c = ensureCtx();
+      if(!c) return;
+      try{
+        const t0 = c.currentTime + (opts.delay||0);
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = opts.type || 'square';
+        osc.frequency.setValueAtTime(freq, t0);
+        if(opts.slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(20,opts.slideTo), t0+dur);
+        const vol = opts.vol!==undefined ? opts.vol : 0.16;
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(vol, t0+0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+        osc.connect(gain).connect(c.destination);
+        osc.start(t0);
+        osc.stop(t0+dur+0.03);
+      }catch(e){}
+    }
+
+    function noise(dur, opts){
+      opts = opts || {};
+      if(muted) return;
+      const c = ensureCtx();
+      if(!c) return;
+      try{
+        const t0 = c.currentTime + (opts.delay||0);
+        const size = Math.max(1, Math.floor(c.sampleRate*dur));
+        const buf = c.createBuffer(1, size, c.sampleRate);
+        const data = buf.getChannelData(0);
+        for(let i=0;i<size;i++) data[i] = (Math.random()*2-1) * (1 - i/size);
+        const src = c.createBufferSource();
+        src.buffer = buf;
+        const filter = c.createBiquadFilter();
+        filter.type = opts.filterType || 'lowpass';
+        filter.frequency.setValueAtTime(opts.freqFrom!==undefined?opts.freqFrom:1400, t0);
+        if(opts.freqTo!==undefined) filter.frequency.exponentialRampToValueAtTime(Math.max(50,opts.freqTo), t0+dur);
+        const gain = c.createGain();
+        gain.gain.setValueAtTime(opts.vol!==undefined?opts.vol:0.18, t0);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+        src.connect(filter).connect(gain).connect(c.destination);
+        src.start(t0);
+      }catch(e){}
+    }
+
+    return {
+      unlock(){ ensureCtx(); },
+      setMuted(m){ muted = !!m; },
+      isMuted(){ return muted; },
+
+      uiTap(){ tone(520, 0.06, {type:'square', vol:0.12}); },
+
+      start(){
+        tone(523, 0.09, {type:'square', vol:0.15});
+        tone(784, 0.12, {type:'square', vol:0.15, delay:0.09});
+      },
+
+      eatNormal(){
+        tone(660, 0.07, {type:'square', vol:0.15});
+        tone(990, 0.08, {type:'square', vol:0.12, delay:0.05});
+      },
+
+      eatShark(){
+        tone(220, 0.1, {type:'sawtooth', vol:0.14});
+        tone(330, 0.1, {type:'square', vol:0.13, delay:0.05});
+        noise(0.12, {vol:0.1, freqFrom:2000, freqTo:400});
+      },
+
+      eatBad(){
+        tone(300, 0.09, {type:'sawtooth', vol:0.16, slideTo:140});
+        tone(180, 0.12, {type:'sawtooth', vol:0.1, delay:0.06, slideTo:90});
+      },
+
+      eatBall(){
+        tone(988, 0.08, {type:'square', vol:0.17});
+        tone(1319, 0.16, {type:'square', vol:0.17, delay:0.08});
+      },
+
+      eatIce(){
+        tone(1500, 0.05, {type:'triangle', vol:0.12});
+        tone(1900, 0.06, {type:'triangle', vol:0.09, delay:0.04});
+      },
+
+      combo(level){
+        const base = 700 + Math.min(level,8)*70;
+        tone(base, 0.06, {type:'square', vol:0.13});
+        tone(base*1.5, 0.07, {type:'square', vol:0.11, delay:0.045});
+      },
+
+      tideWarn(){
+        tone(700, 0.09, {type:'square', vol:0.14});
+      },
+
+      tideRise(){
+        noise(0.35, {vol:0.16, freqFrom:1800, freqTo:150});
+        tone(180, 0.3, {type:'sine', vol:0.1, slideTo:80});
+      },
+
+      win(){
+        [523,659,784,1047].forEach((f,i)=>tone(f, 0.16, {type:'square', vol:0.16, delay:i*0.11}));
+      },
+
+      lose(){
+        [392,330,262,196].forEach((f,i)=>tone(f, 0.18, {type:'sawtooth', vol:0.14, delay:i*0.11}));
+        noise(0.3, {vol:0.08, delay:0.1, freqFrom:1000, freqTo:200});
+      }
+    };
+  })();
 
   // ---------- CONFIG ----------
   const COLS = 15, ROWS = 21;
@@ -633,11 +813,35 @@
   if(startBgImg.complete) positionStartButton();
   else startBgImg.addEventListener('load', positionStartButton);
   const restartBtn = document.getElementById('restartBtn');
+  const backToInstructionsBtn = document.getElementById('backToInstructionsBtn');
   const resultBoard = document.getElementById('resultBoard');
   const endTitle = document.getElementById('endTitle');
   const endEmoji = document.getElementById('endEmoji');
   const boardWrap = document.getElementById('boardWrap');
   const swipeHint = document.getElementById('swipeHint');
+  const muteBtn = document.getElementById('muteBtn');
+  const startMuteBtn = document.getElementById('startMuteBtn');
+  const muteBtns = [muteBtn, startMuteBtn];
+
+  function syncMuteUI(nowMuted){
+    for(const b of muteBtns){
+      if(!b) continue;
+      b.textContent = nowMuted ? '🔇' : '🔊';
+      b.classList.toggle('is-muted', nowMuted);
+      b.setAttribute('aria-pressed', String(nowMuted));
+    }
+  }
+
+  function toggleMute(){
+    SFX.unlock();
+    const nowMuted = !SFX.isMuted();
+    SFX.setMuted(nowMuted);
+    syncMuteUI(nowMuted);
+    if(!nowMuted) SFX.uiTap();
+  }
+
+  muteBtn.addEventListener('click', toggleMute);
+  startMuteBtn.addEventListener('click', toggleMute);
 
   // ---------- SIZE ----------
   let CELL = 22;
@@ -801,14 +1005,20 @@
         addFloat(nx, ny, (delta>0?'+':'')+delta, delta>0?'#22B14C':'#E32545');
         if(comboLevel >= 2){
           addFloat(nx, ny, `COMBO×${comboCount}!`, '#FF8C1A', 'combo');
+          SFX.combo(comboLevel);
         }
       }
 
       if(ate.key==='ball'){
         ballEaten++;
+        SFX.eatBall();
       } else if(isIce){
         // 保鮮冰塊不算漁獲，也不推進魚丸刷新進度
+        SFX.eatIce();
       } else {
+        if(ate.key==='shark') SFX.eatShark();
+        else if(t.score < 0) SFX.eatBad();
+        else SFX.eatNormal();
         fishEaten++;
         fishSinceBall++;
         if(fishSinceBall >= BALL_SPAWN_EVERY){
@@ -835,9 +1045,9 @@
 
   const FISHBALL_LORE = [
     '苑裡沿海早年鯊魚產量豐富，但交通不便、魚肉不耐久放，盛產時常常供過於求，漁民便把鯊魚做成魚丸，Q彈鮮美，成了全台知名的苑裡特產。',
-    '現實中的鯊魚資源可不是取之不盡：台灣鯊魚漁獲量在1990年代一度逼近7.5萬公噸，到2010年只剩2萬多公噸，2012年起更禁止進口魚翅——這正是遊戲裡「🌱 永續分數」機制想傳達的提醒。',
     '傳統魚丸多以鯊魚漿製成，肉質細緻不易糊爛，久煮也能維持Q彈口感，因此常被做成關東煮、火鍋料裡最耐煮的班底。',
-    '幼魚還沒機會長大繁殖就被捕撈，會讓魚群數量一年比一年少；留住幼魚、抓大放小，才能讓漁場「年年有魚」，這也是遊戲裡幼魚會扣分的原因。',
+    '現實中的鯊魚資源可不是取之不盡：台灣鯊魚漁獲量在1990年代一度逼近7.5萬公噸，到2010年只剩2萬多公噸，2012年起更禁止進口魚翅。',
+    '幼魚還沒機會長大繁殖就被捕撈，會讓魚群數量一年比一年少；留住幼魚、抓大放小，才能讓漁場「年年有魚」。',
     '「保育類魚種」代表牠們的族群數量已經很稀少，一旦被捕撈就很難恢復，各國漁業法規多半明文禁捕或限捕，違者可能面臨罰則。'
   ];
 
@@ -847,10 +1057,10 @@
     clearInterval(timerId);
 
     let emoji = '🏮', title = '收網了';
-    if(reason.includes('時間到')){ emoji = '🏆'; title = '滿載而歸！'; }
-    else if(reason.includes('潮水')){ emoji = '🌊'; title = '被潮水追上了'; }
-    else if(reason.includes('撞到自己')){ emoji = '🥢'; title = '竹籤打結了'; }
-    else if(reason.includes('生態崩潰')){ emoji = '💀'; title = '生態崩潰了'; }
+    if(reason.includes('時間到')){ emoji = '🏆'; title = '滿載而歸！'; SFX.win(); }
+    else if(reason.includes('潮水')){ emoji = '🌊'; title = '被潮水追上了'; SFX.lose(); }
+    else if(reason.includes('撞到自己')){ emoji = '🥢'; title = '竹籤打結了'; SFX.lose(); }
+    else if(reason.includes('生態崩潰')){ emoji = '💀'; title = '生態崩潰了'; SFX.lose(); }
     endEmoji.textContent = emoji;
     endTitle.textContent = title;
 
@@ -1234,6 +1444,7 @@
     tideWarning = true;
     tideCaption.textContent = '⚠️ 潮水即將上漲';
     tideCaption.classList.add('show');
+    SFX.tideWarn();
     tideTimeoutId = setTimeout(()=>{
       tideWarning = false;
       raiseTide();
@@ -1246,6 +1457,7 @@
       tideInset++;
       tideCaption.textContent = '潮水上漲';
       tideCaption.classList.add('show');
+      SFX.tideRise();
       setTimeout(()=>tideCaption.classList.remove('show'), 1500);
       relocateSubmergedFoods();
     }
@@ -1310,6 +1522,8 @@
 
   // ---------- START / RESTART ----------
   function startGame(){
+    SFX.unlock();
+    SFX.start();
     sizeCanvas();
     resetState();
     running = true;
@@ -1330,6 +1544,13 @@
 
   startBtn.addEventListener('click', startGame);
   restartBtn.addEventListener('click', ()=>{ stopIntervals(); startGame(); });
+  backToInstructionsBtn.addEventListener('click', ()=>{
+    SFX.uiTap();
+    stopIntervals();
+    running = false;
+    endOverlay.classList.add('hidden');
+    startOverlay.classList.remove('hidden');
+  });
 
   // init
   sizeCanvas();

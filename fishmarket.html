@@ -148,6 +148,9 @@
 
         #history-fab { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; font-weight: bold; cursor: pointer; flex-shrink: 0; }
         #history-fab:active { opacity: 0.85; }
+        #sound-toggle { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 10px; font-size: 0.85rem; font-weight: bold; cursor: pointer; flex-shrink: 0; line-height: 1.4; }
+        #sound-toggle:active { opacity: 0.85; }
+        #sound-toggle.muted { opacity: 0.55; }
 
         #drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 39; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
         #drawer-backdrop.open { opacity: 1; pointer-events: auto; }
@@ -209,6 +212,7 @@
             <div id="ui-inventory-summary">本季尚未購入</div>
             <div style="display:flex; align-items:center; gap:10px;">
                 <div id="ui-stage-label">📋 看板整備中</div>
+                <button id="sound-toggle" onclick="toggleSound()" aria-label="切換音效">🔊</button>
                 <button id="history-fab" onclick="openHistoryDrawer()">📊 紀錄</button>
             </div>
         </div>
@@ -363,6 +367,109 @@
             const parts = name.split(' ');
             return { emoji: parts[0], label: parts.slice(1).join(' ') };
         }
+
+        // ===== 音效系統（Web Audio API 即時合成，無需外部音檔） =====
+        const SFX = (() => {
+            let ctx = null;
+            let muted = false;
+
+            try {
+                const saved = localStorage.getItem('fishmarket-muted');
+                if (saved === '1') muted = true;
+            } catch (e) { /* localStorage 不可用時忽略 */ }
+
+            function getCtx() {
+                if (!ctx) {
+                    try { ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+                    catch (e) { ctx = null; }
+                }
+                if (ctx && ctx.state === 'suspended') ctx.resume();
+                return ctx;
+            }
+
+            function tone(freq, start, dur, type, peakGain, freqEnd) {
+                const c = getCtx();
+                if (!c || muted) return;
+                const t0 = c.currentTime + start;
+                const osc = c.createOscillator();
+                const gain = c.createGain();
+                osc.type = type || 'sine';
+                osc.frequency.setValueAtTime(freq, t0);
+                if (freqEnd) osc.frequency.exponentialRampToValueAtTime(Math.max(30, freqEnd), t0 + dur);
+                gain.gain.setValueAtTime(0.0001, t0);
+                gain.gain.exponentialRampToValueAtTime(peakGain || 0.15, t0 + Math.min(0.02, dur / 3));
+                gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+                osc.connect(gain);
+                gain.connect(c.destination);
+                osc.start(t0);
+                osc.stop(t0 + dur + 0.02);
+            }
+
+            function noiseBurst(start, dur, peakGain, filterFreq) {
+                const c = getCtx();
+                if (!c || muted) return;
+                const t0 = c.currentTime + start;
+                const bufferSize = Math.max(1, Math.floor(c.sampleRate * dur));
+                const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+                const src = c.createBufferSource();
+                src.buffer = buffer;
+                const filter = c.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = filterFreq || 1200;
+                const gain = c.createGain();
+                gain.gain.setValueAtTime(0.0001, t0);
+                gain.gain.exponentialRampToValueAtTime(peakGain || 0.15, t0 + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+                src.connect(filter);
+                filter.connect(gain);
+                gain.connect(c.destination);
+                src.start(t0);
+                src.stop(t0 + dur + 0.02);
+            }
+
+            return {
+                unlock() { getCtx(); },
+                click() { tone(720, 0, 0.06, 'triangle', 0.10); },
+                bidPlayer() { tone(523.25, 0, 0.09, 'triangle', 0.20); tone(659.25, 0.07, 0.14, 'triangle', 0.22); },
+                bidAI() { tone(329.63, 0, 0.09, 'sine', 0.13); },
+                tick() { tone(880, 0, 0.07, 'square', 0.14); },
+                boxStart() { tone(440, 0, 0.1, 'sine', 0.14); tone(659.25, 0.1, 0.16, 'sine', 0.16); },
+                win() { [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => tone(f, i * 0.11, 0.22, 'triangle', 0.22)); },
+                lose() { tone(392.00, 0, 0.12, 'sawtooth', 0.13); tone(293.66, 0.1, 0.22, 'sawtooth', 0.13); },
+                unsold() { tone(300, 0, 0.22, 'sine', 0.12, 160); },
+                giveUp() { noiseBurst(0, 0.16, 0.12, 900); tone(220, 0, 0.14, 'sawtooth', 0.09); },
+                roundEnd() { [659.25, 523.25, 659.25, 880.00].forEach((f, i) => tone(f, i * 0.13, 0.2, 'triangle', 0.2)); },
+                toggleMuted() {
+                    muted = !muted;
+                    try { localStorage.setItem('fishmarket-muted', muted ? '1' : '0'); } catch (e) { /* 忽略 */ }
+                    if (!muted) { getCtx(); tone(660, 0, 0.08, 'triangle', 0.15); }
+                    return muted;
+                },
+                isMuted() { return muted; }
+            };
+        })();
+
+        function toggleSound() {
+            const isMuted = SFX.toggleMuted();
+            const btn = document.getElementById('sound-toggle');
+            btn.innerText = isMuted ? '🔇' : '🔊';
+            btn.classList.toggle('muted', isMuted);
+        }
+
+        (function initSoundToggleIcon() {
+            const btn = document.getElementById('sound-toggle');
+            if (btn && SFX.isMuted()) { btn.innerText = '🔇'; btn.classList.add('muted'); }
+        })();
+
+        // 通用按鈕點擊音效（拍賣出價／放棄按鈕另有專屬音效，此處排除以免重複）
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            if (btn.id === 'arena-btn-5' || btn.id === 'arena-btn-10' || btn.id === 'arena-btn-fast' || btn.id === 'sound-toggle') return;
+            SFX.click();
+        }, true);
 
         const gameState = { round: 1, seasonIndex: 0, budget: 0, todayBoxes: [], playerInventory: [], history: [], lastTopUp: 0, aiBudgets: {} };
 
@@ -525,6 +632,7 @@
             auctionState.highestBidderName = '無';
             auctionState.giveUp = false;
             auctionState.bidLog = [];
+            auctionState._lastTickSec = null;
 
             auctionState.aiStatus = AI_PLAYERS.map(ai => {
                 const remainingBudget = gameState.aiBudgets[ai.id] ?? 0;
@@ -675,6 +783,7 @@
         function finishAuctionRound() {
             const record = settleRound();
             setStageLabel('📊 本季結算完成');
+            SFX.roundEnd();
 
             const isLastRound = gameState.round >= TOTAL_ROUNDS;
             const nextBtnHtml = isLastRound
@@ -830,13 +939,22 @@
                     auctionState.phase = 'bidding';
                     auctionState.timeLeft = BIDDING_SECONDS;
                     auctionState.aiStatus.forEach(ai => ai.status = '觀望');
+                    auctionState._lastTickSec = null;
                     updateAuctionUI();
+                    SFX.boxStart();
                 } else {
                     endCurrentBox();
                 }
             } else {
                 document.getElementById('arena-time').innerText = Math.max(0, auctionState.timeLeft).toFixed(1);
                 updateRing();
+                if (auctionState.phase === 'bidding' && auctionState.timeLeft <= 3) {
+                    const sec = Math.ceil(auctionState.timeLeft);
+                    if (sec !== auctionState._lastTickSec) {
+                        auctionState._lastTickSec = sec;
+                        SFX.tick();
+                    }
+                }
             }
         }
 
@@ -858,6 +976,7 @@
                 let bidder = willingAIs[Math.floor(Math.random() * willingAIs.length)];
                 let bidAmount = bidder.type === 'wholesale' ? auctionState.bidStep : (Math.random() > 0.5 ? auctionState.bidStep : auctionState.bidStep * 2);
 
+                SFX.bidAI();
                 auctionState.currentPrice += bidAmount;
                 auctionState.highestBidderId = bidder.id;
                 auctionState.highestBidderName = bidder.name;
@@ -889,6 +1008,7 @@
             if (auctionState.giveUp) return;
             if (auctionState.highestBidderId === 'player') return; // 領先中不能放棄
 
+            SFX.giveUp();
             clearInterval(auctionState.mainTimer);
             clearInterval(auctionState.aiTimer);
             auctionState.giveUp = true;
@@ -915,6 +1035,7 @@
                 return;
             }
 
+            SFX.bidPlayer();
             auctionState.currentPrice += amount;
             auctionState.highestBidderId = 'player';
             auctionState.highestBidderName = '⭐ 你 (領先)';
@@ -940,6 +1061,7 @@
                 box.status = 'sold-player';
                 box.soldPrice = auctionState.currentPrice;
                 overlayCls = 'win'; overlayTitle = '🔨 SOLD！你得標'; overlaySub = `${auctionState.currentPrice} 元`;
+                SFX.win();
             } else if (auctionState.highestBidderId) {
                 box.status = 'sold-other';
                 box.soldPrice = auctionState.currentPrice;
@@ -948,9 +1070,11 @@
                     gameState.aiBudgets[auctionState.highestBidderId] = Math.max(0, gameState.aiBudgets[auctionState.highestBidderId] - auctionState.currentPrice);
                 }
                 overlayCls = 'other'; overlayTitle = 'SOLD'; overlaySub = `由 ${auctionState.highestBidderName} 標得`;
+                SFX.lose();
             } else {
                 box.status = 'unsold';
                 overlayCls = 'unsold'; overlayTitle = '流標'; overlaySub = '無人出價';
+                SFX.unsold();
             }
 
             overlay.innerHTML = `<div><div class="stamp">${overlayTitle}</div><div class="sold-sub">${overlaySub}</div></div>`;
@@ -1003,6 +1127,7 @@
         }
 
         function startGame() {
+            SFX.unlock();
             document.getElementById('intro-screen').style.display = 'none';
             initRound();
         }
