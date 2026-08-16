@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>苗栗漁港一日遊</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f1e8d6;
+    --paper-deep:#e8dcc2;
+    --rule:rgba(83,58,26,0.16);
+    --ink:#2c2116;
+    --ink-soft:rgba(44,33,22,0.58);
+    --sea:#2c6e68;
+    --sea-soft:rgba(44,110,104,0.14);
+    --stamp:#a3402b;
+    --stamp-soft:rgba(163,64,43,0.13);
+    --brass:#a97a2e;
+    --brass-soft:rgba(169,122,46,0.16);
+    --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+    --hand:'Zhi Mang Xing',cursive;
+    --serif:'Noto Serif TC',serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;overflow:hidden;}
+  body{
+    background:
+      radial-gradient(circle, var(--rule) 1px, transparent 1.3px) 0 0/16px 16px,
+      var(--paper);
+    color:var(--ink);
+    font-family:var(--serif);
+    display:flex;
+    flex-direction:column;
+    height:100dvh;
+    padding:10px 12px 12px;
+    gap:8px;
+  }
+
+  /* ---------- header ---------- */
+  header{
+    flex-shrink:0;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:8px;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:6px;
+  }
+  .brand{user-select:none;-webkit-tap-highlight-color:transparent;}
+  .brand h1{
+    margin:0;
+    font-family:var(--hand);
+    font-size:1.55rem;
+    font-weight:400;
+    line-height:1;
+    transform:rotate(-0.6deg);
+  }
+  .brand .tag{
+    margin:2px 0 0;
+    font-size:0.66rem;
+    color:var(--ink-soft);
+    letter-spacing:0.04em;
+  }
+  .nick-chip{
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:#fff;
+    border:1.5px solid var(--ink);
+    border-radius:20px 6px 20px 6px;
+    padding:5px 10px 5px 12px;
+    font-size:0.72rem;
+    cursor:pointer;
+    transform:rotate(0.7deg);
+  }
+  .nick-chip .greet{color:var(--ink-soft);font-size:0.62rem;display:block;}
+  .nick-chip .name{font-weight:700;}
+  .nick-chip .pencil{font-family:var(--hand);font-size:0.85rem;color:var(--sea);}
+
+  /* ---------- map panel ---------- */
+  .map-wrap{
+    flex:1;
+    min-height:0;
+    position:relative;
+    border:2px solid var(--ink);
+    border-radius:22px 8px 22px 8px/10px 22px 8px 22px;
+    overflow:hidden;
+    background:#dfe7dd;
+  }
+  .map-wrap img{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center;
+    pointer-events:none;
+    user-select:none;
+    -webkit-user-drag:none;
+  }
+  .map-caption{
+    position:absolute;left:8px;bottom:6px;
+    font-size:0.58rem;
+    color:var(--ink-soft);
+    background:rgba(241,232,214,0.75);
+    padding:1px 6px;
+    border-radius:8px;
+    pointer-events:none;
+  }
+  .compass{position:absolute;top:8px;right:8px;width:34px;height:34px;opacity:0.8;pointer-events:none;}
+  .map-missing{
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    text-align:center;padding:20px;
+    font-size:0.8rem;color:var(--ink-soft);
+  }
+
+  .pin{
+    position:absolute;
+    transform:translate(-50%,-100%);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    pointer-events:none;
+    transition:filter .2s ease;
+  }
+  .pin .label{
+    font-family:var(--hand);
+    font-size:0.78rem;
+    background:var(--paper);
+    border:1.3px solid var(--ink);
+    border-radius:10px 3px 10px 3px;
+    padding:0 5px;
+    white-space:nowrap;
+    margin-bottom:2px;
+    transform:rotate(-1deg);
+  }
+  .pin.in-range svg .pin-body{fill:var(--sea);}
+  .pin.unlocked svg .pin-body{fill:var(--brass);}
+  .pin.in-range:not(.unlocked){animation:nudge 1.6s ease-in-out infinite;}
+  @keyframes nudge{0%,100%{transform:translate(-50%,-100%);}50%{transform:translate(-50%,-104%);}}
+
+  /* ---------- passport strip ---------- */
+  .passport{
+    flex-shrink:0;
+    border:1.6px solid var(--ink);
+    border-radius:14px 4px 14px 4px;
+    background:#fff;
+    padding:8px 10px 9px;
+  }
+  .passport-head{
+    display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;
+  }
+  .passport-head h2{
+    margin:0;font-family:var(--hand);font-size:0.95rem;font-weight:400;
+  }
+  .passport-head .progress{font-family:var(--mono);font-size:0.68rem;color:var(--ink-soft);}
+  .stamp-row{display:flex;gap:8px;}
+  .stamp-btn{
+    flex:1;
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    background:none;
+    border:1.4px dashed var(--ink-soft);
+    border-radius:50%;
+    width:100%;
+    aspect-ratio:1/1;
+    max-height:52px;
+    font-family:var(--hand);
+    font-size:0.62rem;
+    color:var(--ink-soft);
+    padding:2px;
+  }
+  .stamp-btn.active{border-style:solid;border-color:var(--sea);color:var(--sea);}
+  .stamp-btn.got{
+    border-style:solid;border-color:var(--stamp);color:var(--stamp);
+    background:var(--stamp-soft);
+    transform:rotate(-6deg);
+    font-weight:700;
+  }
+  .stamp-btn .mark{font-size:0.9rem;line-height:1;}
+  .detail-line{
+    margin-top:7px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    min-height:30px;
+  }
+  .detail-text{font-size:0.72rem;line-height:1.4;color:var(--ink-soft);}
+  .detail-text b{color:var(--ink);font-weight:700;}
+  .detail-text .dist{font-family:var(--mono);}
+  .claim-btn{
+    flex-shrink:0;
+    border:1.6px solid var(--ink);
+    border-radius:16px 4px 16px 4px;
+    background:var(--sea);
+    color:#fff;
+    font-family:var(--serif);
+    font-weight:700;
+    font-size:0.72rem;
+    padding:7px 12px;
+    cursor:pointer;
+  }
+  .claim-btn:disabled{background:#fff;color:var(--ink-soft);border-color:var(--rule);cursor:not-allowed;}
+
+  /* ---------- bottom bar ---------- */
+  .bottom-bar{flex-shrink:0;display:flex;flex-direction:column;gap:4px;}
+  .gps-status{font-family:var(--mono);font-size:0.62rem;color:var(--ink-soft);text-align:center;min-height:14px;}
+  .locate-btn{
+    border:2px solid var(--ink);
+    border-radius:18px 6px 18px 6px/8px 18px 6px 18px;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:var(--hand);
+    font-size:1.05rem;
+    padding:10px;
+    cursor:pointer;
+    width:100%;
+  }
+  .locate-btn:active{transform:translateY(1px);}
+
+  /* ---------- generic full-screen sheet ---------- */
+  .sheet{
+    position:fixed;inset:0;
+    background:rgba(30,22,14,0.55);
+    display:none;
+    align-items:center;justify-content:center;
+    z-index:5000;
+    padding:22px;
+  }
+  .sheet.show{display:flex;}
+  .sheet-card{
+    background:var(--paper);
+    border:2px solid var(--ink);
+    border-radius:18px 6px 18px 6px;
+    padding:18px 16px 16px;
+    width:100%;
+    max-width:340px;
+    max-height:88vh;
+    overflow-y:auto;
+    position:relative;
+  }
+  .sheet-card h3{
+    font-family:var(--hand);font-size:1.25rem;font-weight:400;margin:0 0 4px;
+  }
+  .sheet-card p{font-size:0.76rem;color:var(--ink-soft);line-height:1.5;margin:0 0 10px;}
+  .sheet-close{
+    position:absolute;top:10px;right:10px;
+    border:1.4px solid var(--ink);border-radius:50%;
+    width:26px;height:26px;background:#fff;font-size:0.8rem;cursor:pointer;line-height:1;
+  }
+  .sheet-input{
+    width:100%;border:1.4px solid var(--ink);border-radius:10px 3px 10px 3px;
+    padding:9px 10px;font-family:var(--serif);font-size:0.85rem;margin-bottom:10px;background:#fff;
+  }
+  .sheet-primary{
+    width:100%;border:1.6px solid var(--ink);border-radius:14px 4px 14px 4px;
+    background:var(--sea);color:#fff;font-family:var(--hand);font-size:1rem;padding:9px;cursor:pointer;
+  }
+  .admin-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+  .admin-row button{
+    flex:1;min-width:110px;
+    border:1.3px solid var(--ink);border-radius:10px 3px 10px 3px;
+    background:#fff;font-size:0.7rem;padding:7px 6px;cursor:pointer;font-family:var(--serif);
+  }
+  .admin-row button.danger{border-color:var(--stamp);color:var(--stamp);}
+  .admin-sub{font-size:0.64rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-soft);margin:10px 0 5px;}
+  .debug-pre{
+    font-family:var(--mono);font-size:0.6rem;background:#fff;border:1.2px solid var(--rule);
+    border-radius:8px;padding:8px;white-space:pre-wrap;word-break:break-all;max-height:110px;overflow-y:auto;color:var(--ink-soft);
+  }
+  .stamp-big{
+    width:120px;height:120px;margin:6px auto 10px;border:4px double var(--stamp);
+    border-radius:50%;display:flex;align-items:center;justify-content:center;
+    color:var(--stamp);font-family:var(--hand);font-size:1rem;text-align:center;
+    transform:rotate(-5deg);
+  }
+
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(6px);
+    background:var(--ink);color:var(--paper);
+    padding:10px 18px;border-radius:16px 4px 16px 4px;
+    font-family:var(--hand);font-size:0.95rem;
+    opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
+    z-index:6000;
+    max-width:80vw;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  button:focus-visible, .stamp-btn:focus-visible, .nick-chip:focus-visible{
+    outline:2.5px solid var(--sea);outline-offset:2px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand" id="brand-trigger">
+    <h1>苗栗漁港一日遊</h1>
+    <p class="tag">走訪三座漁港・集滿手繪通行證</p>
+  </div>
+  <div class="nick-chip" id="nick-chip">
+    <span>
+      <span class="greet" id="greet-text">哈囉</span>
+      <span class="name" id="nick-name">旅人</span>
+    </span>
+    <span class="pencil">✎</span>
+  </div>
+</header>
+
+<div class="map-wrap">
+  <img id="map-img" src="mlcmap.jpg" alt="苗栗海岸手繪地圖" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'map-missing',textContent:'找不到 mlcmap.jpg，請確認地圖圖片和這個 HTML 檔案放在同一個資料夾'}))">
+  <svg class="compass" viewBox="0 0 40 40">
+    <circle cx="20" cy="20" r="17" fill="none" stroke="#2c2116" stroke-width="1.3" opacity="0.7"/>
+    <path d="M20 5 L23 20 L20 35 L17 20 Z" fill="#a3402b" opacity="0.75"/>
+    <text x="20" y="12" text-anchor="middle" font-size="6" fill="#2c2116" font-family="Zhi Mang Xing">北</text>
+  </svg>
+  <div id="pin-layer"></div>
+  <div class="map-caption">地圖示意．非精確定位</div>
+</div>
+
+<div class="passport">
+  <div class="passport-head">
+    <h2>漁港通行證</h2>
+    <span class="progress" id="progress-text">0 / 3</span>
+  </div>
+  <div class="stamp-row" id="stamp-row"></div>
+  <div class="detail-line">
+    <div class="detail-text" id="detail-text">點選上方港口查看狀態</div>
+    <button class="claim-btn" id="claim-btn" disabled>領取通行證</button>
+  </div>
+</div>
+
+<div class="bottom-bar">
+  <div class="gps-status" id="gps-status">正在準備定位…</div>
+  <button class="locate-btn" id="locate-btn">回報我的位置</button>
+</div>
+
+<!-- 暱稱輸入 -->
+<div class="sheet" id="nick-sheet">
+  <div class="sheet-card">
+    <h3>在通行證封面寫下名字</h3>
+    <p>這是你這趟一日遊的探索者稱號，之後隨時可以修改。</p>
+    <input class="sheet-input" id="nick-input" maxlength="12" placeholder="例如：阿明">
+    <button class="sheet-primary" id="nick-save">開始探索</button>
+  </div>
+</div>
+
+<!-- 集滿慶祝 -->
+<div class="sheet" id="celebrate-sheet">
+  <div class="sheet-card">
+    <button class="sheet-close" data-close="celebrate-sheet">✕</button>
+    <div class="stamp-big">苗栗<br>漁港達人</div>
+    <h3 style="text-align:center;">三港通行證集滿了！</h3>
+    <p style="text-align:center;">你已走訪竹南龍鳳、後龍外埔、苑港三座漁港，收藏完整的手繪通行證。</p>
+    <button class="sheet-primary" data-close="celebrate-sheet">收下</button>
+  </div>
+</div>
+
+<!-- 隱藏管理員畫面 -->
+<div class="sheet" id="admin-sheet">
+  <div class="sheet-card">
+    <button class="sheet-close" data-close="admin-sheet">✕</button>
+    <h3>管理員測試模式</h3>
+    <p>用來模擬 GPS 位置、測試通行證解鎖，不會出現在一般畫面上。</p>
+
+    <div class="admin-sub">快速模擬到達</div>
+    <div class="admin-row" id="admin-sim-row"></div>
+    <div class="admin-row">
+      <button id="admin-real">改回真實定位</button>
+    </div>
+
+    <div class="admin-sub">資料管理</div>
+    <div class="admin-row">
+      <button class="danger" id="admin-clear-pass">清除全部通行證</button>
+      <button class="danger" id="admin-clear-nick">清除暱稱</button>
+    </div>
+
+    <div class="admin-sub">目前儲存內容</div>
+    <pre class="debug-pre" id="admin-debug">{}</pre>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var HARBORS = [
+  { id:'longfeng', short:'龍鳳', name:'竹南龍鳳漁港', lat:24.699778, lng:120.85831 },
+  { id:'waipu',    short:'外埔', name:'後龍外埔漁港', lat:24.65002,  lng:120.77310 },
+  { id:'yuangang', short:'苑港', name:'苑港觀光漁港', lat:24.4591,   lng:120.64726 }
+];
+
+// 手繪地圖上三個漁港圖釘的位置（相對圖片寬高的百分比），由標定工具產生
+var PIN_POSITIONS = {
+  longfeng: { xPct: 54.45, yPct: 20.56 }, // 竹南龍鳳漁港
+  waipu:    { xPct: 40.92, yPct: 29.09 }, // 後龍外埔漁港
+  yuangang: { xPct: 23.30, yPct: 54.94 }  // 苑港觀光漁港
+};
+
+var UNLOCK_RADIUS_M = 500; // 解鎖半徑（公尺）
+var KEY_PASSES = 'miaoliHarborPasses';
+var KEY_NICK = 'miaoliNickname';
+
+var currentPos = null;
+var selectedId = HARBORS[0].id;
+var isSimulated = false;
+
+var el = {
+  pinLayer: document.getElementById('pin-layer'),
+  stampRow: document.getElementById('stamp-row'),
+  progressText: document.getElementById('progress-text'),
+  detailText: document.getElementById('detail-text'),
+  claimBtn: document.getElementById('claim-btn'),
+  gpsStatus: document.getElementById('gps-status'),
+  locateBtn: document.getElementById('locate-btn'),
+  toast: document.getElementById('toast'),
+  nickChip: document.getElementById('nick-chip'),
+  nickName: document.getElementById('nick-name'),
+  greetText: document.getElementById('greet-text'),
+  nickSheet: document.getElementById('nick-sheet'),
+  nickInput: document.getElementById('nick-input'),
+  nickSave: document.getElementById('nick-save'),
+  celebrateSheet: document.getElementById('celebrate-sheet'),
+  adminSheet: document.getElementById('admin-sheet'),
+  adminSimRow: document.getElementById('admin-sim-row'),
+  adminDebug: document.getElementById('admin-debug'),
+  brandTrigger: document.getElementById('brand-trigger'),
+  mapWrap: document.querySelector('.map-wrap')
+};
+
+/* ---------- storage ---------- */
+function loadPasses(){
+  try{ return JSON.parse(localStorage.getItem(KEY_PASSES)) || {}; }catch(e){ return {}; }
+}
+function savePasses(d){ localStorage.setItem(KEY_PASSES, JSON.stringify(d)); }
+function hasPass(id){ return !!loadPasses()[id]; }
+function grantPass(id){
+  var d = loadPasses();
+  if(d[id]) return false;
+  d[id] = { at: new Date().toISOString() };
+  savePasses(d);
+  return true;
+}
+function passCount(){ return Object.keys(loadPasses()).length; }
+
+function loadNick(){ return localStorage.getItem(KEY_NICK) || ''; }
+function saveNick(v){ localStorage.setItem(KEY_NICK, v); }
+
+/* ---------- geo ---------- */
+function distanceMeters(lat1,lng1,lat2,lng2){
+  var R=6371000, toRad=function(d){return d*Math.PI/180;};
+  var dLat=toRad(lat2-lat1), dLng=toRad(lng2-lng1);
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R*2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+function formatDist(m){ return m<1000 ? Math.round(m)+' 公尺' : (m/1000).toFixed(2)+' 公里'; }
+
+/* ---------- toast ---------- */
+function showToast(msg){
+  el.toast.textContent = msg;
+  el.toast.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(function(){ el.toast.classList.remove('show'); }, 2300);
+}
+
+/* ---------- render ---------- */
+var PIN_SVG = '<svg width="26" height="34" viewBox="0 0 26 34">'+
+  '<path class="pin-body" d="M13 1C6 1 1 6.6 1 12.8c0 8.3 10.4 18.4 11.4 19.4.3.3.9.3 1.2 0C14.6 31.2 25 21.1 25 12.8 25 6.6 20 1 13 1Z" fill="#2c2116" stroke="#2c2116" stroke-width="1.2"/>'+
+  '<circle cx="13" cy="13" r="4.6" fill="#f1e8d6"/></svg>';
+
+function renderPins(){
+  el.pinLayer.innerHTML = '';
+  HARBORS.forEach(function(h){
+    var pos = PIN_POSITIONS[h.id];
+    if(!pos) return;
+    var wrap = document.createElement('div');
+    var unlocked = hasPass(h.id);
+    var dist = currentPos ? distanceMeters(currentPos.lat,currentPos.lng,h.lat,h.lng) : null;
+    var inRange = dist!==null && dist<=UNLOCK_RADIUS_M;
+    wrap.className = 'pin' + (unlocked?' unlocked':(inRange?' in-range':''));
+    wrap.style.left = pos.xPct + '%';
+    wrap.style.top = pos.yPct + '%';
+    wrap.innerHTML = '<span class="label">'+h.short+'</span>' + PIN_SVG;
+    el.pinLayer.appendChild(wrap);
+  });
+}
+
+function renderStampRow(){
+  el.stampRow.innerHTML = '';
+  HARBORS.forEach(function(h){
+    var unlocked = hasPass(h.id);
+    var btn = document.createElement('button');
+    btn.className = 'stamp-btn' + (unlocked?' got':'') + (h.id===selectedId?' active':'');
+    btn.innerHTML = '<span class="mark">'+(unlocked?'印':'○')+'</span><span>'+h.short+'</span>';
+    btn.addEventListener('click', function(){ selectedId = h.id; renderAll(); });
+    el.stampRow.appendChild(btn);
+  });
+  el.progressText.textContent = passCount()+' / '+HARBORS.length;
+}
+
+function renderDetail(){
+  var h = HARBORS.filter(function(x){return x.id===selectedId;})[0];
+  var unlocked = hasPass(h.id);
+  var dist = currentPos ? distanceMeters(currentPos.lat,currentPos.lng,h.lat,h.lng) : null;
+  var inRange = dist!==null && dist<=UNLOCK_RADIUS_M;
+
+  var distStr = dist!==null ? '<span class="dist">'+formatDist(dist)+'</span>' : '尚未定位';
+  if(unlocked){
+    var d = loadPasses()[h.id];
+    var dateStr = d && d.at ? new Date(d.at).toLocaleDateString('zh-TW') : '';
+    el.detailText.innerHTML = '<b>'+h.name+'</b>　通行證已於 '+dateStr+' 領取';
+    el.claimBtn.textContent = '已領取';
+    el.claimBtn.disabled = true;
+  } else if(inRange){
+    el.detailText.innerHTML = '<b>'+h.name+'</b>　'+distStr+'．在範圍內，可以領取了';
+    el.claimBtn.textContent = '領取通行證';
+    el.claimBtn.disabled = false;
+  } else {
+    el.detailText.innerHTML = '<b>'+h.name+'</b>　目前距離 '+distStr;
+    el.claimBtn.textContent = '尚未抵達';
+    el.claimBtn.disabled = true;
+  }
+}
+
+function renderNick(){
+  var n = loadNick();
+  el.nickName.textContent = n || '旅人';
+  var hour = new Date().getHours();
+  el.greetText.textContent = hour<11 ? '早安' : (hour<18 ? '午安' : '晚安');
+  if(!n){ openSheet(el.nickSheet); }
+}
+
+function renderAll(){
+  renderPins();
+  renderStampRow();
+  renderDetail();
+}
+
+/* ---------- claim ---------- */
+el.claimBtn.addEventListener('click', function(){
+  var h = HARBORS.filter(function(x){return x.id===selectedId;})[0];
+  var isNew = grantPass(h.id);
+  if(isNew){
+    showToast('已領取「'+h.name+'」通行證');
+    if(passCount()===HARBORS.length){
+      setTimeout(function(){ openSheet(el.celebrateSheet); }, 500);
+    }
+  }
+  renderAll();
+});
+
+/* ---------- locate ---------- */
+// 只在頁面載入時呼叫一次 watchPosition：整個瀏覽階段只會跳出一次權限請求，
+// 之後瀏覽器會持續在背景回報位置更新，按鈕只是讀取最新結果，不會再觸發任何
+// 需要權限的 API 呼叫，因此不會重複跳出詢問視窗。
+var watchId = null;
+var lastFixAt = null;
+
+function startWatch(){
+  if(!navigator.geolocation){
+    el.gpsStatus.textContent = '此瀏覽器不支援定位功能';
+    return;
+  }
+  el.gpsStatus.textContent = '正在請求定位權限…';
+  watchId = navigator.geolocation.watchPosition(function(pos){
+    currentPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    lastFixAt = new Date();
+    if(!isSimulated){
+      el.gpsStatus.textContent = '已定位（誤差 ±'+Math.round(pos.coords.accuracy)+' 公尺）・'+lastFixAt.toLocaleTimeString('zh-TW');
+      renderAll();
+    }
+  }, function(err){
+    if(isSimulated) return;
+    var msg = '尚未取得定位：';
+    if(err.code===1) msg += '未允許位置權限，請至瀏覽器／系統設定開啟後重新整理頁面';
+    else if(err.code===2) msg += '目前無法取得位置';
+    else if(err.code===3) msg += '定位逾時，稍後會自動再試';
+    else msg += err.message;
+    el.gpsStatus.textContent = msg;
+  }, { enableHighAccuracy:true, timeout:15000, maximumAge:5000 });
+}
+
+el.locateBtn.addEventListener('click', function(){
+  if(isSimulated){
+    el.gpsStatus.textContent = '目前使用管理員模擬座標，回到真實定位請至管理畫面';
+    renderAll();
+    return;
+  }
+  if(!currentPos){
+    el.gpsStatus.textContent = '仍在等待定位結果，請稍候…';
+    return;
+  }
+  el.gpsStatus.textContent = '位置已更新・'+(lastFixAt ? lastFixAt.toLocaleTimeString('zh-TW') : '');
+  renderAll();
+});
+
+/* ---------- sheets ---------- */
+function openSheet(s){ s.classList.add('show'); }
+function closeSheet(s){ s.classList.remove('show'); }
+document.querySelectorAll('[data-close]').forEach(function(b){
+  b.addEventListener('click', function(){ closeSheet(document.getElementById(b.getAttribute('data-close'))); });
+});
+
+el.nickChip.addEventListener('click', function(){
+  el.nickInput.value = loadNick();
+  openSheet(el.nickSheet);
+});
+el.nickSave.addEventListener('click', function(){
+  var v = el.nickInput.value.trim() || '神秘旅人';
+  saveNick(v);
+  closeSheet(el.nickSheet);
+  renderNick();
+});
+
+/* ---------- admin (hidden) ---------- */
+var tapTimes = [];
+el.brandTrigger.addEventListener('click', function(){
+  var now = Date.now();
+  tapTimes.push(now);
+  tapTimes = tapTimes.filter(function(t){ return now - t < 2200; });
+  if(tapTimes.length >= 5){
+    tapTimes = [];
+    refreshAdminDebug();
+    openSheet(el.adminSheet);
+  }
+});
+
+HARBORS.forEach(function(h){
+  var b = document.createElement('button');
+  b.textContent = '模擬在'+h.short;
+  b.addEventListener('click', function(){
+    currentPos = { lat:h.lat, lng:h.lng };
+    isSimulated = true;
+    el.gpsStatus.textContent = '模擬定位：'+h.name;
+    renderAll();
+    refreshAdminDebug();
+  });
+  el.adminSimRow.appendChild(b);
+});
+
+document.getElementById('admin-real').addEventListener('click', function(){
+  isSimulated = false;
+  el.gpsStatus.textContent = lastFixAt ? ('已切回真實定位・'+lastFixAt.toLocaleTimeString('zh-TW')) : '已切回真實定位模式，背景持續追蹤中…';
+  renderAll();
+  refreshAdminDebug();
+});
+document.getElementById('admin-clear-pass').addEventListener('click', function(){
+  localStorage.removeItem(KEY_PASSES);
+  showToast('已清除全部通行證');
+  renderAll();
+  refreshAdminDebug();
+});
+document.getElementById('admin-clear-nick').addEventListener('click', function(){
+  localStorage.removeItem(KEY_NICK);
+  showToast('已清除暱稱');
+  renderNick();
+  refreshAdminDebug();
+});
+function refreshAdminDebug(){
+  el.adminDebug.textContent = JSON.stringify({
+    passes: loadPasses(),
+    nickname: loadNick(),
+    currentPos: currentPos,
+    isSimulated: isSimulated
+  }, null, 1);
+}
+
+window.addEventListener('resize', renderPins);
+
+renderNick();
+renderAll();
+startWatch(); // 一開始就要求定位權限並開始背景追蹤，之後按按鈕不會再重複跳出詢問
+</script>
+</body>
+</html>
