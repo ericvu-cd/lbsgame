@@ -527,8 +527,8 @@ const SoundFX = (function(){
   function setAmbientLevel(level, rampSec){
     const c = ensureCtx();
     if(!c || !ambientGain) return;
-    // 音量上限設在 0.4，手機外放已經聽得清楚又不會過大聲
-    const target = muted ? 0.0001 : Math.max(0.0001, Math.min(0.4, level * 0.4));
+    // 音量上限設在 0.3，手機外放清楚但不過大聲
+    const target = muted ? 0.0001 : Math.max(0.0001, Math.min(0.3, level * 0.3));
     const now = c.currentTime;
     ambientGain.gain.cancelScheduledValues(now);
     ambientGain.gain.setValueAtTime(Math.max(0.0001, ambientGain.gain.value), now);
