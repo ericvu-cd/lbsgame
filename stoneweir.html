@@ -49,9 +49,8 @@
     font-family:'Noto Sans TC', sans-serif;
     color:var(--ink);
     background:
-      radial-gradient(circle at 15% 4%, rgba(255,255,255,.55) 0%, transparent 22%),
-      radial-gradient(circle at 82% 8%, rgba(255,255,255,.4) 0%, transparent 20%),
-      linear-gradient(180deg, var(--sky-top) 0%, var(--sky-horizon) 32%, var(--land-upper) 60%, var(--land-lower) 100%);
+      linear-gradient(180deg, rgba(8,30,50,.12) 0%, rgba(8,30,50,0) 18%, rgba(8,30,50,0) 70%, rgba(4,20,35,.28) 100%),
+      url('swbg.png') center center / cover no-repeat;
     position:relative;
     display:flex;
     flex-direction:column;
@@ -92,14 +91,16 @@
   .app{position:relative;z-index:1;display:flex;flex-direction:column;flex:1;min-height:0;padding:10px 14px 16px;}
 
   h1.title{
-    font-family:'Noto Sans TC', sans-serif;font-weight:900;font-size:1.6rem;letter-spacing:2px;
-    text-align:center;margin:0 0 2px;flex-shrink:0;-webkit-text-stroke:1.5px var(--outline);
-    background:linear-gradient(180deg,#fff6c4 0%, var(--gold) 42%, var(--gold-dark) 100%);
-    -webkit-background-clip:text;background-clip:text;color:transparent;
-    text-shadow:
-      0 2px 0 var(--outline), 0 4px 0 var(--outline), 0 6px 0 var(--outline),
-      0 8px 10px rgba(0,0,0,.4);
-    transform:rotate(-1deg);
+    font-family:'Noto Sans TC', sans-serif;font-weight:900;font-size:1.5rem;letter-spacing:3px;
+    text-align:center;margin:0 0 8px;flex-shrink:0;
+    /* 不用漸層挖字、不用多層陰影堆疊，單純實色文字 + 實色底板，
+       對比穩定可靠，不會因為背景圖或瀏覽器支援度不同而看不清 */
+    color:#fffaea;
+    align-self:center;width:fit-content;
+    padding:6px 22px;
+    background:linear-gradient(180deg,#f0c988 0%, var(--wood) 55%, var(--wood-dark) 100%);
+    border:3px solid var(--outline);border-radius:10px;
+    box-shadow:0 4px 0 var(--wood-dark), 0 4px 0 1px var(--outline);
   }
 
 
@@ -177,7 +178,35 @@
   }
   .icon-btn:active{transform:translateY(3px) scale(.97);box-shadow:0 1px 0 var(--wood-dark), 0 1px 0 1px var(--outline);}
 
-  .board-wrap{display:flex;flex:1;min-height:0;align-items:center;justify-content:center;margin-bottom:6px;}
+  .board-wrap{position:relative;display:flex;flex:1;min-height:0;align-items:center;justify-content:center;margin-bottom:6px;}
+  .tool-broken-banner{
+    position:absolute;top:6px;left:50%;transform:translateX(-50%) scale(.85);z-index:40;
+    background:linear-gradient(180deg,#ffdc7a 0%, var(--coral) 100%);color:#fff;
+    border:3px solid var(--outline);border-radius:999px;padding:6px 16px;
+    font-family:'Noto Sans TC',sans-serif;font-weight:800;font-size:0.82rem;
+    box-shadow:0 4px 0 var(--outline), 0 6px 12px rgba(0,0,0,.35);text-shadow:0 1px 0 rgba(0,0,0,.35);
+    opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease;white-space:nowrap;
+  }
+  .tool-broken-banner.show{opacity:1;transform:translateX(-50%) scale(1);animation:toolShake .4s ease .1s 2;}
+  @keyframes toolShake{0%,100%{transform:translateX(-50%) scale(1) rotate(0);}25%{transform:translateX(-50%) scale(1) rotate(-3deg);}75%{transform:translateX(-50%) scale(1) rotate(3deg);}}
+  #birdFlyLayer{position:absolute;inset:0;pointer-events:none;z-index:35;overflow:visible;}
+  .bird-fly{position:absolute;top:10%;width:46px;height:34px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));
+    animation:birdSwoop 1.6s cubic-bezier(.4,0,.6,1) forwards;}
+  .bird-fly svg{width:100%;height:100%;display:block;}
+  .bird-fly.reverse{animation-name:birdSwoopRev;}
+  .bird-fly.reverse svg{transform:scaleX(-1);}
+  .bird-wing{transform-origin:20px 15px;animation:wingFlap .26s ease-in-out infinite alternate;}
+  @keyframes wingFlap{from{transform:rotate(-6deg) scaleY(1);}to{transform:rotate(-38deg) scaleY(.82);}}
+  @keyframes birdSwoop{
+    0%{left:-10%;transform:translateY(0) scale(.85);}
+    48%{transform:translateY(22px) scale(1.05);}
+    100%{left:106%;transform:translateY(-4px) scale(.85);}
+  }
+  @keyframes birdSwoopRev{
+    0%{left:106%;transform:translateY(0) scale(.85);}
+    48%{transform:translateY(22px) scale(1.05);}
+    100%{left:-10%;transform:translateY(-4px) scale(.85);}
+  }
   #board{width:min(340px, 88vw);height:auto;overflow:visible;}
   .stone-cell{cursor:pointer;}
   .stone-visual{transform-box:fill-box;transform-origin:center;transition:transform .15s ease;}
@@ -223,65 +252,69 @@
   .legend-mini > div{background:rgba(255,255,255,.55);border:2px solid var(--outline);border-radius:999px;padding:3px 10px;box-shadow:0 2px 0 rgba(0,0,0,.15);}
   .legend-mini .swatch{display:inline-block;width:11px;height:11px;border-radius:4px;margin-right:5px;vertical-align:-1px;border:2px solid var(--outline);}
 
-  .overlay{position:fixed;inset:0;background:rgba(10,30,45,.72);display:none;align-items:center;justify-content:center;z-index:80;padding:16px;}
+  .overlay{position:fixed;inset:0;background:rgba(10,30,45,.72);display:none;align-items:center;justify-content:center;z-index:80;padding:14px;}
   .overlay.active{display:flex;animation:fadeUp .3s ease both;}
   .modal{
     position:relative;
     background:linear-gradient(180deg,#fffaea 0%, #ecd792 100%);color:var(--ink);
-    border:5px solid var(--outline);border-radius:26px;max-width:340px;width:100%;padding:22px 20px;text-align:center;
-    max-height:90dvh;overflow-y:auto;box-shadow:0 10px 0 var(--outline), 0 16px 30px rgba(0,0,0,.45),
+    border:5px solid var(--outline);border-radius:24px;max-width:340px;width:100%;padding:16px 18px 14px;text-align:center;
+    max-height:94dvh;overflow-y:auto;box-shadow:0 10px 0 var(--outline), 0 16px 30px rgba(0,0,0,.45),
       inset 0 3px 0 rgba(255,255,255,.55);
     animation:bounceIn .5s cubic-bezier(.34,1.56,.64,1) both;
   }
   .modal::before,.modal::after{
-    content:'';position:absolute;top:12px;width:9px;height:9px;border-radius:50%;
+    content:'';position:absolute;top:10px;width:9px;height:9px;border-radius:50%;
     background:radial-gradient(circle at 35% 30%, #fff, var(--wood-dark) 70%);border:1.5px solid var(--outline);
   }
   .modal::before{left:14px;}
   .modal::after{right:14px;}
-  .modal h2{font-family:'Noto Sans TC',sans-serif;font-weight:900;font-size:1.5rem;margin:4px 0 3px;color:var(--ink);
-    -webkit-text-stroke:.6px var(--outline);}
-  .modal .medal{font-size:2.4rem;filter:drop-shadow(0 3px 0 rgba(0,0,0,.25));position:relative;display:inline-block;}
+  .modal h2{font-family:'Noto Sans TC',sans-serif;font-weight:900;font-size:1.3rem;margin:0 0 2px;color:var(--ink);
+    position:relative;z-index:1;-webkit-text-stroke:.6px var(--outline);}
+  .modal .medal{font-size:2rem;filter:drop-shadow(0 3px 0 rgba(0,0,0,.25));position:relative;display:inline-block;margin-bottom:0;line-height:1;}
   .modal .medal::before{
-    content:'';position:absolute;left:50%;top:50%;width:120px;height:120px;transform:translate(-50%,-50%);z-index:-1;
-    background:repeating-conic-gradient(rgba(255,205,0,.55) 0deg 10deg, transparent 10deg 20deg);
+    content:'';position:absolute;left:50%;top:50%;width:74px;height:74px;transform:translate(-50%,-50%);z-index:-1;
+    background:repeating-conic-gradient(rgba(255,205,0,.5) 0deg 10deg, transparent 10deg 20deg);
     border-radius:50%;animation:sunburstSpin 12s linear infinite;
   }
   @keyframes sunburstSpin{from{transform:translate(-50%,-50%) rotate(0deg);}to{transform:translate(-50%,-50%) rotate(360deg);}}
-  .modal .stars{font-size:1.3rem;letter-spacing:5px;margin:6px 0 3px;}
-  .score-rank{display:flex;align-items:baseline;justify-content:center;gap:6px;margin:10px 0 8px;}
-  .score-rank b{font-family:'JetBrains Mono',monospace;font-size:2.1rem;font-weight:800;color:var(--gold-dark);}
-  .score-rank .score-unit{font-size:0.85rem;color:var(--ink-dim);font-weight:700;}
+  .modal .stars{font-size:1.5rem;letter-spacing:6px;margin:0 0 2px;}
+  .modal .stars .star-on{color:var(--gold);text-shadow:0 2px 0 var(--gold-dark), 0 3px 4px rgba(0,0,0,.35);
+    -webkit-text-stroke:1px var(--outline);animation:starPop .5s cubic-bezier(.34,1.56,.64,1) both;}
+  .modal .stars .star-off{color:#e8dfc4;text-shadow:none;-webkit-text-stroke:1px rgba(0,0,0,.25);}
+  @keyframes starPop{0%{transform:scale(0) rotate(-40deg);opacity:0;}70%{transform:scale(1.3) rotate(8deg);opacity:1;}100%{transform:scale(1) rotate(0);}}
+  .score-rank{display:flex;align-items:baseline;justify-content:center;gap:6px;margin:4px 0 5px;}
+  .score-rank b{font-family:'JetBrains Mono',monospace;font-size:1.85rem;font-weight:800;color:var(--gold-dark);}
+  .score-rank .score-unit{font-size:0.8rem;color:var(--ink-dim);font-weight:700;}
   .score-breakdown{
     background:rgba(0,0,0,.06);border:2px solid rgba(0,0,0,.15);border-radius:10px;
-    padding:8px 12px;margin-bottom:10px;font-family:'JetBrains Mono',monospace;font-size:0.74rem;
-    color:var(--ink-dim);text-align:left;line-height:1.7;
+    padding:6px 12px;margin-bottom:7px;font-family:'JetBrains Mono',monospace;font-size:0.72rem;
+    color:var(--ink-dim);text-align:left;line-height:1.42;
   }
   .score-breakdown .sb-row{display:flex;justify-content:space-between;}
-  .score-breakdown .sb-total{color:var(--gold-dark);border-top:2px dashed rgba(0,0,0,.2);margin-top:3px;padding-top:3px;font-weight:800;}
-  .modal .result-grid{display:flex;justify-content:center;gap:12px;margin:10px 0 12px;flex-wrap:wrap;}
-  .modal .result-grid div b{display:block;font-size:1.1rem;font-family:'JetBrains Mono',monospace;color:var(--ink);}
-  .modal .result-grid div span{font-size:0.72rem;color:var(--ink-dim);}
+  .score-breakdown .sb-total{color:var(--gold-dark);border-top:2px dashed rgba(0,0,0,.2);margin-top:2px;padding-top:2px;font-weight:800;}
+  .modal .result-grid{display:flex;justify-content:center;gap:12px;margin:6px 0 7px;flex-wrap:wrap;}
+  .modal .result-grid div b{display:block;font-size:1.05rem;font-family:'JetBrains Mono',monospace;color:var(--ink);}
+  .modal .result-grid div span{font-size:0.7rem;color:var(--ink-dim);}
   .modal .tip-carousel{
-    display:flex;align-items:flex-start;gap:9px;background:rgba(0,0,0,.05);border:2px solid rgba(0,0,0,.1);
-    border-radius:10px;padding:9px 12px 10px;margin-bottom:14px;text-align:left;
+    display:flex;align-items:flex-start;gap:8px;background:rgba(0,0,0,.05);border:2px solid rgba(0,0,0,.1);
+    border-radius:10px;padding:7px 10px 8px;margin-bottom:10px;text-align:left;
     touch-action:pan-y;user-select:none;cursor:grab;
   }
   .modal .tip-carousel:active{cursor:grabbing;}
-  .tip-icon{font-size:1.15rem;line-height:1.5;flex-shrink:0;filter:drop-shadow(0 1px 0 rgba(0,0,0,.2));}
+  .tip-icon{font-size:1.05rem;line-height:1.4;flex-shrink:0;filter:drop-shadow(0 1px 0 rgba(0,0,0,.2));}
   .tip-body{flex:1;min-width:0;}
-  .tip-text{font-size:0.8rem;color:var(--ink-dim);line-height:1.5;height:4rem;overflow:hidden;}
+  .tip-text{font-size:0.76rem;color:var(--ink-dim);line-height:1.38;height:3.1rem;overflow:hidden;}
   .tip-text.slide-next{animation:tipSlideNext .28s ease both;}
   .tip-text.slide-prev{animation:tipSlidePrev .28s ease both;}
   @keyframes tipSlideNext{0%{opacity:0;transform:translateX(14px);}100%{opacity:1;transform:translateX(0);}}
   @keyframes tipSlidePrev{0%{opacity:0;transform:translateX(-14px);}100%{opacity:1;transform:translateX(0);}}
-  .tip-dots{display:flex;gap:4px;margin-top:7px;}
+  .tip-dots{display:flex;gap:4px;margin-top:5px;}
   .tip-dots span{width:5px;height:5px;border-radius:50%;background:rgba(0,0,0,.18);flex-shrink:0;transition:background .2s ease, transform .2s ease;}
   .tip-dots span.active{background:var(--gold-dark);transform:scale(1.3);}
   .modal .btn-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
   .modal-lose{background:linear-gradient(180deg,#ffdcd0 0%, #f3ab8f 100%);}
   .modal-lose h2{color:var(--coral-dark2);}
-  .lose-msg{font-size:0.85rem;color:var(--ink);font-weight:600;margin:0 0 10px;line-height:1.6;}
+  .lose-msg{font-size:0.83rem;color:var(--ink);font-weight:600;margin:0 0 8px;line-height:1.42;}
   .stat.danger{border-color:var(--outline);background:linear-gradient(180deg,#ffcdbd 0%, var(--coral) 100%);}
   .stat.danger b{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5);}
 
@@ -344,7 +377,10 @@
       </div>
     </div>
 
-    <div class="board-wrap"><svg id="board" viewBox="0 0 526 476">
+    <div class="board-wrap">
+    <div class="tool-broken-banner" id="toolBrokenBanner">🔧 工具壞了，維修中…</div>
+    <div id="birdFlyLayer"></div>
+    <svg id="board" viewBox="0 0 526 476">
       <defs>
         <linearGradient id="okGrad" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="var(--stone-ok-1)"/><stop offset="1" stop-color="var(--stone-ok-2)"/>
@@ -391,6 +427,7 @@
   <div class="modal">
     <div class="medal">🪨</div>
     <h2>石滬修復完成！</h2>
+    <div class="stars" id="finalStars"></div>
     <div class="score-rank"><b id="finalScore">1000</b><span class="score-unit">分</span></div>
     <div class="result-grid">
       <div><b id="finalTime">00:00</b><span>總時間</span></div>
@@ -467,6 +504,33 @@ const SoundFX = (function(){
     return noiseBuffer;
   }
 
+  // 持續性潮聲底噪：只建立一次，之後只調整音量大小，音量會跟著水位升降即時變化
+  let ambientGain = null, ambientStarted = false;
+  function ensureAmbient(){
+    const c = ensureCtx();
+    if(!c || ambientStarted) return;
+    const buf = getNoiseBuffer();
+    if(!buf) return;
+    ambientStarted = true;
+    const src = c.createBufferSource();
+    src.buffer = buf; src.loop = true;
+    const filter = c.createBiquadFilter();
+    filter.type = 'lowpass'; filter.frequency.value = 520; filter.Q.value = 0.5;
+    ambientGain = c.createGain();
+    ambientGain.gain.value = 0.0001;
+    src.connect(filter); filter.connect(ambientGain); ambientGain.connect(master);
+    src.start();
+  }
+  function setAmbientLevel(level, rampSec){
+    const c = ensureCtx();
+    if(!c || !ambientGain) return;
+    const target = muted ? 0.0001 : Math.max(0.0001, Math.min(0.22, level * 0.22));
+    const now = c.currentTime;
+    ambientGain.gain.cancelScheduledValues(now);
+    ambientGain.gain.setValueAtTime(Math.max(0.0001, ambientGain.gain.value), now);
+    ambientGain.gain.linearRampToValueAtTime(target, now + Math.max(0.05, rampSec || 0.5));
+  }
+
   function tone(freq, dur, type, vol, delay, glideTo){
     if(muted) return;
     const c = ensureCtx();
@@ -507,9 +571,19 @@ const SoundFX = (function(){
   }
 
   return {
-    unlock(){ ensureCtx(); },
-    setMuted(v){ muted = v; },
+    unlock(){ ensureCtx(); ensureAmbient(); },
+    setMuted(v){
+      muted = v;
+      if(ambientGain){
+        const c = ensureCtx();
+        if(c){
+          ambientGain.gain.cancelScheduledValues(c.currentTime);
+          ambientGain.gain.setValueAtTime(muted ? 0.0001 : ambientGain.gain.value, c.currentTime);
+        }
+      }
+    },
     isMuted(){ return muted; },
+    setAmbientLevel(level, rampSec){ setAmbientLevel(level, rampSec); },
     uiClick(){ tone(720, 0.07, 'square', 0.12); },
     stoneTap(){ tone(340, 0.09, 'triangle', 0.16, 0, 260); },
     repair(){
@@ -524,56 +598,69 @@ const SoundFX = (function(){
     fishOut(){
       tone(700, 0.18, 'sine', 0.1, 0, 260);
     },
-    tideCrash(){
+    toolBreak(){
+      tone(180, 0.16, 'sawtooth', 0.18, 0, 90);
+      tone(140, 0.22, 'square', 0.12, 0.08, 60);
+    },
+    birdSwoop(){
+      tone(1400, 0.06, 'sine', 0.12, 0);
+      tone(1100, 0.06, 'sine', 0.1, 0.08);
+      tone(1600, 0.07, 'sine', 0.1, 0.16);
+    },
+    tideCrash(urgency){
       if(muted) return;
       const c = ensureCtx();
       const buf = getNoiseBuffer();
       if(!c || !buf) return;
       const t0 = c.currentTime;
+      const u = Math.max(0, Math.min(1, urgency || 0));
+      // 急迫度越高：撞擊音調越尖、時值稍微壓縮，聽感上節奏更急促
+      const pitchMul = 1 + u * 0.35;
+      const timeMul = 1 - u * 0.18;
 
       // 主體浪湧：噪音經帶通濾波，頻率從高快速下滑到低，模擬浪頭捲下的「唰」聲
       const src1 = c.createBufferSource(); src1.buffer = buf;
       const filter1 = c.createBiquadFilter();
       filter1.type = 'bandpass'; filter1.Q.value = 1.1;
-      filter1.frequency.setValueAtTime(2400, t0);
-      filter1.frequency.exponentialRampToValueAtTime(160, t0 + 0.5);
+      filter1.frequency.setValueAtTime(2400 * pitchMul, t0);
+      filter1.frequency.exponentialRampToValueAtTime(160 * pitchMul, t0 + 0.5 * timeMul);
       const gain1 = c.createGain();
       gain1.gain.setValueAtTime(0.0001, t0);
       gain1.gain.exponentialRampToValueAtTime(0.42, t0 + 0.05);
-      gain1.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.6);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.6 * timeMul);
       src1.connect(filter1); filter1.connect(gain1); gain1.connect(master);
       src1.start(t0); src1.stop(t0 + 0.65);
 
       // 低頻悶響：撞擊瞬間的沉重感
       const src2 = c.createBufferSource(); src2.buffer = buf;
       const filter2 = c.createBiquadFilter();
-      filter2.type = 'lowpass'; filter2.frequency.value = 170; filter2.Q.value = 0.7;
+      filter2.type = 'lowpass'; filter2.frequency.value = 170 * pitchMul; filter2.Q.value = 0.7;
       const gain2 = c.createGain();
       gain2.gain.setValueAtTime(0.0001, t0 + 0.02);
       gain2.gain.exponentialRampToValueAtTime(0.38, t0 + 0.08);
-      gain2.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.85);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.85 * timeMul);
       src2.connect(filter2); filter2.connect(gain2); gain2.connect(master);
       src2.start(t0 + 0.02); src2.stop(t0 + 0.9);
 
       // 次低音重擊：一記下墜的正弦音，加強衝擊的「份量」
       const osc = c.createOscillator(); osc.type = 'sine';
-      osc.frequency.setValueAtTime(130, t0);
-      osc.frequency.exponentialRampToValueAtTime(42, t0 + 0.35);
+      osc.frequency.setValueAtTime(130 * pitchMul, t0);
+      osc.frequency.exponentialRampToValueAtTime(42 * pitchMul, t0 + 0.35 * timeMul);
       const gainO = c.createGain();
       gainO.gain.setValueAtTime(0.0001, t0);
       gainO.gain.exponentialRampToValueAtTime(0.32, t0 + 0.03);
-      gainO.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
+      gainO.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5 * timeMul);
       osc.connect(gainO); gainO.connect(master);
       osc.start(t0); osc.stop(t0 + 0.55);
 
       // 浪花泡沫：短促的高頻嘶聲，撞擊後半拍出現
       const src3 = c.createBufferSource(); src3.buffer = buf;
       const filter3 = c.createBiquadFilter();
-      filter3.type = 'highpass'; filter3.frequency.value = 3200;
+      filter3.type = 'highpass'; filter3.frequency.value = 3200 * pitchMul;
       const gain3 = c.createGain();
       gain3.gain.setValueAtTime(0.0001, t0 + 0.05);
       gain3.gain.exponentialRampToValueAtTime(0.13, t0 + 0.12);
-      gain3.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.4);
+      gain3.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.4 * timeMul);
       src3.connect(filter3); filter3.connect(gain3); gain3.connect(master);
       src3.start(t0 + 0.05); src3.stop(t0 + 0.45);
     },
@@ -586,6 +673,13 @@ const SoundFX = (function(){
     }
   };
 })();
+
+/* 手機震動回饋：只在支援的裝置上生效，包在 try/catch 避免部分瀏覽器丟例外 */
+function vibrate(pattern){
+  if(navigator.vibrate){
+    try{ navigator.vibrate(pattern); }catch(e){}
+  }
+}
 
 const muteBtn = document.getElementById('muteBtn');
 muteBtn.addEventListener('click', ()=>{
@@ -910,6 +1004,8 @@ function stopTimers(){
     clearTimeout(state.tideHandle);
     clearTimeout(state.shakeWaitHandle);
     clearTimeout(state.recedeHandle);
+    clearTimeout(state.birdHandle);
+    clearTimeout(state.toolBrokenHandle);
   }
 }
 
@@ -952,6 +1048,8 @@ function failGame(){
   state.over = true;
   stopTimers();
   SoundFX.lose();
+  SoundFX.setAmbientLevel(0, 1.2);
+  vibrate([80, 60, 80, 60, 200]); // 決堤失敗，較長的震動提示
   document.getElementById('failTime').textContent = formatTime(state.seconds);
   document.getElementById('failMoves').textContent = state.moves;
   loseTipCarousel.showRandom();
@@ -960,10 +1058,14 @@ function failGame(){
 
 const SHAKE_MS = 500;   // 需與 .shake 的CSS動畫時長一致
 const RECEDE_MS = 900;  // 需與 recedeOceanQuickly() 的transition時長一致
+const TIDE_INTERVAL_MIN = 6; // 海浪間隔下限（秒）
 
 function scheduleTide(){
-  const delay = (12 + Math.random()*3) * 1000; // 12~15 秒隨機
+  // 每沖刷一次，下一次的海浪間隔就縮短 1 秒，直到縮到最短 6 秒為止，讓後期越修越急
+  if(state.tideInterval === undefined) state.tideInterval = 12 + Math.random()*3; // 第一次仍是 12~15 秒隨機
+  const delay = state.tideInterval * 1000;
   riseOceanOverDelay(delay); // 水位在整段倒數期間緩緩爬升，撞擊瞬間到達最高點
+  SoundFX.setAmbientLevel(1, delay / 1000); // 潮聲底噪隨水位同步變大，聽覺跟視覺同步
 
   // 魚群跟著水位一起慢慢游進來，不是瞬間出現；動畫時長跟這次上升的秒數一致
   const fishIn = 2 + Math.floor(Math.random()*4); // 每次漲潮帶入2~5尾
@@ -975,11 +1077,13 @@ function scheduleTide(){
 
   state.tideHandle = setTimeout(()=>{
     tideStrike();
+    state.tideInterval = Math.max(TIDE_INTERVAL_MIN, state.tideInterval - 1); // 沖刷一次後間隔縮短1秒，最短6秒
     if(state && !state.over && state.bits !== 0){
       // 畫面震動播完之後，海水才開始往下退
       state.shakeWaitHandle = setTimeout(()=>{
         if(!state || state.over) return;
         recedeOceanQuickly();
+        SoundFX.setAmbientLevel(0.12, RECEDE_MS / 1000); // 潮聲底噪跟著退潮變小聲
         ebbFish(RECEDE_MS); // 海水開始後退的瞬間，依照當下的毀損比例讓魚群跟著缺口逃走，動畫時長跟退潮同步
         state.recedeHandle = setTimeout(()=>{
           if(state && !state.over && state.bits !== 0) scheduleTide();
@@ -998,19 +1102,23 @@ function startGame(){
     fishCaught: 0,
     fishList: [],
     over: false,
+    toolBroken: false,
     timerHandle: null,
-    tideHandle: null
+    tideHandle: null,
+    tideInterval: undefined
   };
   document.getElementById('statTime').textContent = '00:00';
   document.getElementById('statMoves').textContent = '0';
   document.getElementById('statFish').textContent = '0';
   document.getElementById('statScore').textContent = String(BASE_SCORE);
   document.getElementById('statScore').parentElement.classList.remove('danger');
+  document.getElementById('toolBrokenBanner').classList.remove('show');
   resetOceanInstant();
 
   renderBoard();
   clearFish();
   switchScreen('screen-game');
+  scheduleBirdCheck();
 
   state.timerHandle = setInterval(()=>{
     state.seconds++;
@@ -1049,6 +1157,17 @@ function renderBoard(){
     g.addEventListener('click', ()=>onCellClick(s.id, g));
     layer.appendChild(g);
   });
+}
+
+/* 只更新單顆石塊的破損/完好圖示，不重建整個 DOM 節點；
+   點擊或海浪撞擊時，通常只有 2~4 顆石塊狀態改變，比起每次都整版重繪 22 顆，
+   這樣可以省掉大量不必要的 DOM 銷毀/建立，手機上會比較順 */
+function updateStoneVisual(sid){
+  const cell = document.querySelector(`.stone-cell[data-id="${sid}"]`);
+  if(!cell) return;
+  const damaged = (state.bits >> sid) & 1;
+  const use = cell.querySelector('.stone-visual use');
+  if(use) use.setAttribute('href', damaged ? '#stoneBad' : '#stoneOk');
 }
 
 /* 修復特效：中心金色閃光 + 雙層擴散光環 + 星星火花四散 + 石塊本身彈跳一下
@@ -1117,6 +1236,11 @@ function playRepairEffect(sid, isRepair){
 
 function onCellClick(id, g){
   if(!state || state.over) return;
+  if(state.toolBroken) return; // 工具維修中，暫時無法點擊修復
+  if(Math.random() < TOOL_BREAK_CHANCE){
+    triggerToolBroken();
+    return; // 這次點擊沒有修復到，石塊狀態不變
+  }
   const oldBits = state.bits;
   SoundFX.stoneTap();
   state.bits ^= MASKS[id];
@@ -1124,9 +1248,12 @@ function onCellClick(id, g){
   document.getElementById('statMoves').textContent = state.moves;
   updateLiveScore();
   if(state.over) return; // 這一步就把分數扣到0了，失敗結算已觸發，不再翻面
-  renderBoard();
 
+  // 只處理這次點擊實際翻動到的幾顆石塊（MASKS[id] 影響到的位元），不整版重繪
+  const changedBits = oldBits ^ state.bits;
   for(let sid=0; sid<TOTAL; sid++){
+    if(!((changedBits>>sid)&1)) continue;
+    updateStoneVisual(sid);
     const wasDamaged = (oldBits >> sid) & 1;
     const nowDamaged = (state.bits >> sid) & 1;
     if(wasDamaged && !nowDamaged) playRepairEffect(sid);
@@ -1167,18 +1294,24 @@ function tideStrike(){
   let idx1 = Math.floor(Math.random()*TOTAL);
   let idx2 = pickNearbyIndex(idx1);
   state.bits ^= MASKS[idx1] ^ MASKS[idx2];
-  renderBoard();
   updateLiveScore();
 
-  // 海浪衝擊音效：撞擊瞬間播放
-  SoundFX.tideCrash();
+  // 海浪衝擊音效：間隔越接近下限（TIDE_INTERVAL_MIN）代表節奏越急，聲音也跟著更尖銳急促
+  const urgency = state.tideInterval !== undefined
+    ? 1 - Math.max(0, Math.min(1, (state.tideInterval - TIDE_INTERVAL_MIN) / (15 - TIDE_INTERVAL_MIN)))
+    : 0;
+  SoundFX.tideCrash(urgency);
+  vibrate([40, 30, 80]); // 撞擊瞬間的手機震動回饋
 
-  // 所有被這次漲潮衝擊影響（狀態翻轉）的石塊，都套用跟點擊修復一樣的特效，
-  // 讓玩家清楚看到海浪具體沖到了哪些石塊。修復或毀損各自播放對應音效。
+  // 只更新這次漲潮衝擊實際翻轉到的石塊，不整版重繪；
+  // 每顆都套用跟點擊修復一樣的特效，讓玩家清楚看到海浪具體沖到了哪些石塊。
+  const changedBits = oldBits ^ state.bits;
   for(let sid=0; sid<TOTAL; sid++){
+    if(!((changedBits>>sid)&1)) continue;
+    updateStoneVisual(sid);
     const was = (oldBits >> sid) & 1;
     const now = (state.bits >> sid) & 1;
-    if(was !== now) playRepairEffect(sid, was === 1 && now === 0);
+    playRepairEffect(sid, was === 1 && now === 0);
   }
 
   // 撞擊瞬間：水面波光加亮（水位本身已在倒數期間緩緩升到最高點）
@@ -1212,15 +1345,122 @@ function ebbFish(escapeDurationMs){
   }
 }
 
+/* ============ 海鳥偷魚事件（隨機 15%） ============ */
+const BIRD_CHECK_MIN_MS = 4000, BIRD_CHECK_MAX_MS = 8000;
+const BIRD_CHANCE = 0.15;
+
+function scheduleBirdCheck(){
+  if(!state || state.over) return;
+  const wait = BIRD_CHECK_MIN_MS + Math.random()*(BIRD_CHECK_MAX_MS - BIRD_CHECK_MIN_MS);
+  state.birdHandle = setTimeout(()=>{
+    if(!state || state.over) return;
+    if(state.fishList.length > 0 && Math.random() < BIRD_CHANCE){
+      triggerBirdEvent();
+    }
+    scheduleBirdCheck();
+  }, wait);
+}
+
+function triggerBirdEvent(){
+  const layer = document.getElementById('birdFlyLayer');
+  if(!layer || !state.fishList.length) return;
+  const idx = Math.floor(Math.random()*state.fishList.length);
+  const targetFish = state.fishList[idx];
+  const boardWrap = document.querySelector('.board-wrap');
+  const wrapH = boardWrap ? boardWrap.clientHeight : 200;
+  // 用目標魚在畫布中的縱向比例，換算飛鳥掠過的高度，讓牠看起來真的往那條魚俯衝
+  const svgH = BOARD_VIEW_H;
+  const topPct = Math.max(4, Math.min(80, (targetFish.y / svgH) * 100));
+
+  const reverse = Math.random() < 0.5;
+  const bird = document.createElement('div');
+  bird.className = 'bird-fly' + (reverse ? ' reverse' : '');
+  bird.style.top = topPct + '%';
+  bird.innerHTML = `
+    <svg viewBox="0 0 44 32">
+      <path d="M2,18 L11,13 L11,23 Z" fill="var(--rock-dark)" stroke="var(--outline)" stroke-width="1.3" stroke-linejoin="round"/>
+      <ellipse cx="21" cy="19" rx="10.5" ry="7.5" fill="var(--cream)" stroke="var(--outline)" stroke-width="1.6"/>
+      <circle cx="32" cy="12" r="6.4" fill="var(--cream)" stroke="var(--outline)" stroke-width="1.6"/>
+      <path d="M37,10 L44.5,8 L38,13.5 Z" fill="var(--gold)" stroke="var(--outline)" stroke-width="1.2" stroke-linejoin="round"/>
+      <circle cx="34.2" cy="10.2" r="1.3" fill="var(--outline)"/>
+      <g class="bird-wing"><path d="M17,17 Q2,4 -3,13 Q9,15 19,21 Z" fill="var(--rock-dark)" stroke="var(--outline)" stroke-width="1.3" stroke-linejoin="round"/></g>
+    </svg>`;
+  layer.appendChild(bird);
+  SoundFX.birdSwoop();
+
+  // 動畫飛行到約一半時，正好掠過畫面中央，此時判定魚被叼走
+  setTimeout(()=>{
+    if(!state || state.over) return;
+    const stillThere = state.fishList.find(f=>f.id === targetFish.id);
+    if(!stillThere) return; // 這條魚可能已經因退潮先逃走了
+    state.fishList = state.fishList.filter(f=>f.id !== targetFish.id);
+    state.fishCaught = Math.max(0, state.fishCaught - 1);
+    document.getElementById('statFish').textContent = state.fishCaught;
+    const el = document.getElementById(targetFish.id);
+    if(el){
+      el.style.transition = 'transform .25s ease, opacity .25s ease';
+      el.style.transform += ' scale(.2)';
+      el.style.opacity = '0';
+      setTimeout(()=>{ if(el.parentNode) el.remove(); }, 260);
+    }
+    updateLiveScore();
+    showFishDelta(-1);
+  }, 768); // 對應 birdSwoop 動畫 1.6s 的 48% 進度
+
+  setTimeout(()=>{ if(bird.parentNode) bird.remove(); }, 1650);
+}
+
+/* ============ 工具故障事件（隨機 5%） ============ */
+const TOOL_BREAK_CHANCE = 0.05;
+const TOOL_BREAK_MS = 3000;
+
+function triggerToolBroken(){
+  state.toolBroken = true;
+  SoundFX.toolBreak();
+  vibrate(50); // 工具故障的短促震動提示
+  const banner = document.getElementById('toolBrokenBanner');
+  banner.classList.remove('show');
+  void banner.offsetWidth;
+  banner.classList.add('show');
+  state.toolBrokenHandle = setTimeout(()=>{
+    if(!state) return;
+    state.toolBroken = false;
+    banner.classList.remove('show');
+  }, TOOL_BREAK_MS);
+}
+
+/* 星級門檻：以總分對照基礎分（1000）的比例區分 3 / 2 / 1 / 0 星 */
+const STAR_THRESHOLDS = [850, 400, 150]; // 依序對應 3★ / 2★ / 1★ 的最低分數
+function computeStars(total){
+  if(total >= STAR_THRESHOLDS[0]) return 3;
+  if(total >= STAR_THRESHOLDS[1]) return 2;
+  if(total >= STAR_THRESHOLDS[2]) return 1;
+  return 0;
+}
+function renderStars(containerId, count){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  let html = '';
+  for(let i=0;i<3;i++){
+    const on = i < count;
+    const delay = (i*0.12).toFixed(2);
+    html += `<span class="${on?'star-on':'star-off'}" style="animation-delay:${delay}s">${on?'★':'☆'}</span>`;
+  }
+  el.innerHTML = html;
+}
+
 function finishGame(){
   state.over = true;
   stopTimers();
   SoundFX.win();
+  SoundFX.setAmbientLevel(0, 1.2);
+  vibrate([30, 40, 30, 40, 60]); // 修復完成，輕快的慶祝震動
   document.getElementById('finalTime').textContent = formatTime(state.seconds);
   document.getElementById('finalMoves').textContent = state.moves;
 
   const { timePenalty, movePenalty, fishBonus, total } = computeScore(state.seconds, state.moves, state.fishCaught);
   document.getElementById('finalScore').textContent = total;
+  renderStars('finalStars', computeStars(total));
 
   document.getElementById('scoreBreakdown').innerHTML = `
     <div class="sb-row"><span>基礎分</span><span>${BASE_SCORE}</span></div>
