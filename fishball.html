@@ -688,10 +688,81 @@
       }catch(e){}
     }
 
+    // ---- 背景海浪環境音（迴圈播放，音量很低，跟事件音效分開一軌）----
+    let ambientSrc = null, ambientFilter = null, ambientGain = null, ambientLFO = null, ambientLFOGain = null;
+    let ambientWanted = false; // 遊戲邏輯是否「希望」環境音在播放（跟 muted 分開追蹤，避免在開始畫面誤觸發）
+    function startAmbient(){
+      ambientWanted = true;
+      if(muted) return;
+      const c = ensureCtx();
+      if(!c || ambientSrc) return;
+      try{
+        const dur = 4;
+        const buf = c.createBuffer(1, Math.floor(c.sampleRate*dur), c.sampleRate);
+        const data = buf.getChannelData(0);
+        let last = 0;
+        for(let i=0;i<data.length;i++){
+          const white = Math.random()*2-1;
+          last = (last + 0.02*white) / 1.02; // 布朗噪音近似，聽起來比白噪音更像海浪的低頻沙沙聲
+          data[i] = last*3.2;
+        }
+        ambientSrc = c.createBufferSource();
+        ambientSrc.buffer = buf;
+        ambientSrc.loop = true;
+
+        ambientFilter = c.createBiquadFilter();
+        ambientFilter.type = 'lowpass';
+        ambientFilter.frequency.value = 480;
+
+        ambientGain = c.createGain();
+        ambientGain.gain.setValueAtTime(0.0001, c.currentTime);
+        ambientGain.gain.exponentialRampToValueAtTime(0.05, c.currentTime + 1.2); // 慢慢淡入，避免開場太突兀
+
+        // 慢速 LFO 調制濾波頻率，模擬海浪忽強忽弱的起伏感
+        ambientLFO = c.createOscillator();
+        ambientLFO.frequency.value = 0.12;
+        ambientLFOGain = c.createGain();
+        ambientLFOGain.gain.value = 200;
+        ambientLFO.connect(ambientLFOGain).connect(ambientFilter.frequency);
+        ambientLFO.start();
+
+        ambientSrc.connect(ambientFilter).connect(ambientGain).connect(c.destination);
+        ambientSrc.start();
+      }catch(e){}
+    }
+    function stopAmbient(){
+      ambientWanted = false;
+      try{
+        if(ambientGain && actx){
+          ambientGain.gain.cancelScheduledValues(actx.currentTime);
+          ambientGain.gain.setValueAtTime(ambientGain.gain.value, actx.currentTime);
+          ambientGain.gain.linearRampToValueAtTime(0.0001, actx.currentTime + 0.4);
+        }
+        const src = ambientSrc, lfo = ambientLFO;
+        setTimeout(()=>{
+          try{ if(src){ src.stop(); src.disconnect(); } }catch(e){}
+          try{ if(lfo){ lfo.stop(); lfo.disconnect(); } }catch(e){}
+        }, 450);
+      }catch(e){}
+      ambientSrc = null; ambientFilter = null; ambientGain = null; ambientLFO = null; ambientLFOGain = null;
+    }
+
     return {
       unlock(){ ensureCtx(); },
-      setMuted(m){ muted = !!m; },
+      setMuted(m){
+        muted = !!m;
+        if(muted){
+          // 靜音時只關掉聲音節點，不動 ambientWanted，這樣取消靜音時才知道要不要恢復
+          const wanted = ambientWanted;
+          stopAmbient();
+          ambientWanted = wanted;
+        } else if(ambientWanted){
+          startAmbient();
+        }
+      },
       isMuted(){ return muted; },
+      ambientStart(){ startAmbient(); },
+      ambientStop(){ stopAmbient(); },
 
       uiTap(){ tone(520, 0.06, {type:'square', vol:0.12}); },
 
@@ -752,6 +823,11 @@
     };
   })();
 
+  // ---------- HAPTICS (手機震動回饋，桌機/不支援的裝置會直接被忽略) ----------
+  function vibrate(pattern){
+    try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
+  }
+
   // ---------- CONFIG ----------
   const COLS = 15, ROWS = 21;
   const GAME_SECONDS = 180;
@@ -762,7 +838,7 @@
   const TIDE_FIRST_DELAY_MS = 25000;   // 前 25 秒完全不縮小
   const TIDE_INTERVAL_MS = 25000;      // 之後每 25 秒縮 1 格
   const TIDE_MAX_INSET = 6;
-  const TIDE_WARN_MS = 1000;           // 縮小前，即將被淹沒的那一圈要先閃動警示
+  const TIDE_WARN_MS = 2200;           // 縮小前，即將被淹沒的那一圈要先閃動警示
   const FOOD_TARGET_COUNT = 6;
   const BALL_SPAWN_EVERY = 4;
 
@@ -862,6 +938,17 @@
   let score, sustain, fishEaten, ballEaten, fishSinceBall, running, timeLeft, timerId, rafId, floatMsgs;
   let comboKey, comboCount;
   let tideWarning = false;
+  let lastEatAt = -9999; // 上次吃到東西的時間戳，用來畫頭部短暫張嘴的動畫
+  // 潮水上漲的視覺漸進動畫（遊戲判定用整數 tideInset，畫面用內插的浮動值，
+  // 讓「淹過來」看起來是一段連續的過程，而不是瞬間變色塊）
+  let tideAnimFrom = 0, tideAnimTo = 0, tideAnimStart = 0;
+  const TIDE_RISE_ANIM_MS = 700;
+  function easeOutCubic(t){ return 1 - Math.pow(1-t, 3); }
+  function currentTideVisualInset(){
+    if(tideAnimTo <= tideAnimFrom) return tideInset;
+    const t = Math.min(1, (performance.now() - tideAnimStart) / TIDE_RISE_ANIM_MS);
+    return tideAnimFrom + (tideAnimTo - tideAnimFrom) * easeOutCubic(t);
+  }
 
   function resetState(){
     snake = [];
@@ -871,6 +958,7 @@
     nextDir = {x:1,y:0};
     foods = [];
     tideInset = 0;
+    tideAnimFrom = 0; tideAnimTo = 0; tideAnimStart = 0;
     tickMs = TICK_MS_START;
     tickAcc = 0;
     lastTs = 0;
@@ -885,6 +973,7 @@
     comboKey = null;
     comboCount = 0;
     tideWarning = false;
+    lastEatAt = -9999;
     refillFoods();
     updateHUD();
   }
@@ -975,18 +1064,26 @@
     if(nx<minB || nx>maxBx || ny<minB || ny>maxBy){
       return gameOver('潮水淹過了漁港邊界！');
     }
-    if(snake.some(s=>s.x===nx && s.y===ny)){
-      return gameOver('魚丸串撞到自己了！');
-    }
-
     let ate = null;
     const fi = foods.findIndex(f=>f.x===nx && f.y===ny);
     if(fi>=0){ ate = foods[fi]; foods.splice(fi,1); }
+
+    // 自撞判定：這一步尾端會被讓出的格子（依照下方成長/縮短邏輯，
+    // 可能一次讓出 0～2 格）不該被算成「撞到自己」，否則轉進尾巴
+    // 剛空出來的位置會被誤判成假死亡
+    let willPop = 0, gProbe = ate ? ate.kind.grow : 0, lenProbe = snake.length;
+    while(gProbe < 0 && lenProbe > 3){ willPop++; lenProbe--; gProbe++; }
+    if(gProbe <= 0){ willPop++; }
+    const bodyToCheck = willPop > 0 ? snake.slice(0, Math.max(0, snake.length - willPop)) : snake;
+    if(bodyToCheck.some(s=>s.x===nx && s.y===ny)){
+      return gameOver('魚丸串撞到自己了！');
+    }
 
     snake.unshift({x:nx,y:ny});
 
     if(ate){
       const t = ate.kind;
+      lastEatAt = performance.now();
 
       // combo：連續吃到同一種食物會累加，好魚加碼獎勵、壞魚加碼扣分
       // 保鮮冰塊不參與 combo：既不會延續/中斷既有連線，自己也不計連線
@@ -1013,13 +1110,15 @@
       if(ate.key==='ball'){
         ballEaten++;
         SFX.eatBall();
+        vibrate([10,15,10]);
       } else if(isIce){
         // 保鮮冰塊不算漁獲，也不推進魚丸刷新進度
         SFX.eatIce();
+        vibrate(8);
       } else {
-        if(ate.key==='shark') SFX.eatShark();
-        else if(t.score < 0) SFX.eatBad();
-        else SFX.eatNormal();
+        if(ate.key==='shark'){ SFX.eatShark(); vibrate([15,20,15]); }
+        else if(t.score < 0){ SFX.eatBad(); vibrate(30); }
+        else { SFX.eatNormal(); vibrate(12); }
         fishEaten++;
         fishSinceBall++;
         if(fishSinceBall >= BALL_SPAWN_EVERY){
@@ -1056,12 +1155,13 @@
     running = false;
     cancelAnimationFrame(rafId);
     clearInterval(timerId);
+    SFX.ambientStop();
 
     let emoji = '🏮', title = '收網了';
-    if(reason.includes('時間到')){ emoji = '🏆'; title = '滿載而歸！'; SFX.win(); }
-    else if(reason.includes('潮水')){ emoji = '🌊'; title = '被潮水追上了'; SFX.lose(); }
-    else if(reason.includes('撞到自己')){ emoji = '🥢'; title = '竹籤打結了'; SFX.lose(); }
-    else if(reason.includes('生態崩潰')){ emoji = '💀'; title = '生態崩潰了'; SFX.lose(); }
+    if(reason.includes('時間到')){ emoji = '🏆'; title = '滿載而歸！'; SFX.win(); vibrate([30,50,30,50,90]); }
+    else if(reason.includes('潮水')){ emoji = '🌊'; title = '被潮水追上了'; SFX.lose(); vibrate([50,40,50,40,100]); }
+    else if(reason.includes('撞到自己')){ emoji = '🥢'; title = '竹籤打結了'; SFX.lose(); vibrate([50,40,50,40,100]); }
+    else if(reason.includes('生態崩潰')){ emoji = '💀'; title = '生態崩潰了'; SFX.lose(); vibrate([50,40,50,40,100]); }
     endEmoji.textContent = emoji;
     endTitle.textContent = title;
 
@@ -1281,16 +1381,57 @@
       }
     }
 
-    // 潮汐區：已淹沒範圍改為灰色
-    if(tideInset>0){
+    // 潮汐區：已淹沒範圍改為灰色（用浮動內插值繪製，讓潮水用一小段時間「淹過來」
+    // 而不是瞬間變色塊；判定用的 tideInset 本身仍是整數、即時生效，只有畫面漸進）
+    const visInset = currentTideVisualInset();
+    if(visInset>0){
+      const ins = visInset*CELL;
       ctx.fillStyle = 'rgba(120,120,120,0.85)';
-      ctx.fillRect(0,0,canvas.width, tideInset*CELL);
-      ctx.fillRect(0,canvas.height - tideInset*CELL, canvas.width, tideInset*CELL);
-      ctx.fillRect(0,0, tideInset*CELL, canvas.height);
-      ctx.fillRect(canvas.width - tideInset*CELL, 0, tideInset*CELL, canvas.height);
+      ctx.fillRect(0,0,canvas.width, ins);
+      ctx.fillRect(0,canvas.height - ins, canvas.width, ins);
+      ctx.fillRect(0,0, ins, canvas.height);
+      ctx.fillRect(canvas.width - ins, 0, ins, canvas.height);
+
+      // 推進邊緣的水線：一條帶著波浪起伏、微微發亮的藍白線，強化「水正在淹過來」的動態
+      const waveW = Math.max(2, CELL*0.22);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(200,235,255,0.9)';
+      ctx.lineWidth = waveW;
+      ctx.lineCap = 'round';
+      const t0 = performance.now();
+      // 上緣
+      ctx.beginPath();
+      for(let x=0;x<=canvas.width;x+=8){
+        const y = ins + Math.sin(x/22 + t0/220)*2.2;
+        if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      // 下緣
+      ctx.beginPath();
+      for(let x=0;x<=canvas.width;x+=8){
+        const y = canvas.height - ins + Math.sin(x/22 + t0/220 + 1.5)*2.2;
+        if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      // 左緣
+      ctx.beginPath();
+      for(let y=0;y<=canvas.height;y+=8){
+        const x = ins + Math.sin(y/22 + t0/220 + 0.7)*2.2;
+        if(y===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      // 右緣
+      ctx.beginPath();
+      for(let y=0;y<=canvas.height;y+=8){
+        const x = canvas.width - ins + Math.sin(y/22 + t0/220 + 2.2)*2.2;
+        if(y===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      ctx.restore();
+
       ctx.strokeStyle = '#101010';
       ctx.lineWidth = 3;
-      ctx.strokeRect(tideInset*CELL+1, tideInset*CELL+1, canvas.width-2*tideInset*CELL-2, canvas.height-2*tideInset*CELL-2);
+      ctx.strokeRect(ins+1, ins+1, canvas.width-2*ins-2, canvas.height-2*ins-2);
     }
 
     // 即將被淹沒的那一圈：縮小前先閃動警示，提醒玩家提早離開
@@ -1352,6 +1493,22 @@
         ctx.beginPath();
         ctx.ellipse(cx, cy - r*0.4, r*0.62, r*0.32, 0, 0, Math.PI*2);
         ctx.fill();
+
+        // 剛吃到東西時，嘴巴朝前進方向短暫張開再合起來（快速放大→回縮的一個 hump）
+        const sinceEat = performance.now() - lastEatAt;
+        const MOUTH_DUR = 240;
+        if(sinceEat >= 0 && sinceEat < MOUTH_DUR){
+          const mouthT = Math.sin(Math.min(1, sinceEat/MOUTH_DUR) * Math.PI); // 0→1→0
+          const faceAngle = Math.atan2(dir.y, dir.x);
+          const halfAngle = 0.15 + mouthT*0.55;
+          ctx.fillStyle = '#101010';
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, r*0.96, faceAngle-halfAngle, faceAngle+halfAngle);
+          ctx.closePath();
+          ctx.fill();
+        }
+
         // 像素方眼
         ctx.fillStyle = '#101010';
         const eyeSize = Math.max(2, Math.floor(size*0.16));
@@ -1446,6 +1603,7 @@
     tideCaption.textContent = '⚠️ 潮水即將上漲';
     tideCaption.classList.add('show');
     SFX.tideWarn();
+    vibrate(15);
     tideTimeoutId = setTimeout(()=>{
       tideWarning = false;
       raiseTide();
@@ -1455,12 +1613,15 @@
   function raiseTide(){
     if(!running) return;
     if(tideInset < TIDE_MAX_INSET && (COLS-2*(tideInset+1))>4 && (ROWS-2*(tideInset+1))>6){
+      const from = tideInset;
       tideInset++;
+      tideAnimFrom = from; tideAnimTo = tideInset; tideAnimStart = performance.now();
       tideCaption.textContent = '潮水上漲';
       tideCaption.classList.add('show');
       SFX.tideRise();
       setTimeout(()=>tideCaption.classList.remove('show'), 1500);
       relocateSubmergedFoods();
+      if(navigator.vibrate) navigator.vibrate([30, 40, 60]);
     }
   }
 
@@ -1525,6 +1686,7 @@
   function startGame(){
     SFX.unlock();
     SFX.start();
+    SFX.ambientStart();
     sizeCanvas();
     resetState();
     running = true;
@@ -1547,6 +1709,7 @@
   restartBtn.addEventListener('click', ()=>{ stopIntervals(); startGame(); });
   backToInstructionsBtn.addEventListener('click', ()=>{
     SFX.uiTap();
+    SFX.ambientStop();
     stopIntervals();
     running = false;
     endOverlay.classList.add('hidden');
