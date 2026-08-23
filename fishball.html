@@ -1664,21 +1664,33 @@
   });
 
   let touchStart = null;
-  boardFrame.addEventListener('touchstart', (e)=>{
-    const t = e.touches[0];
-    touchStart = {x:t.clientX, y:t.clientY};
-  }, {passive:true});
-  boardFrame.addEventListener('touchend', (e)=>{
+  const SWIPE_THRESHOLD = 10; // 判定門檻縮小，滑一點點就能轉向，反應更靈敏
+  function handleSwipePoint(t){
     if(!touchStart) return;
-    const t = e.changedTouches[0];
     const dx = t.clientX - touchStart.x;
     const dy = t.clientY - touchStart.y;
-    if(Math.abs(dx) < 14 && Math.abs(dy) < 14){ touchStart=null; return; }
+    if(Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) return;
     if(Math.abs(dx) > Math.abs(dy)){
       setDir(dx>0?1:-1, 0);
     } else {
       setDir(0, dy>0?1:-1);
     }
+    // 轉向成功後，把起點重設到目前手指位置：
+    // 這樣手指持續拖著滑動時可以連續轉好幾次彎，不必放開再重壓
+    touchStart = {x:t.clientX, y:t.clientY};
+  }
+  boardFrame.addEventListener('touchstart', (e)=>{
+    const t = e.touches[0];
+    touchStart = {x:t.clientX, y:t.clientY};
+  }, {passive:true});
+  boardFrame.addEventListener('touchmove', (e)=>{
+    const t = e.touches[0];
+    if(t) handleSwipePoint(t);
+  }, {passive:true});
+  boardFrame.addEventListener('touchend', (e)=>{
+    if(!touchStart) return;
+    const t = e.changedTouches[0];
+    if(t) handleSwipePoint(t);
     touchStart = null;
   }, {passive:true});
 
