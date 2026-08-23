@@ -190,7 +190,7 @@
   .tool-broken-banner.show{opacity:1;transform:translateX(-50%) scale(1);animation:toolShake .4s ease .1s 2;}
   @keyframes toolShake{0%,100%{transform:translateX(-50%) scale(1) rotate(0);}25%{transform:translateX(-50%) scale(1) rotate(-3deg);}75%{transform:translateX(-50%) scale(1) rotate(3deg);}}
   #birdFlyLayer{position:absolute;inset:0;pointer-events:none;z-index:35;overflow:visible;}
-  .bird-fly{position:absolute;top:10%;width:46px;height:34px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));
+  .bird-fly{position:absolute;top:10%;width:59.8px;height:44.2px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));
     animation:birdSwoop 1.6s cubic-bezier(.4,0,.6,1) forwards;}
   .bird-fly svg{width:100%;height:100%;display:block;}
   .bird-fly.reverse{animation-name:birdSwoopRev;}
@@ -250,7 +250,7 @@
 
   .legend-mini{display:flex;justify-content:center;gap:10px;margin-top:2px;font-size:0.74rem;color:var(--ink);flex-shrink:0;font-weight:800;}
   .legend-mini > div{background:rgba(255,255,255,.55);border:2px solid var(--outline);border-radius:999px;padding:3px 10px;box-shadow:0 2px 0 rgba(0,0,0,.15);}
-  .legend-mini .swatch{display:inline-block;width:11px;height:11px;border-radius:4px;margin-right:5px;vertical-align:-1px;border:2px solid var(--outline);}
+  .legend-mini .swatch{display:inline-block;width:16px;height:16px;border-radius:4px;margin-right:5px;vertical-align:-3px;object-fit:cover;}
 
   .overlay{position:fixed;inset:0;background:rgba(10,30,45,.72);display:none;align-items:center;justify-content:center;z-index:80;padding:14px;}
   .overlay.active{display:flex;animation:fadeUp .3s ease both;}
@@ -383,34 +383,17 @@
     <div id="birdFlyLayer"></div>
     <svg id="board" viewBox="0 0 526 476">
       <defs>
-        <linearGradient id="okGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="var(--stone-ok-1)"/><stop offset="1" stop-color="var(--stone-ok-2)"/>
-        </linearGradient>
-        <linearGradient id="badGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="var(--stone-bad-1)"/><stop offset="1" stop-color="var(--stone-bad-2)"/>
-        </linearGradient>
-        <linearGradient id="crackGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="var(--stone-ok-1)"/><stop offset="1" stop-color="var(--stone-bad-1)"/>
-        </linearGradient>
         <symbol id="stoneOk" viewBox="0 0 60 60">
           <ellipse cx="30" cy="47" rx="20" ry="5" fill="var(--outline)" opacity=".22"/>
-          <path d="M10 38 Q6 22 22 14 Q38 4 50 18 Q58 30 46 42 Q34 54 20 48 Q10 44 10 38Z" fill="url(#okGrad)" stroke="var(--outline)" stroke-width="3.6" stroke-linejoin="round"/>
-          <circle cx="22" cy="24" r="2.6" fill="#a8641c" opacity=".7"/>
-          <circle cx="36" cy="34" r="2" fill="#a8641c" opacity=".6"/>
-          <ellipse cx="19" cy="16" rx="8.5" ry="4.4" fill="#fff" opacity=".65"/>
+          <image href="m0.png" x="4" y="2" width="52" height="52" preserveAspectRatio="xMidYMid meet"/>
         </symbol>
         <symbol id="stoneBad" viewBox="0 0 60 60">
           <ellipse cx="30" cy="47" rx="20" ry="5" fill="var(--outline)" opacity=".22"/>
-          <path d="M10 38 Q6 22 22 14 Q38 4 50 18 Q58 30 46 42 Q34 54 20 48 Q10 44 10 38Z" fill="url(#badGrad)" stroke="var(--outline)" stroke-width="3.6" stroke-linejoin="round"/>
-          <path d="M18 20 L30 30 L24 40 M30 30 L40 24" stroke="#1a2226" stroke-width="3" fill="none" opacity=".9" stroke-linecap="round"/>
-          <ellipse cx="19" cy="17" rx="8.5" ry="4.4" fill="#fff" opacity=".22"/>
+          <image href="m2.png" x="4" y="2" width="52" height="52" preserveAspectRatio="xMidYMid meet"/>
         </symbol>
         <symbol id="stoneCracked" viewBox="0 0 60 60">
           <ellipse cx="30" cy="47" rx="20" ry="5" fill="var(--outline)" opacity=".22"/>
-          <path d="M10 38 Q6 22 22 14 Q38 4 50 18 Q58 30 46 42 Q34 54 20 48 Q10 44 10 38Z" fill="url(#crackGrad)" stroke="var(--outline)" stroke-width="3.6" stroke-linejoin="round"/>
-          <path d="M23 17 L29 29" stroke="#1a2226" stroke-width="2.4" fill="none" opacity=".7" stroke-linecap="round"/>
-          <circle cx="22" cy="24" r="2.4" fill="#a8641c" opacity=".6"/>
-          <ellipse cx="19" cy="16" rx="8.5" ry="4.4" fill="#fff" opacity=".5"/>
+          <image href="m1.png" x="4" y="2" width="52" height="52" preserveAspectRatio="xMidYMid meet"/>
         </symbol>
         <symbol id="fishIcon" viewBox="0 0 32 20">
           <path d="M20 10 L30 3 L25 10 L30 17 Z" fill="currentColor" stroke="var(--outline)" stroke-width="1" stroke-linejoin="round" opacity=".95"/>
@@ -428,9 +411,9 @@
     </svg></div>
 
     <div class="legend-mini">
-      <div><span class="swatch" style="background:linear-gradient(160deg,var(--stone-ok-1),var(--stone-ok-2));"></span>已修復</div>
-      <div><span class="swatch" style="background:linear-gradient(160deg,var(--stone-ok-1),var(--stone-bad-1));"></span>龜裂中</div>
-      <div><span class="swatch" style="background:linear-gradient(160deg,var(--stone-bad-1),var(--stone-bad-2));"></span>毀損中</div>
+      <div><img class="swatch" src="m0.png" alt="已修復"/>已修復</div>
+      <div><img class="swatch" src="m1.png" alt="龜裂中"/>龜裂中</div>
+      <div><img class="swatch" src="m2.png" alt="毀損中"/>毀損中</div>
     </div>
   </div>
 </div>
@@ -931,7 +914,7 @@ function spawnFish(n, riseDurationMs){
     g.setAttribute('class','fish-icon');
     g.style.transform = `translate(${GAP_X}px,${GAP_Y}px) rotate(${rot}deg) scale(.5)`;
     g.style.opacity = '0';
-    g.innerHTML = `<use href="#fishIcon" x="-26" y="-16" width="52" height="32" style="color:${color}">
+    g.innerHTML = `<use href="#fishIcon" x="-31.2" y="-19.2" width="62.4" height="38.4" style="color:${color}">
       <animateTransform attributeName="transform" type="translate" values="0,0; 3,-2; 0,0" dur="${bobDur}s" begin="${bobBegin}s" repeatCount="indefinite"/>
     </use>`;
     layer.appendChild(g);
@@ -1200,6 +1183,7 @@ function startGame(){
     fishList: [],
     over: false,
     toolBroken: false,
+    toolBreakSafeClicksLeft: 0,
     timerHandle: null,
     tideHandle: null,
     tideInterval: undefined
@@ -1335,7 +1319,9 @@ function playRepairEffect(sid, isRepair){
 function onCellClick(id, g){
   if(!state || state.over) return;
   if(state.toolBroken) return; // 工具維修中，暫時無法點擊修復
-  if(Math.random() < TOOL_BREAK_CHANCE){
+  if(state.toolBreakSafeClicksLeft > 0){
+    state.toolBreakSafeClicksLeft--; // 保障期內，這次點擊不參與故障判定
+  } else if(Math.random() < TOOL_BREAK_CHANCE){
     triggerToolBroken();
     return; // 這次點擊沒有修復到，石塊狀態不變
   }
@@ -1509,9 +1495,11 @@ function triggerBirdEvent(){
 /* ============ 工具故障事件（隨機 5%） ============ */
 const TOOL_BREAK_CHANCE = 0.05;
 const TOOL_BREAK_MS = 3000;
+const TOOL_BREAK_SAFE_CLICKS = 2; // 工具修好後，至少保障接下來這麼多次點擊不會連續故障
 
 function triggerToolBroken(){
   state.toolBroken = true;
+  state.toolBreakSafeClicksLeft = 0; // 故障中，安全次數歸零（等下次修好後才會重新給）
   SoundFX.toolBreak();
   vibrate(50); // 工具故障的短促震動提示
   const banner = document.getElementById('toolBrokenBanner');
@@ -1521,6 +1509,7 @@ function triggerToolBroken(){
   state.toolBrokenHandle = setTimeout(()=>{
     if(!state) return;
     state.toolBroken = false;
+    state.toolBreakSafeClicksLeft = TOOL_BREAK_SAFE_CLICKS; // 修好後保障至少兩次點擊不會再故障
     banner.classList.remove('show');
   }, TOOL_BREAK_MS);
 }
