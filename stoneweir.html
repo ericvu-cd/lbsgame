@@ -163,8 +163,8 @@
   }
   .stat b{display:block;font-size:1.05rem;color:var(--ink);font-weight:800;}
   .stat span{color:var(--ink-dim);font-size:0.62rem;font-weight:700;}
-  .stat.score-stat{border-color:var(--outline);background:linear-gradient(180deg,#fff3ba 0%, var(--gold) 100%);}
-  .stat.score-stat b{color:var(--gold-dark);}
+  .stat.score-stat{border-color:var(--outline);background:linear-gradient(180deg,#fff3ba 0%, var(--gold) 100%);width:58px;min-width:58px;box-sizing:border-box;}
+  .stat.score-stat b{color:var(--gold-dark);font-variant-numeric:tabular-nums;}
   .stat.fish-stat{border-color:var(--outline);background:linear-gradient(180deg,#dbf6ff 0%, #6fd4f0 100%);}
   .stat.fish-stat b{color:var(--ocean-deep);}
   .icon-btn{
@@ -277,6 +277,7 @@
     border-radius:50%;animation:sunburstSpin 12s linear infinite;
   }
   @keyframes sunburstSpin{from{transform:translate(-50%,-50%) rotate(0deg);}to{transform:translate(-50%,-50%) rotate(360deg);}}
+  .modal-lose .medal::before{display:none;} /* 決堤失敗是壞消息，不該有慶祝用的陽光放射效果 */
   .modal .stars{font-size:1.5rem;letter-spacing:6px;margin:0 0 2px;}
   .modal .stars .star-on{color:var(--gold);text-shadow:0 2px 0 var(--gold-dark), 0 3px 4px rgba(0,0,0,.35);
     -webkit-text-stroke:1px var(--outline);animation:starPop .5s cubic-bezier(.34,1.56,.64,1) both;}
@@ -367,7 +368,7 @@
   <div class="screen" id="screen-game">
     <h1 class="title">石滬修復</h1>
     <div class="game-header">
-      <div class="game-title">搶修進行中<span id="gameSub">點擊石塊來修堤，注意海浪來襲會沖潰毀損</span></div>
+      <div class="game-title"><span id="gameSub">點擊石塊來修堤，注意海浪來襲會沖潰毀損</span></div>
       <div class="stat-bar">
         <div class="stat"><b id="statTime">00:00</b><span>時間</span></div>
         <div class="stat"><b id="statMoves">0</b><span>步數</span></div>
@@ -388,6 +389,9 @@
         <linearGradient id="badGrad" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="var(--stone-bad-1)"/><stop offset="1" stop-color="var(--stone-bad-2)"/>
         </linearGradient>
+        <linearGradient id="crackGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--stone-ok-1)"/><stop offset="1" stop-color="var(--stone-bad-1)"/>
+        </linearGradient>
         <symbol id="stoneOk" viewBox="0 0 60 60">
           <ellipse cx="30" cy="47" rx="20" ry="5" fill="var(--outline)" opacity=".22"/>
           <path d="M10 38 Q6 22 22 14 Q38 4 50 18 Q58 30 46 42 Q34 54 20 48 Q10 44 10 38Z" fill="url(#okGrad)" stroke="var(--outline)" stroke-width="3.6" stroke-linejoin="round"/>
@@ -400,6 +404,13 @@
           <path d="M10 38 Q6 22 22 14 Q38 4 50 18 Q58 30 46 42 Q34 54 20 48 Q10 44 10 38Z" fill="url(#badGrad)" stroke="var(--outline)" stroke-width="3.6" stroke-linejoin="round"/>
           <path d="M18 20 L30 30 L24 40 M30 30 L40 24" stroke="#1a2226" stroke-width="3" fill="none" opacity=".9" stroke-linecap="round"/>
           <ellipse cx="19" cy="17" rx="8.5" ry="4.4" fill="#fff" opacity=".22"/>
+        </symbol>
+        <symbol id="stoneCracked" viewBox="0 0 60 60">
+          <ellipse cx="30" cy="47" rx="20" ry="5" fill="var(--outline)" opacity=".22"/>
+          <path d="M10 38 Q6 22 22 14 Q38 4 50 18 Q58 30 46 42 Q34 54 20 48 Q10 44 10 38Z" fill="url(#crackGrad)" stroke="var(--outline)" stroke-width="3.6" stroke-linejoin="round"/>
+          <path d="M23 17 L29 29" stroke="#1a2226" stroke-width="2.4" fill="none" opacity=".7" stroke-linecap="round"/>
+          <circle cx="22" cy="24" r="2.4" fill="#a8641c" opacity=".6"/>
+          <ellipse cx="19" cy="16" rx="8.5" ry="4.4" fill="#fff" opacity=".5"/>
         </symbol>
         <symbol id="fishIcon" viewBox="0 0 32 20">
           <path d="M20 10 L30 3 L25 10 L30 17 Z" fill="currentColor" stroke="var(--outline)" stroke-width="1" stroke-linejoin="round" opacity=".95"/>
@@ -418,6 +429,7 @@
 
     <div class="legend-mini">
       <div><span class="swatch" style="background:linear-gradient(160deg,var(--stone-ok-1),var(--stone-ok-2));"></span>已修復</div>
+      <div><span class="swatch" style="background:linear-gradient(160deg,var(--stone-ok-1),var(--stone-bad-1));"></span>龜裂中</div>
       <div><span class="swatch" style="background:linear-gradient(160deg,var(--stone-bad-1),var(--stone-bad-2));"></span>毀損中</div>
     </div>
   </div>
@@ -969,21 +981,34 @@ function showFishDelta(delta){
   statEl.classList.add(delta > 0 ? 'flash-gain' : 'flash-loss');
 }
 
-// 翻動遮罩：自己 + 同層左右相鄰 + 對面另一層
-const MASKS = new Array(TOTAL).fill(0);
+/* 翻動影響清單：自己 + 同層左右相鄰 + 對面另一層。
+   三態石塊（0完好/1龜裂/2毀損）用 mod-3 加法取代原本的位元 XOR，
+   所以這裡改成存「受影響格子 id 的陣列」，而不是位元遮罩整數。 */
+const MASKS = new Array(TOTAL).fill(null);
 for(let i=0;i<N;i++){
-  let m = (1<<i);
-  if(i>0) m |= (1<<(i-1));
-  if(i<N-1) m |= (1<<(i+1));
-  m |= (1<<(N+i));
-  MASKS[i] = m;
+  const cells = [i];
+  if(i>0) cells.push(i-1);
+  if(i<N-1) cells.push(i+1);
+  cells.push(N+i);
+  MASKS[i] = cells;
 }
 for(let i=0;i<N;i++){
-  let m = (1<<(N+i));
-  if(i>0) m |= (1<<(N+i-1));
-  if(i<N-1) m |= (1<<(N+i+1));
-  m |= (1<<i);
-  MASKS[N+i] = m;
+  const cells = [N+i];
+  if(i>0) cells.push(N+i-1);
+  if(i<N-1) cells.push(N+i+1);
+  cells.push(i);
+  MASKS[N+i] = cells;
+}
+
+/* 對一組石塊狀態陣列套用某個點的翻動效果：delta=+1 表示往毀損方向推一階（海浪），
+   delta=-1（即 mod 3 的 +2）表示往完好方向修一階（點擊修復）。
+   同一顆格子若同時被兩個點影響到，會各自疊加，不會互相抵銷──
+   這維持了跟原本 XOR 版本相同的「保證可解」性質：因為 -1 在 mod 3 底下是可逆的，
+   任何由這組生成元疊加出來的損壞狀態，都能單靠反覆套用「修復」操作（同一組生成元的逆元）解回全 0。 */
+function applyMask(cellsArr, idx, delta){
+  MASKS[idx].forEach(cid=>{
+    cellsArr[cid] = ((cellsArr[cid] + delta) % 3 + 3) % 3;
+  });
 }
 
 /* ============ 計分基準 ============ */
@@ -1001,18 +1026,20 @@ function computeScore(seconds, moves, fishCaught){
 }
 
 /* 依照「通道」（畫面上看得到的直線+斜線連接線，CHANNELS）計算目前有幾處缺口：
-   每條通道都是一內層+一外層的配對，只要任一端石頭毀損，這條通道就算是破口。
-   缺口比率 = 破口通道數 / 全部通道數，取代單純用「毀損顆數/22」的算法 */
-function countGapRatio(bits){
+   每條通道都是一內層+一外層的配對。三態石塊下，缺口不是全有全無：
+   完好(0)=沒缺口，龜裂(1)=半個缺口，毀損(2)=整個缺口，兩端取較嚴重的那一個。
+   缺口比率 = 加總缺口權重 / 全部通道數，取代單純用「毀損顆數/22」的算法 */
+function countGapRatio(cells){
   let breached = 0;
   CHANNELS.forEach(([a,b])=>{
-    if(((bits>>a)&1) || ((bits>>b)&1)) breached++;
+    const worst = Math.max(cells[a], cells[b]); // 0/1/2
+    breached += worst / 2;
   });
   return breached / CHANNELS.length;
 }
 
 /* ============ 狀態 ============ */
-let state = null; // {bits, moves, seconds, timerHandle, tideHandle}
+let state = null; // {cells(每格0/1/2三態陣列), moves, seconds, timerHandle, tideHandle}
 
 function switchScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -1043,15 +1070,19 @@ document.getElementById('retryBtn').addEventListener('click', ()=>{
 });
 
 /* ============ 遊戲邏輯 ============ */
+/* 三態版本：從全部完好(0)開始，隨機對某些點套用「+1」(往毀損方向推一階)。
+   因為都是用同一組 MASKS 生成元疊加出來的，不管疊加幾次、順不順路，
+   最終狀態一定落在玩家用「修復」操作（同一生成元的逆元）可以推回全 0 的空間內，
+   保證整局一定有解。 */
 function randomPuzzle(){
-  let bits = 0;
-  const scrambleMoves = 20 + Math.floor(Math.random()*6); // 20~25 次隨機翻動，保證有解
+  const cells = new Array(TOTAL).fill(0);
+  const scrambleMoves = 26 + Math.floor(Math.random()*8); // 三態的狀態空間更大，多疊幾次讓初始局更需要推理
   for(let k=0;k<scrambleMoves;k++){
     const idx = Math.floor(Math.random()*TOTAL);
-    bits ^= MASKS[idx];
+    applyMask(cells, idx, 1);
   }
-  if(bits === 0) bits ^= MASKS[Math.floor(Math.random()*TOTAL)];
-  return bits;
+  if(cells.every(v=>v===0)) applyMask(cells, Math.floor(Math.random()*TOTAL), 1);
+  return cells;
 }
 
 function stopTimers(){
@@ -1140,7 +1171,7 @@ function scheduleTide(){
   state.tideHandle = setTimeout(()=>{
     tideStrike();
     state.tideInterval = Math.max(TIDE_INTERVAL_MIN, state.tideInterval - 1); // 沖刷一次後間隔縮短1秒，最短6秒
-    if(state && !state.over && state.bits !== 0){
+    if(state && !state.over && !isFullyRepaired()){
       // 畫面震動播完之後，海水才開始往下退
       state.shakeWaitHandle = setTimeout(()=>{
         if(!state || state.over) return;
@@ -1148,17 +1179,21 @@ function scheduleTide(){
         SoundFX.setAmbientLevel(0.12, RECEDE_MS / 1000); // 潮聲底噪跟著退潮變小聲
         ebbFish(RECEDE_MS); // 海水開始後退的瞬間，依照當下的毀損比例讓魚群跟著缺口逃走，動畫時長跟退潮同步
         state.recedeHandle = setTimeout(()=>{
-          if(state && !state.over && state.bits !== 0) scheduleTide();
+          if(state && !state.over && !isFullyRepaired()) scheduleTide();
         }, RECEDE_MS);
       }, SHAKE_MS);
     }
   }, delay);
 }
 
+function isFullyRepaired(){
+  return !!state && state.cells.every(v=>v===0);
+}
+
 function startGame(){
   stopTimers();
   state = {
-    bits: randomPuzzle(),
+    cells: randomPuzzle(),
     moves: 0,
     seconds: 0,
     fishCaught: 0,
@@ -1197,11 +1232,13 @@ function formatTime(sec){
   return `${m}:${s}`;
 }
 
+const STONE_SYMBOL = ['#stoneOk', '#stoneCracked', '#stoneBad']; // state 0/1/2 對應圖示
+
 function renderBoard(){
   const layer = document.getElementById('stoneLayer');
   layer.innerHTML = '';
   STONES.forEach(s=>{
-    const damaged = (state.bits >> s.id) & 1;
+    const st = state.cells[s.id];
     const isOuter = s.layer === 'outer';
     const size = isOuter ? 76.5 : 51;
     const half = size / 2;
@@ -1213,7 +1250,7 @@ function renderBoard(){
     g.innerHTML = `
       <g class="stone-visual">
         <circle class="hit" r="${hitR}"></circle>
-        <use href="${damaged ? '#stoneBad' : '#stoneOk'}" x="${-half}" y="${-half}" width="${size}" height="${size}"></use>
+        <use href="${STONE_SYMBOL[st]}" x="${-half}" y="${-half}" width="${size}" height="${size}"></use>
       </g>
     `;
     g.addEventListener('click', ()=>onCellClick(s.id, g));
@@ -1227,9 +1264,8 @@ function renderBoard(){
 function updateStoneVisual(sid){
   const cell = document.querySelector(`.stone-cell[data-id="${sid}"]`);
   if(!cell) return;
-  const damaged = (state.bits >> sid) & 1;
   const use = cell.querySelector('.stone-visual use');
-  if(use) use.setAttribute('href', damaged ? '#stoneBad' : '#stoneOk');
+  if(use) use.setAttribute('href', STONE_SYMBOL[state.cells[sid]]);
 }
 
 /* 修復特效：中心金色閃光 + 雙層擴散光環 + 星星火花四散 + 石塊本身彈跳一下
@@ -1303,28 +1339,25 @@ function onCellClick(id, g){
     triggerToolBroken();
     return; // 這次點擊沒有修復到，石塊狀態不變
   }
-  const oldBits = state.bits;
+  const oldCells = state.cells.slice();
   SoundFX.stoneTap();
-  state.bits ^= MASKS[id];
+  applyMask(state.cells, id, -1); // 修復：影響到的格子各往完好方向推一階（0→2 代表原本完好的被連帶弄裂，是刻意的風險）
   state.moves++;
   document.getElementById('statMoves').textContent = state.moves;
   updateLiveScore();
   if(state.over) return; // 這一步就把分數扣到0了，失敗結算已觸發，不再翻面
 
-  // 只處理這次點擊實際翻動到的幾顆石塊（MASKS[id] 影響到的位元），不整版重繪
-  const changedBits = oldBits ^ state.bits;
-  for(let sid=0; sid<TOTAL; sid++){
-    if(!((changedBits>>sid)&1)) continue;
+  // 只處理這次點擊實際翻動到的幾顆石塊（MASKS[id] 影響到的格子），不整版重繪
+  MASKS[id].forEach(sid=>{
     updateStoneVisual(sid);
-    const wasDamaged = (oldBits >> sid) & 1;
-    const nowDamaged = (state.bits >> sid) & 1;
-    if(wasDamaged && !nowDamaged) playRepairEffect(sid);
-  }
+    const improved = state.cells[sid] < oldCells[sid]; // 狀態數值變小＝往完好方向前進
+    playRepairEffect(sid, improved);
+  });
 
   const fresh = document.querySelector(`.stone-cell[data-id="${id}"] .stone-visual`);
   if(fresh){ fresh.classList.add('pulse'); setTimeout(()=>fresh.classList.remove('pulse'), 350); }
 
-  if(state.bits === 0) finishGame();
+  if(isFullyRepaired()) finishGame();
 }
 
 /* 漲潮的第二個撞擊點，位置限制在第一個撞擊點的 ±2 塊範圍內（同一角度位置、層別不拘），
@@ -1345,17 +1378,18 @@ function pickNearbyIndex(idx1){
 }
 
 function tideStrike(){
-  if(!state || state.over || state.bits === undefined) return;
+  if(!state || state.over || !state.cells) return;
 
   // 漲潮等同「兩次點擊」疊加的效果（而非單顆石頭直接翻面），且第二個撞擊點
   // 限制在第一個撞擊點 ±2 塊距離內，讓破壞範圍集中、更像單一波浪的衝擊。
   // 這樣保證局面永遠停留在玩家點擊操作可到達的「可解子空間」內，
   // 不會產生無論怎麼點都解不完的死局；同時因為疊加了兩處連動效果，
   // 通常不會剛好等於任何單一顆石頭的點擊遮罩，玩家也無法一鍵抵銷。
-  const oldBits = state.bits;
+  const oldCells = state.cells.slice();
   let idx1 = Math.floor(Math.random()*TOTAL);
   let idx2 = pickNearbyIndex(idx1);
-  state.bits ^= MASKS[idx1] ^ MASKS[idx2];
+  applyMask(state.cells, idx1, 1); // 損壞：影響到的格子各往毀損方向推一階
+  applyMask(state.cells, idx2, 1); // 兩點各自疊加，同一格被打到兩次就會直接跳兩階
   updateLiveScore();
 
   // 海浪衝擊音效：間隔越接近下限（TIDE_INTERVAL_MIN）代表節奏越急，聲音也跟著更尖銳急促
@@ -1367,14 +1401,13 @@ function tideStrike(){
 
   // 只更新這次漲潮衝擊實際翻轉到的石塊，不整版重繪；
   // 每顆都套用跟點擊修復一樣的特效，讓玩家清楚看到海浪具體沖到了哪些石塊。
-  const changedBits = oldBits ^ state.bits;
-  for(let sid=0; sid<TOTAL; sid++){
-    if(!((changedBits>>sid)&1)) continue;
+  const touched = new Set([...MASKS[idx1], ...MASKS[idx2]]);
+  touched.forEach(sid=>{
+    if(state.cells[sid] === oldCells[sid]) return; // 同一格被打兩次可能剛好繞回原狀，沒有變化就不用播特效
     updateStoneVisual(sid);
-    const was = (oldBits >> sid) & 1;
-    const now = (state.bits >> sid) & 1;
-    playRepairEffect(sid, was === 1 && now === 0);
-  }
+    const improved = state.cells[sid] < oldCells[sid];
+    playRepairEffect(sid, improved);
+  });
 
   // 撞擊瞬間：水面波光加亮（水位本身已在倒數期間緩緩升到最高點）
   const ocean = document.getElementById('ocean');
@@ -1389,13 +1422,13 @@ function tideStrike(){
   const boardWrap = document.querySelector('.board-wrap');
   boardWrap.classList.remove('shake'); void boardWrap.offsetWidth; boardWrap.classList.add('shake');
 
-  if(state.bits === 0) finishGame();
+  if(isFullyRepaired()) finishGame();
 }
 
 /* 退潮時：滬堤缺口（直線+斜線連接的破損比率）越多，魚群就會跟著海水逃出去越多；escapeDurationMs跟退潮動畫時長同步 */
 function ebbFish(escapeDurationMs){
   if(!state || state.over) return;
-  const escapeRatio = countGapRatio(state.bits);
+  const escapeRatio = countGapRatio(state.cells);
   const escaped = Math.round(state.fishCaught * escapeRatio);
   if(escaped > 0){
     state.fishCaught = Math.max(0, state.fishCaught - escaped);
@@ -1492,8 +1525,10 @@ function triggerToolBroken(){
   }, TOOL_BREAK_MS);
 }
 
-/* 星級門檻：以總分對照基礎分（1000）的比例區分 3 / 2 / 1 / 0 星 */
-const STAR_THRESHOLDS = [850, 400, 150]; // 依序對應 3★ / 2★ / 1★ 的最低分數
+/* 星級門檻：三態石塊上線後，一顆龜裂的石頭常要連點兩次才能修好，
+   加上遊戲中海浪會持續疊加新損壞，實際所需步數/耗時都比原本二進位版本高一截，
+   門檻對應下修，讓 3★ 仍然要接近理想解法才拿得到、但不是理論上摸不到的天花板 */
+const STAR_THRESHOLDS = [720, 350, 120]; // 依序對應 3★ / 2★ / 1★ 的最低分數
 function computeStars(total){
   if(total >= STAR_THRESHOLDS[0]) return 3;
   if(total >= STAR_THRESHOLDS[1]) return 2;
