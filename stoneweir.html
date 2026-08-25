@@ -319,6 +319,11 @@
   .stat.danger{border-color:var(--outline);background:linear-gradient(180deg,#ffcdbd 0%, var(--coral) 100%);}
   .stat.danger b{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5);}
 
+  .board-pit-shadow{mix-blend-mode:multiply;}
+
+  .icon-slot{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;line-height:0;}
+  .icon-slot canvas{display:block;}
+
   .sound-toggle-btn{
     position:fixed;top:10px;right:10px;z-index:70;
     width:40px;height:40px;border-radius:50%;
@@ -379,7 +384,7 @@
     </div>
 
     <div class="board-wrap">
-    <div class="tool-broken-banner" id="toolBrokenBanner">🔧 工具壞了，維修中…</div>
+    <div class="tool-broken-banner" id="toolBrokenBanner"><span class="icon-slot" id="iconWrench"></span> 工具壞了，維修中…</div>
     <div id="birdFlyLayer"></div>
     <svg id="board" viewBox="0 0 526 476">
       <defs>
@@ -404,7 +409,16 @@
           <circle cx="6.3" cy="9" r="1.5" fill="var(--outline)"/>
           <circle cx="6.7" cy="8.6" r=".5" fill="#fff"/>
         </symbol>
+        <radialGradient id="pitShadowGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#b8790a" stop-opacity=".55"/>
+          <stop offset="50%" stop-color="#dda832" stop-opacity=".22"/>
+          <stop offset="100%" stop-color="#dda832" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="pitBlur" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="7"/>
+        </filter>
       </defs>
+      <ellipse class="board-pit-shadow" cx="263" cy="215" rx="248" ry="238" fill="url(#pitShadowGrad)" filter="url(#pitBlur)"/>
       <g id="connectorLayer"></g>
       <g id="fishLayer"></g>
       <g id="stoneLayer"></g>
@@ -420,7 +434,7 @@
 
 <div class="overlay" id="winOverlay">
   <div class="modal">
-    <div class="medal">🪨</div>
+    <div class="medal"><span class="icon-slot" id="iconMedalWin"></span></div>
     <h2>石滬修復完成！</h2>
     <div class="stars" id="finalStars"></div>
     <div class="score-rank"><b id="finalScore">1000</b><span class="score-unit">分</span></div>
@@ -430,7 +444,7 @@
     </div>
     <div class="score-breakdown" id="scoreBreakdown"></div>
     <div class="tip-carousel" id="winTipCarousel">
-      <div class="tip-icon">💡</div>
+      <div class="tip-icon"><span class="icon-slot" id="iconTipWin"></span></div>
       <div class="tip-body">
         <div class="tip-text" id="winTipText"></div>
         <div class="tip-dots" id="winTipDots"></div>
@@ -445,7 +459,7 @@
 
 <div class="overlay" id="loseOverlay">
   <div class="modal modal-lose">
-    <div class="medal">🌊</div>
+    <div class="medal"><span class="icon-slot" id="iconMedalLose"></span></div>
     <h2>滬堤決堤了……</h2>
     <p class="lose-msg">分數已歸零，海水衝破了滬堤，這次搶修失敗了。</p>
     <div class="result-grid">
@@ -453,7 +467,7 @@
       <div><b id="failMoves">0</b><span>使用步數</span></div>
     </div>
     <div class="tip-carousel" id="loseTipCarousel">
-      <div class="tip-icon">💡</div>
+      <div class="tip-icon"><span class="icon-slot" id="iconTipLose"></span></div>
       <div class="tip-body">
         <div class="tip-text" id="loseTipText"></div>
         <div class="tip-dots" id="loseTipDots"></div>
@@ -1560,6 +1574,247 @@ function finishGame(){
   winTipCarousel.showRandom();
   document.getElementById('winOverlay').classList.add('active');
 }
+
+/* ============ Canvas 圖示（只畫一次，取代靜態 emoji：扳手／石頭獎牌／海浪徽章／燈泡） ============
+   喇叭開關跟浮動 +N 魚獲維持原本 emoji 不變，因為喇叭要頻繁切換、魚獲會重複生成很多次，
+   目前用 emoji 字元反而比較輕量；這裡只處理「畫一次、幾乎不變」的 4 個圖示。 */
+(function(){
+  const OUTLINE = '#241407';
+
+  function makeCanvas(size){
+    const dpr = window.devicePixelRatio || 1;
+    const c = document.createElement('canvas');
+    c.width = Math.round(size*dpr); c.height = Math.round(size*dpr);
+    c.style.width = size+'px'; c.style.height = size+'px';
+    const ctx = c.getContext('2d');
+    ctx.scale(dpr,dpr);
+    return {c, ctx};
+  }
+
+  function strokePath(ctx, path, width){
+    ctx.lineWidth = width; ctx.strokeStyle = OUTLINE;
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.stroke(path);
+  }
+
+  function drawPuck(ctx, cx, cy, r, colorTop, colorMid, colorBottom){
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.35)';
+    ctx.shadowBlur = r*0.18;
+    ctx.shadowOffsetY = r*0.16;
+    const grad = ctx.createLinearGradient(0, cy-r, 0, cy+r);
+    grad.addColorStop(0, colorTop); grad.addColorStop(.55, colorMid); grad.addColorStop(1, colorBottom);
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fillStyle = grad; ctx.fill();
+    ctx.restore();
+    ctx.lineWidth = Math.max(2, r*0.09); ctx.strokeStyle = OUTLINE;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+    const hi = ctx.createRadialGradient(cx-r*0.32, cy-r*0.4, r*0.05, cx-r*0.32, cy-r*0.4, r*0.85);
+    hi.addColorStop(0, 'rgba(255,255,255,.75)'); hi.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.beginPath(); ctx.arc(cx, cy, r*0.96, 0, Math.PI*2); ctx.fillStyle = hi; ctx.fill();
+  }
+
+  /* ---- 扳手（工具壞了） ---- */
+  function drawWrench(ctx, size){
+    ctx.save();
+    ctx.translate(size/2, size/2);
+    ctx.rotate(-38*Math.PI/180);
+    const s = size*0.019;
+    const path = new Path2D();
+    path.moveTo(-16*s,-6*s);
+    path.quadraticCurveTo(-20*s,-6*s,-20*s,-2*s);
+    path.lineTo(-20*s,2*s);
+    path.quadraticCurveTo(-20*s,6*s,-16*s,6*s);
+    path.lineTo(12*s,6*s);
+    path.quadraticCurveTo(20*s,6*s,20*s,2*s);
+    path.quadraticCurveTo(24*s,2*s,24*s,-2*s);
+    path.quadraticCurveTo(24*s,-6*s,20*s,-6*s);
+    path.quadraticCurveTo(20*s,-2*s,16*s,-2*s);
+    path.quadraticCurveTo(12*s,-2*s,12*s,-6*s);
+    path.lineTo(-16*s,-6*s);
+    path.closePath();
+    ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=size*0.05; ctx.shadowOffsetY=size*0.03;
+    const grad = ctx.createLinearGradient(0,-6*s,0,6*s);
+    grad.addColorStop(0,'#e7ecef'); grad.addColorStop(.5,'#c8d1d6'); grad.addColorStop(1,'#7d8c94');
+    ctx.fillStyle = grad; ctx.fill(path);
+    ctx.shadowColor='transparent';
+    strokePath(ctx, path, s*1.7);
+    ctx.strokeStyle='rgba(255,255,255,.75)'; ctx.lineWidth=s*1.1; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(-14*s,-3.2*s); ctx.lineTo(9*s,-3.2*s); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ---- 石頭獎牌（過關）：獎牌 + 明顯的雙尾緞帶，掛在獎牌上方 ---- */
+  function drawMedalStone(ctx, size){
+    const cx=size/2, cy=size*0.62, r=size*0.29;
+    const s = size*0.021;
+    ctx.save();
+    ctx.translate(cx, cy);
+    // 緞帶：從獎牌後方向上展開成 V 字，尾端剪出燕尾缺角，畫在獎牌之前 = 視覺上在後方
+    function ribbonTail(dir, colorA, colorB){
+      const p = new Path2D();
+      const topX = dir*4.5*s, topY = -r*0.55;
+      p.moveTo(topX-dir*5*s, topY);
+      p.lineTo(dir*17*s, -r*1.9);
+      p.lineTo(dir*22*s, -r*1.55);
+      p.lineTo(dir*11*s, -r*0.55 + 2*s);
+      p.lineTo(topX+dir*4*s, topY + 3*s);
+      p.closePath();
+      const g = ctx.createLinearGradient(0, -r*1.9, 0, -r*0.5);
+      g.addColorStop(0, colorA); g.addColorStop(1, colorB);
+      ctx.fillStyle = g; ctx.fill(p);
+      ctx.lineWidth = s*1.3; ctx.strokeStyle = OUTLINE; ctx.lineJoin='round'; ctx.stroke(p);
+    }
+    ribbonTail(-1, '#00e6d2', '#087a89');
+    ribbonTail(1, '#ff8a68', '#c2280f');
+    ctx.restore();
+
+    drawPuck(ctx, cx, cy, r, '#fff2a8', '#ffcd00', '#b8790a');
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.lineWidth = s*1.4; ctx.strokeStyle='rgba(138,75,22,.65)'; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(-9*s,-1*s); ctx.quadraticCurveTo(-2*s,7*s, 6*s,-2*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-4*s,-8*s); ctx.quadraticCurveTo(-1*s,-1*s, 4*s,-7*s); ctx.stroke();
+    ctx.fillStyle='#fffaea'; ctx.strokeStyle=OUTLINE; ctx.lineWidth=s*0.6;
+    const star = new Path2D('M0,-6 L1.6,-1.8 L6,-1.8 L2.6,1 L4,5.6 L0,2.8 L-4,5.6 L-2.6,1 L-6,-1.8 L-1.6,-1.8 Z');
+    ctx.save(); ctx.translate(9*s,-8*s); ctx.scale(.85,.85); ctx.fill(star); ctx.stroke(star); ctx.restore();
+    ctx.restore();
+  }
+
+  /* ---- 決堤（失敗）：兩塊斷裂石塊中間裂開，海水從縫隙噴湧而出——
+     不用獎章式的圓形亮面底盤，故意讓形狀破碎、不對稱，才不會跟「過關」的獎牌搞混 ---- */
+  function drawBreach(ctx, size){
+    const cx=size/2, cy=size/2;
+    const s = size*0.021;
+    ctx.save();
+    ctx.translate(cx,cy);
+
+    // 背後噴出的水花（先畫，讓石塊疊在上面）
+    const splash = new Path2D();
+    splash.moveTo(-6*s,6*s);
+    splash.lineTo(-9*s,-4*s);
+    splash.lineTo(-4*s,-9*s);
+    splash.lineTo(-2*s,-17*s);
+    splash.lineTo(1.5*s,-8*s);
+    splash.lineTo(5*s,-15*s);
+    splash.lineTo(4.5*s,-4*s);
+    splash.lineTo(9*s,-6*s);
+    splash.lineTo(6*s,7*s);
+    splash.closePath();
+    ctx.shadowColor='rgba(0,0,0,.25)'; ctx.shadowBlur=size*0.04; ctx.shadowOffsetY=size*0.015;
+    const sg = ctx.createLinearGradient(0,-17*s,0,7*s);
+    sg.addColorStop(0,'#eafcff'); sg.addColorStop(.5,'#4ee0ff'); sg.addColorStop(1,'#0d70b0');
+    ctx.fillStyle = sg; ctx.fill(splash);
+    ctx.shadowColor='transparent';
+    strokePath(ctx, splash, s*1.3);
+    // 幾滴四散的水珠
+    [[-11*s,-11*s,1.6*s],[10*s,-13*s,1.3*s],[13*s,-2*s,1.1*s]].forEach(([x,y,rr])=>{
+      ctx.beginPath(); ctx.arc(x,y,rr,0,Math.PI*2);
+      ctx.fillStyle='#8fe0f2'; ctx.fill();
+      ctx.lineWidth=s*0.7; ctx.strokeStyle=OUTLINE; ctx.stroke();
+    });
+
+    // 左邊斷石
+    const leftRock = new Path2D();
+    leftRock.moveTo(-21*s,13*s);
+    leftRock.lineTo(-22*s,-4*s);
+    leftRock.lineTo(-15*s,-13*s);
+    leftRock.lineTo(-7*s,-10*s);
+    leftRock.lineTo(-4*s,-3*s);
+    leftRock.lineTo(-8*s,1*s);
+    leftRock.lineTo(-5*s,6*s);
+    leftRock.lineTo(-9*s,15*s);
+    leftRock.closePath();
+    ctx.shadowColor='rgba(0,0,0,.35)'; ctx.shadowBlur=size*0.035; ctx.shadowOffsetY=size*0.02;
+    const lg = ctx.createLinearGradient(-22*s,-13*s,-4*s,15*s);
+    lg.addColorStop(0,'#c8d1d6'); lg.addColorStop(.55,'#9aa7ae'); lg.addColorStop(1,'#414c55');
+    ctx.fillStyle = lg; ctx.fill(leftRock);
+    ctx.shadowColor='transparent';
+    strokePath(ctx, leftRock, s*1.5);
+    // 裂痕
+    ctx.strokeStyle='rgba(26,41,66,.55)'; ctx.lineWidth=s*0.8; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(-17*s,-7*s); ctx.lineTo(-12*s,-1*s); ctx.lineTo(-14*s,5*s); ctx.stroke();
+
+    // 右邊斷石（鏡射）
+    const rightRock = new Path2D();
+    rightRock.moveTo(21*s,13*s);
+    rightRock.lineTo(22*s,-4*s);
+    rightRock.lineTo(15*s,-13*s);
+    rightRock.lineTo(7*s,-10*s);
+    rightRock.lineTo(4*s,-3*s);
+    rightRock.lineTo(8*s,1*s);
+    rightRock.lineTo(5*s,6*s);
+    rightRock.lineTo(9*s,15*s);
+    rightRock.closePath();
+    ctx.shadowColor='rgba(0,0,0,.35)'; ctx.shadowBlur=size*0.035; ctx.shadowOffsetY=size*0.02;
+    const rg = ctx.createLinearGradient(22*s,-13*s,4*s,15*s);
+    rg.addColorStop(0,'#c8d1d6'); rg.addColorStop(.55,'#9aa7ae'); rg.addColorStop(1,'#414c55');
+    ctx.fillStyle = rg; ctx.fill(rightRock);
+    ctx.shadowColor='transparent';
+    strokePath(ctx, rightRock, s*1.5);
+    ctx.strokeStyle='rgba(26,41,66,.55)'; ctx.lineWidth=s*0.8; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(17*s,-7*s); ctx.lineTo(12*s,-1*s); ctx.lineTo(14*s,5*s); ctx.stroke();
+
+    ctx.restore();
+  }
+
+  /* ---- 燈泡（提示）：中間用「！」取代原本的燈絲 X ---- */
+  function drawBulb(ctx, size){
+    ctx.save();
+    ctx.translate(size/2, size/2*0.94);
+    const s = size*0.021;
+    const glass = new Path2D();
+    glass.moveTo(-8*s,-2*s);
+    glass.bezierCurveTo(-11*s,-8*s,-7*s,-15*s,0,-15*s);
+    glass.bezierCurveTo(7*s,-15*s,11*s,-8*s,8*s,-2*s);
+    glass.bezierCurveTo(7*s,2*s,5*s,3*s,5*s,7*s);
+    glass.lineTo(-5*s,7*s);
+    glass.bezierCurveTo(-5*s,3*s,-7*s,2*s,-8*s,-2*s);
+    glass.closePath();
+    ctx.shadowColor='rgba(0,0,0,.3)'; ctx.shadowBlur=size*0.05; ctx.shadowOffsetY=size*0.02;
+    const gg = ctx.createRadialGradient(-3*s,-10*s,1*s,0,-6*s,16*s);
+    gg.addColorStop(0,'#fff9d6'); gg.addColorStop(.55,'#ffe066'); gg.addColorStop(1,'#e8a80a');
+    ctx.fillStyle = gg; ctx.fill(glass);
+    ctx.shadowColor='transparent';
+    strokePath(ctx, glass, s*1.6);
+    // 燈絲改成「！」：一段圓角粗豎線 + 底下一個圓點
+    ctx.fillStyle = 'rgba(138,75,22,.85)';
+    ctx.strokeStyle = OUTLINE; ctx.lineWidth = s*0.4;
+    const bar = new Path2D();
+    bar.moveTo(-1.5*s,-9.5*s); bar.lineTo(1.5*s,-9.5*s); bar.lineTo(1*s,-1.5*s); bar.lineTo(-1*s,-1.5*s); bar.closePath();
+    ctx.fill(bar); ctx.stroke(bar);
+    ctx.beginPath(); ctx.arc(0, 1.2*s, 1.5*s, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    // 高光
+    ctx.fillStyle='rgba(255,255,255,.7)';
+    ctx.beginPath(); ctx.ellipse(-3.5*s,-9*s,2*s,4.5*s,0.4,0,Math.PI*2); ctx.fill();
+    // 螺紋底座
+    const base = new Path2D();
+    base.rect(-5*s,7*s,10*s,7*s);
+    const bg = ctx.createLinearGradient(-5*s,7*s,5*s,7*s);
+    bg.addColorStop(0,'#c8d1d6'); bg.addColorStop(.5,'#f3f6f7'); bg.addColorStop(1,'#9aa7ae');
+    ctx.fillStyle = bg; ctx.fill(base);
+    strokePath(ctx, base, s*1.4);
+    [9.5,11.6,13.7].forEach(y=>{
+      ctx.beginPath(); ctx.moveTo(-5*s,y*s); ctx.lineTo(5*s,y*s);
+      ctx.lineWidth=s*0.9; ctx.strokeStyle=OUTLINE; ctx.globalAlpha=.5; ctx.stroke(); ctx.globalAlpha=1;
+    });
+    ctx.restore();
+  }
+
+  function place(slotId, size, drawFn){
+    const slot = document.getElementById(slotId);
+    if(!slot) return;
+    const {c, ctx} = makeCanvas(size);
+    drawFn(ctx, size);
+    slot.appendChild(c);
+  }
+
+  place('iconWrench', 22, drawWrench);
+  place('iconMedalWin', 62, drawMedalStone);
+  place('iconMedalLose', 48, drawBreach);
+  place('iconTipWin', 26, drawBulb);
+  place('iconTipLose', 26, drawBulb);
+})();
 </script>
 </body>
 </html>
