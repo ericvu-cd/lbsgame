@@ -195,6 +195,9 @@
     border:2px solid var(--ink);
     border-radius:4px;
   }
+  .legend-chip .icon img{
+    width:15px; height:15px; display:block;
+  }
   .legend-chip .icon.coin{
     border-radius:50%;
     background:radial-gradient(circle at 34% 30%, #fff6c0 0%, #FFD700 42%, #B8860B 100%) !important;
@@ -264,6 +267,11 @@
     line-height:1.7;
     text-align:center;
   }
+  #swipeHint img.icon-inline{
+    width:16px; height:16px;
+    vertical-align:-3px;
+    margin-right:2px;
+  }
 
   /* ---------- OVERLAYS (full screen, mario menu style) ---------- */
   .overlay{
@@ -309,6 +317,10 @@
     filter:drop-shadow(1px 1px 0 rgba(0,0,0,0.2));
     pointer-events:none;
     z-index:0;
+  }
+  .end-bg-deco img{
+    width:1em; height:1em;
+    display:block;
   }
   #endOverlay .overlay-inner{ justify-content:flex-start; padding-top:3vh; }
   .start-bg-wrap{
@@ -368,6 +380,7 @@
   }
   .overlay.hidden{ display:none; }
   .overlay .big-emoji{ font-size:44px; filter:drop-shadow(3px 3px 0 rgba(0,0,0,0.35)); }
+  .big-emoji img{ width:1em; height:1em; display:block; margin:0 auto; }
   .overlay h1{
     font-size:19px; margin:0; color:var(--white);
     text-shadow:3px 3px 0 var(--ink), -1px -1px 0 var(--ink), 1px -1px 0 var(--ink), -1px 1px 0 var(--ink);
@@ -493,6 +506,8 @@
   }
   .stat-row:first-child{ padding-top:0; }
   .stat-row .stat-label{ display:flex; align-items:center; gap:6px; color:var(--ink); }
+  .stat-row .stat-label img.icon-inline{ width:16px; height:16px; }
+  .final-score .final-label img.icon-inline{ width:15px; height:15px; vertical-align:-2px; margin-right:2px; }
   .stat-row .stat-value{ font-weight:700; color:var(--ink); }
   .final-score{
     margin-top:10px; padding:10px 12px;
@@ -575,17 +590,17 @@
       <div id="tideCaption" class="pixel">潮水上漲</div>
       <canvas id="board"></canvas>
 
-      <div id="swipeHint">👆 滑動螢幕轉向</div>
+      <div id="swipeHint"><img class="icon-inline" id="swipeHintIcon" alt="">滑動螢幕轉向</div>
     </div>
   </div>
 
   <div id="legendBar">
-    <div class="legend-chip"><span class="icon" style="background:var(--c-normal); border-color:var(--c-normal-ring)">🐟</span><span class="name">一般魚</span><span class="val" style="color:#7CFF9E">+5</span></div>
-    <div class="legend-chip"><span class="icon" style="background:var(--c-shark); border-color:var(--c-shark-ring)">🦈</span><span class="name">鯊魚</span><span class="val" style="color:#7CFF9E">+10</span></div>
+    <div class="legend-chip"><span class="icon" style="background:var(--c-normal); border-color:var(--c-normal-ring)"><img data-icon="normal" alt=""></span><span class="name">一般魚</span><span class="val" style="color:#7CFF9E">+5</span></div>
+    <div class="legend-chip"><span class="icon" style="background:var(--c-shark); border-color:var(--c-shark-ring)"><img data-icon="shark" alt=""></span><span class="name">鯊魚</span><span class="val" style="color:#7CFF9E">+10</span></div>
     <div class="legend-chip"><span class="icon coin" style="background:var(--c-ball); border-color:var(--c-ball-ring)">🍥</span><span class="name">魚丸</span><span class="val" style="color:#7CFF9E">+20</span></div>
-    <div class="legend-chip"><span class="icon" style="background:var(--c-juv); border-color:var(--c-juv-ring)">🐠</span><span class="name">幼魚</span><span class="val" style="color:#FF8FA0">-5</span></div>
-    <div class="legend-chip"><span class="icon" style="background:var(--c-protected); border-color:var(--c-protected-ring)">🚫</span><span class="name">保育魚</span><span class="val" style="color:#FF8FA0">-20</span></div>
-    <div class="legend-chip"><span class="icon" style="background:var(--c-ice); border-color:var(--c-ice-ring)">🧊</span><span class="name">冰塊</span><span class="val" style="color:#8FD9FF">永續+10</span></div>
+    <div class="legend-chip"><span class="icon" style="background:var(--c-juv); border-color:var(--c-juv-ring)"><img data-icon="juvenile" alt=""></span><span class="name">幼魚</span><span class="val" style="color:#FF8FA0">-5</span></div>
+    <div class="legend-chip"><span class="icon" style="background:var(--c-protected); border-color:var(--c-protected-ring)"><img data-icon="protected" alt=""></span><span class="name">保育魚</span><span class="val" style="color:#FF8FA0">-20</span></div>
+    <div class="legend-chip"><span class="icon" style="background:var(--c-ice); border-color:var(--c-ice-ring)"><img data-icon="ice" alt=""></span><span class="name">冰塊</span><span class="val" style="color:#8FD9FF">永續+10</span></div>
   </div>
 
   <!-- START (full screen) -->
@@ -603,12 +618,12 @@
    <span class="end-bg-deco" style="top:14%;right:10%;font-size:22px;">🫧</span>
    <span class="end-bg-deco" style="top:38%;left:5%;font-size:20px;">🫧</span>
    <span class="end-bg-deco" style="bottom:16%;right:8%;">🍥</span>
-   <span class="end-bg-deco" style="bottom:6%;left:10%;font-size:22px;">🌊</span>
+   <span class="end-bg-deco" style="bottom:6%;left:10%;font-size:22px;"><img src="" id="endBgWave" alt=""></span>
    <span class="end-bg-deco" style="top:60%;right:6%;font-size:18px;">🫧</span>
    <div class="overlay-inner">
     <div class="end-card">
       <div class="end-card-head">
-        <div class="big-emoji" id="endEmoji">🏮</div>
+        <div class="big-emoji" id="endEmoji"><img src="" id="endEmojiImg" alt=""></div>
         <h1 class="pixel" id="endTitle">收網了</h1>
       </div>
       <div class="end-card-body" id="resultBoard"></div>
@@ -625,6 +640,798 @@
 <script>
 (function(){
   "use strict";
+
+  // ---------- ICONS (canvas-drawn 3D-style icons, replacing plain emoji) ----------
+  const ICONS = (function(){
+    function newCtx(px){
+      const c = document.createElement('canvas');
+      c.width = px; c.height = px;
+      const ctx = c.getContext('2d');
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.scale(px/100, px/100); // draw using a 0-100 coordinate space
+      return {canvas:c, ctx:ctx};
+    }
+    function dropShadow(ctx, cx, cy, rx, ry){
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    const drawers = {
+      // 海浪 — 被潮水追上 / 背景裝飾
+      wave(ctx){
+        dropShadow(ctx, 50, 88, 34, 6);
+        const baseGrad = ctx.createLinearGradient(0,55,0,80);
+        baseGrad.addColorStop(0, '#2e86de');
+        baseGrad.addColorStop(1, '#0d3f7d');
+        ctx.fillStyle = baseGrad;
+        ctx.beginPath();
+        ctx.roundRect(14, 55, 72, 25, 8);
+        ctx.fill();
+        ctx.strokeStyle = '#0a2a4f'; ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        const humps = [
+          {x:30, y:58, r:19},
+          {x:50, y:50, r:23},
+          {x:70, y:58, r:19},
+        ];
+        humps.forEach(h=>{
+          ctx.beginPath();
+          ctx.arc(h.x, h.y, h.r, Math.PI, 0);
+          const g = ctx.createRadialGradient(h.x-h.r*0.35, h.y-h.r*0.5, h.r*0.15, h.x, h.y, h.r*1.1);
+          g.addColorStop(0, '#a9e2ff');
+          g.addColorStop(0.5, '#2e86de');
+          g.addColorStop(1, '#0f4a8f');
+          ctx.fillStyle = g;
+          ctx.fill();
+          ctx.strokeStyle = '#0a2a4f'; ctx.lineWidth = 2.5;
+          ctx.stroke();
+        });
+        ctx.fillStyle = baseGrad;
+        ctx.fillRect(14, 58, 72, 8);
+        ctx.strokeStyle = '#0a2a4f'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(14,58); ctx.lineTo(14,80); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(86,58); ctx.lineTo(86,80); ctx.stroke();
+
+        humps.forEach(h=>{
+          ctx.fillStyle = '#f5fcff';
+          ctx.strokeStyle = '#cdeeff'; ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(h.x - h.r*0.35, h.y - h.r*0.72, 6.5, 0, Math.PI*2);
+          ctx.fill(); ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(h.x + h.r*0.15, h.y - h.r*0.88, 5, 0, Math.PI*2);
+          ctx.fill(); ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(h.x + h.r*0.5, h.y - h.r*0.62, 4, 0, Math.PI*2);
+          ctx.fill(); ctx.stroke();
+        });
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(50, 50, 15, Math.PI*1.05, Math.PI*1.4);
+        ctx.stroke();
+      },
+
+      // 燈籠 — 預設結束畫面「收網了」
+      lantern(ctx){
+        const cx = 50, cy = 55;
+        dropShadow(ctx, cx, 92, 24, 5);
+
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(cx, 12, 6, Math.PI*1.1, Math.PI*1.9);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx, 18); ctx.lineTo(cx, 24);
+        ctx.stroke();
+
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath();
+        ctx.moveTo(cx-9, 24); ctx.lineTo(cx+9, 24);
+        ctx.lineTo(cx+15, 33); ctx.lineTo(cx-15, 33);
+        ctx.closePath(); ctx.fill();
+
+        ctx.fillStyle = '#f4b400';
+        ctx.fillRect(cx-17, 33, 34, 5);
+        ctx.strokeStyle = '#8a5a00'; ctx.lineWidth = 1.5;
+        ctx.strokeRect(cx-17, 33, 34, 5);
+
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, 30, 28, 0, 0, Math.PI*2);
+        const bodyGrad = ctx.createRadialGradient(cx-11, cy-10, 5, cx, cy, 34);
+        bodyGrad.addColorStop(0, '#ff9d90');
+        bodyGrad.addColorStop(0.4, '#e63946');
+        bodyGrad.addColorStop(0.8, '#c0202f');
+        bodyGrad.addColorStop(1, '#7a0f18');
+        ctx.fillStyle = bodyGrad;
+        ctx.fill();
+        ctx.strokeStyle = '#5c0d14'; ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 2;
+        [-18,-9,0,9,18].forEach(dx=>{
+          ctx.beginPath();
+          ctx.moveTo(cx+dx*0.9, cy-27);
+          ctx.quadraticCurveTo(cx+dx*1.35, cy, cx+dx*0.9, cy+27);
+          ctx.stroke();
+        });
+
+        ctx.fillStyle = '#f4b400';
+        ctx.fillRect(cx-17, cy+24, 34, 5);
+        ctx.strokeStyle = '#8a5a00'; ctx.lineWidth = 1.5;
+        ctx.strokeRect(cx-17, cy+24, 34, 5);
+
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath();
+        ctx.moveTo(cx-15, cy+29); ctx.lineTo(cx+15, cy+29);
+        ctx.lineTo(cx+9, cy+38); ctx.lineTo(cx-9, cy+38);
+        ctx.closePath(); ctx.fill();
+
+        ctx.strokeStyle = '#f4b400'; ctx.lineWidth = 2;
+        for(let i=-3;i<=3;i++){
+          ctx.beginPath();
+          ctx.moveTo(cx, cy+38);
+          ctx.lineTo(cx+i*2.5, cy+52);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.beginPath();
+        ctx.ellipse(cx-12, cy-11, 6, 13, -0.3, 0, Math.PI*2);
+        ctx.fill();
+      },
+
+      // 獎盃 — 滿載而歸 / 最終分數
+      trophy(ctx){
+        const cx = 50;
+        dropShadow(ctx, cx, 90, 26, 5);
+
+        const goldGrad = ctx.createLinearGradient(cx-24,10,cx+24,60);
+        goldGrad.addColorStop(0,'#fff2b0');
+        goldGrad.addColorStop(0.4,'#f4b400');
+        goldGrad.addColorStop(1,'#b87e00');
+
+        ctx.strokeStyle = goldGrad; ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.arc(cx-24, 30, 11, Math.PI*0.15, Math.PI*1.55);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx+24, 30, 11, Math.PI*1.45, Math.PI*0.85, true);
+        ctx.stroke();
+        ctx.strokeStyle = '#8a5a00'; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.arc(cx-24, 30, 11, Math.PI*0.15, Math.PI*1.55); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx+24, 30, 11, Math.PI*1.45, Math.PI*0.85, true); ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(cx-20, 16); ctx.lineTo(cx+20, 16);
+        ctx.lineTo(cx+13, 48);
+        ctx.quadraticCurveTo(cx, 60, cx-13, 48);
+        ctx.closePath();
+        ctx.fillStyle = goldGrad; ctx.fill();
+        ctx.strokeStyle = '#8a5a00'; ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        ctx.fillStyle = '#fff6d5';
+        ctx.beginPath();
+        ctx.ellipse(cx, 16, 20, 4, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle = '#8a5a00'; ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = goldGrad;
+        ctx.fillRect(cx-5, 59, 10, 12);
+        ctx.strokeStyle = '#8a5a00'; ctx.lineWidth = 2;
+        ctx.strokeRect(cx-5, 59, 10, 12);
+
+        ctx.beginPath();
+        ctx.moveTo(cx-20, 71); ctx.lineTo(cx+20, 71);
+        ctx.lineTo(cx+15, 83); ctx.lineTo(cx-15, 83);
+        ctx.closePath();
+        ctx.fillStyle = goldGrad; ctx.fill();
+        ctx.strokeStyle = '#8a5a00'; ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.beginPath();
+        ctx.ellipse(cx-8, 30, 3.5, 14, -0.15, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fff6d5';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('★', cx+5, 42);
+      },
+
+      // 滑動提示
+      finger(ctx){
+        dropShadow(ctx, 50, 88, 24, 5);
+
+        ctx.strokeStyle = 'rgba(174,214,241,0.9)';
+        for(let i=0;i<3;i++){
+          ctx.lineWidth = 8 - i*2;
+          ctx.globalAlpha = 0.85 - i*0.25;
+          ctx.beginPath();
+          ctx.moveTo(78 - i*10, 30);
+          ctx.quadraticCurveTo(60 - i*8, 40, 50 - i*7, 50);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+
+        ctx.fillStyle = '#aed6f1';
+        ctx.beginPath();
+        ctx.moveTo(50, 50); ctx.lineTo(60, 44); ctx.lineTo(55, 56);
+        ctx.closePath(); ctx.fill();
+
+        const skinGrad = ctx.createLinearGradient(20,45,55,85);
+        skinGrad.addColorStop(0, '#ffd9a6');
+        skinGrad.addColorStop(1, '#dfa565');
+
+        ctx.fillStyle = skinGrad;
+        ctx.strokeStyle = '#8a5a2b'; ctx.lineWidth = 3.5;
+
+        ctx.beginPath();
+        ctx.roundRect(24, 50, 36, 30, 14);
+        ctx.fill(); ctx.stroke();
+
+        ctx.beginPath();
+        ctx.roundRect(31, 16, 18, 40, 9);
+        ctx.fill(); ctx.stroke();
+
+        ctx.beginPath();
+        ctx.roundRect(14, 58, 16, 20, 8);
+        ctx.fill(); ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.beginPath();
+        ctx.ellipse(40, 24, 4, 7, 0, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle = '#e63946';
+        ctx.strokeStyle = '#8b1a1a'; ctx.lineWidth = 3;
+        ctx.fillRect(22, 78, 40, 12);
+        ctx.strokeRect(22, 78, 40, 12);
+      },
+
+      // 竹籤打結 — 撞到自己（魚丸串纏住了）
+      skewer(ctx){
+        const cx = 50, cy = 52;
+        dropShadow(ctx, cx, 90, 28, 5);
+
+        const skewerGrad = ctx.createLinearGradient(0,0,100,100);
+        skewerGrad.addColorStop(0, '#e0a868');
+        skewerGrad.addColorStop(1, '#a06a34');
+
+        ctx.strokeStyle = '#8a5a2b'; ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.moveTo(18, 20);
+        ctx.bezierCurveTo(45, 30, 30, 55, 50, 60);
+        ctx.bezierCurveTo(70, 65, 60, 35, 82, 25);
+        ctx.stroke();
+
+        ctx.strokeStyle = skewerGrad; ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(18, 19);
+        ctx.bezierCurveTo(45, 29, 30, 54, 50, 59);
+        ctx.bezierCurveTo(70, 64, 60, 34, 82, 24);
+        ctx.stroke();
+
+        ctx.fillStyle = '#e0a868'; ctx.strokeStyle = '#6b431f'; ctx.lineWidth = 1;
+        ctx.save();
+        ctx.translate(82,25); ctx.rotate(-0.5);
+        ctx.beginPath();
+        ctx.moveTo(0,-4); ctx.lineTo(12,0); ctx.lineTo(0,4);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.restore();
+
+        const ballGrad = ctx.createRadialGradient(-3,-3,2,0,0,10);
+        ballGrad.addColorStop(0, '#fff3e0');
+        ballGrad.addColorStop(1, '#e8c9a0');
+        [[18,20],[34,32],[50,60],[66,52]].forEach(([x,y])=>{
+          ctx.save();
+          ctx.translate(x,y);
+          ctx.beginPath();
+          ctx.arc(0,0,9,0,Math.PI*2);
+          ctx.fillStyle = ballGrad;
+          ctx.fill();
+          ctx.strokeStyle = '#8a5a2b'; ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.restore();
+        });
+
+        ctx.strokeStyle = '#8a5a2b'; ctx.lineWidth = 9;
+        ctx.beginPath();
+        ctx.arc(56, 44, 13, 0.2, Math.PI*1.9);
+        ctx.stroke();
+        ctx.strokeStyle = skewerGrad; ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(56, 44, 13, 0.2, Math.PI*1.9);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#4a2f14'; ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(46,37); ctx.lineTo(50,41);
+        ctx.moveTo(66,51); ctx.lineTo(62,47);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#e63946'; ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(66,20); ctx.lineTo(82,36);
+        ctx.moveTo(82,20); ctx.lineTo(66,36);
+        ctx.stroke();
+      },
+
+      // 骷髏 — 生態崩潰了
+      skull(ctx){
+        const cx = 50;
+        dropShadow(ctx, cx, 90, 26, 5);
+
+        ctx.strokeStyle = '#e9e4d8'; ctx.lineWidth = 8; ctx.lineCap='round';
+        ctx.beginPath();
+        ctx.moveTo(20, 66); ctx.lineTo(80, 84);
+        ctx.moveTo(80, 66); ctx.lineTo(20, 84);
+        ctx.stroke();
+        ctx.strokeStyle = '#8a8578'; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(20, 66); ctx.lineTo(80, 84);
+        ctx.moveTo(80, 66); ctx.lineTo(20, 84);
+        ctx.stroke();
+        ctx.fillStyle = '#f5f5f0'; ctx.strokeStyle = '#8a8578'; ctx.lineWidth = 1.5;
+        [[20,66],[80,84],[80,66],[20,84]].forEach(([x,y])=>{
+          ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        });
+
+        const boneGrad = ctx.createRadialGradient(cx-10,20,4,cx,32,32);
+        boneGrad.addColorStop(0,'#ffffff');
+        boneGrad.addColorStop(1,'#d8d4c8');
+
+        ctx.beginPath();
+        ctx.arc(cx, 32, 23, Math.PI, 0);
+        ctx.lineTo(cx+21, 44);
+        ctx.quadraticCurveTo(cx+19, 55, cx+11, 55);
+        ctx.lineTo(cx+11, 48);
+        ctx.lineTo(cx+4, 55);
+        ctx.lineTo(cx-4, 48);
+        ctx.lineTo(cx-11, 55);
+        ctx.quadraticCurveTo(cx-19, 55, cx-21, 44);
+        ctx.closePath();
+        ctx.fillStyle = boneGrad; ctx.fill();
+        ctx.strokeStyle = '#3a3a3a'; ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.ellipse(cx-10, 30, 7.5, 9, 0.1, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx+10, 30, 7.5, 9, -0.1, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.beginPath(); ctx.arc(cx-12,27,1.8,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+8,27,1.8,0,Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath();
+        ctx.moveTo(cx-3, 39); ctx.lineTo(cx+3, 39); ctx.lineTo(cx, 45);
+        ctx.closePath(); ctx.fill();
+
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx+14, 14); ctx.lineTo(cx+10, 20); ctx.lineTo(cx+15,24);
+        ctx.stroke();
+      },
+
+      // 嫩芽 — 永續分數
+      sprout(ctx){
+        const cx = 50, groundY = 66;
+        dropShadow(ctx, cx, 90, 24, 5);
+
+        const dirtGrad = ctx.createRadialGradient(cx-6, groundY-4, 4, cx, groundY, 24);
+        dirtGrad.addColorStop(0, '#9a6a3f');
+        dirtGrad.addColorStop(0.6, '#6b4423');
+        dirtGrad.addColorStop(1, '#452a15');
+        ctx.fillStyle = dirtGrad;
+        ctx.beginPath();
+        ctx.ellipse(cx, groundY, 24, 11, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle = '#2e1b0d'; ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        const stemGrad = ctx.createLinearGradient(cx-4,0,cx+4,0);
+        stemGrad.addColorStop(0,'#0d5c2c');
+        stemGrad.addColorStop(0.5,'#2ecc71');
+        stemGrad.addColorStop(1,'#145a32');
+        ctx.strokeStyle = stemGrad; ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(cx, groundY-2);
+        ctx.lineTo(cx, groundY-24);
+        ctx.stroke();
+
+        function leaf(flip){
+          ctx.save();
+          ctx.translate(cx, groundY-24);
+          if(flip) ctx.scale(-1,1);
+          ctx.beginPath();
+          ctx.moveTo(0,0);
+          ctx.quadraticCurveTo(4,-22, 22,-28);
+          ctx.quadraticCurveTo(10,-14, 0,0);
+          ctx.closePath();
+          const leafGrad = ctx.createRadialGradient(6,-10,2,10,-14,26);
+          leafGrad.addColorStop(0, '#a6f0a0');
+          leafGrad.addColorStop(0.5, '#2ecc71');
+          leafGrad.addColorStop(1, '#0d5c2c');
+          ctx.fillStyle = leafGrad; ctx.fill();
+          ctx.strokeStyle = '#0d3d1f'; ctx.lineWidth = 2.5;
+          ctx.stroke();
+          ctx.restore();
+        }
+        leaf(false);
+        leaf(true);
+
+        ctx.fillStyle = '#d4fbd0';
+        ctx.beginPath();
+        ctx.arc(cx, groundY-25, 3.5, 0, Math.PI*2);
+        ctx.fill();
+      },
+
+      // 一般魚 — 場上魚類，體型大、填滿畫布
+      normal(ctx){
+        const cx = 50, cy = 52;
+        dropShadow(ctx, cx, 90, 34, 6);
+
+        ctx.beginPath();
+        ctx.moveTo(16, cy);
+        ctx.lineTo(-4, 30);
+        ctx.lineTo(4, cy);
+        ctx.lineTo(-4, 74);
+        ctx.closePath();
+        ctx.fillStyle = '#1f7a34';
+        ctx.fill();
+        ctx.strokeStyle = '#0d3d1a'; ctx.lineWidth = 3;
+        ctx.stroke();
+
+        const bodyGrad = ctx.createRadialGradient(44,42,4,58,cy,40);
+        bodyGrad.addColorStop(0, '#a6f0a0');
+        bodyGrad.addColorStop(0.5, '#3fbf5f');
+        bodyGrad.addColorStop(1, '#1f7a34');
+        ctx.beginPath();
+        ctx.ellipse(58, cy, 38, 28, 0, 0, Math.PI*2);
+        ctx.fillStyle = bodyGrad; ctx.fill();
+        ctx.strokeStyle = '#0d3d1a'; ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(44, 26);
+        ctx.quadraticCurveTo(58, 4, 72, 24);
+        ctx.quadraticCurveTo(58, 20, 44, 26);
+        ctx.closePath();
+        ctx.fillStyle = '#1f7a34'; ctx.fill();
+        ctx.strokeStyle = '#0d3d1a'; ctx.lineWidth = 2.5; ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.beginPath();
+        ctx.ellipse(52, cy+11, 22, 8, -0.1, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(80, cy-6, 7, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#0d3d1a'; ctx.lineWidth = 1.8; ctx.stroke();
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.arc(82, cy-6, 3.4, 0, Math.PI*2); ctx.fill();
+
+        ctx.strokeStyle = 'rgba(13,61,26,0.5)'; ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(42, cy, 14, -0.6, 0.6);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.beginPath();
+        ctx.ellipse(50, 40, 9, 4.5, -0.3, 0, Math.PI*2);
+        ctx.fill();
+      },
+
+      // 鯊魚 — 上半身/背鰭/尾鰭改灰階漸層，強化黑白對比
+      shark(ctx){
+        const cx = 50, cy = 52;
+        dropShadow(ctx, cx, 88, 30, 6);
+
+        const darkGrad = ctx.createLinearGradient(30,20,80,60);
+        darkGrad.addColorStop(0, '#5a6068');
+        darkGrad.addColorStop(0.5, '#2b2f34');
+        darkGrad.addColorStop(1, '#0c0d0e');
+
+        // tail — gradient gray
+        ctx.beginPath();
+        ctx.moveTo(18, cy);
+        ctx.lineTo(0, 34);
+        ctx.lineTo(8, cy);
+        ctx.lineTo(0, 70);
+        ctx.closePath();
+        ctx.fillStyle = darkGrad;
+        ctx.fill();
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // body — dark gray gradient top, sharp cut to white belly
+        const bodyGrad = ctx.createLinearGradient(56,20,56,74);
+        bodyGrad.addColorStop(0, '#6b7178');
+        bodyGrad.addColorStop(0.3, '#33383e');
+        bodyGrad.addColorStop(0.55, '#111315');
+        bodyGrad.addColorStop(0.56, '#ffffff');
+        bodyGrad.addColorStop(1, '#ffffff');
+        ctx.beginPath();
+        ctx.ellipse(58, cy, 34, 24, 0, 0, Math.PI*2);
+        ctx.fillStyle = bodyGrad; ctx.fill();
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // dorsal fin — gradient gray
+        ctx.beginPath();
+        ctx.moveTo(46, 30);
+        ctx.quadraticCurveTo(58, 2, 70, 28);
+        ctx.quadraticCurveTo(58, 22, 46, 30);
+        ctx.closePath();
+        ctx.fillStyle = darkGrad; ctx.fill();
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 2.5; ctx.stroke();
+
+        // snout — gradient gray
+        ctx.fillStyle = darkGrad;
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(90, cy-6);
+        ctx.lineTo(100, cy);
+        ctx.lineTo(90, cy+8);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(72, cy+10);
+        ctx.quadraticCurveTo(82, cy+14, 90, cy+6);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 1;
+        for(let i=0;i<5;i++){
+          const x = 74+i*4.5;
+          ctx.beginPath();
+          ctx.moveTo(x, cy+9);
+          ctx.lineTo(x+3, cy+9);
+          ctx.lineTo(x+1.5, cy+15);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+        }
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(78, cy-10, 6.5, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#000000';
+        ctx.beginPath(); ctx.arc(80, cy-10, 3.4, 0, Math.PI*2); ctx.fill();
+
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 2.5;
+        [0,5,10].forEach(dx=>{
+          ctx.beginPath();
+          ctx.moveTo(42+dx, cy-4);
+          ctx.lineTo(38+dx, cy+14);
+          ctx.stroke();
+        });
+
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.beginPath();
+        ctx.ellipse(44, 32, 9, 4, -0.3, 0, Math.PI*2);
+        ctx.fill();
+      },
+
+      // 幼魚 — 明顯縮小、留白，強調「未成年」
+      juvenile(ctx){
+        const cx = 50, cy = 56;
+        dropShadow(ctx, cx, 78, 16, 4);
+
+        ctx.beginPath();
+        ctx.moveTo(38, cy);
+        ctx.lineTo(30, 46);
+        ctx.lineTo(33, cy);
+        ctx.lineTo(30, 66);
+        ctx.closePath();
+        ctx.fillStyle = '#c99a1a';
+        ctx.fill();
+        ctx.strokeStyle = '#5a3d00'; ctx.lineWidth = 2;
+        ctx.stroke();
+
+        const bodyGrad = ctx.createRadialGradient(52,52,2,58,cy,14);
+        bodyGrad.addColorStop(0, '#fff3b0');
+        bodyGrad.addColorStop(0.55, '#FFE066');
+        bodyGrad.addColorStop(1, '#c99a1a');
+        ctx.beginPath();
+        ctx.ellipse(60, cy, 13, 11, 0, 0, Math.PI*2);
+        ctx.fillStyle = bodyGrad; ctx.fill();
+        ctx.strokeStyle = '#5a3d00'; ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(56, 46);
+        ctx.quadraticCurveTo(60, 38, 65, 45);
+        ctx.quadraticCurveTo(60, 43, 56, 46);
+        ctx.closePath();
+        ctx.fillStyle = '#c99a1a'; ctx.fill();
+        ctx.strokeStyle = '#5a3d00'; ctx.lineWidth = 1.5; ctx.stroke();
+
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(68, cy-2, 5.5, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#5a3d00'; ctx.lineWidth = 1.2; ctx.stroke();
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.arc(69.5, cy-2, 2.8, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(70.5, cy-3.5, 1, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = 'rgba(255,140,140,0.5)';
+        ctx.beginPath(); ctx.arc(62, cy+5, 2.6, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.beginPath();
+        ctx.ellipse(56, 50, 3.5, 2, -0.3, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(90,61,0,0.25)'; ctx.lineWidth = 1.5;
+        ctx.setLineDash([2,3]);
+        ctx.beginPath();
+        ctx.ellipse(58, cy, 34, 27, 0, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      },
+
+      // 保育魚 — 特徵魚身 + 白色禁止符號疊加
+      protected(ctx){
+        const cx = 50, cy = 52;
+        dropShadow(ctx, cx, 84, 26, 5);
+
+        ctx.strokeStyle = '#7a0a20'; ctx.lineWidth = 2;
+        ctx.fillStyle = 'rgba(255,140,160,0.85)';
+        for(let i=0;i<5;i++){
+          ctx.beginPath();
+          const ang = -0.7 + i*0.32;
+          const x1 = 60+Math.cos(ang)*8, y1 = 30+Math.sin(ang)*8;
+          const x2 = 60+Math.cos(ang)*32, y2 = 20+Math.sin(ang)*32;
+          ctx.moveTo(x1,y1);
+          ctx.quadraticCurveTo((x1+x2)/2-4, (y1+y2)/2-6, x2,y2);
+          ctx.quadraticCurveTo((x1+x2)/2+2, (y1+y2)/2, x1+4,y1+4);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(20, cy);
+        ctx.lineTo(4, 36);
+        ctx.lineTo(10, cy);
+        ctx.lineTo(4, 68);
+        ctx.closePath();
+        ctx.fillStyle = '#c4102e'; ctx.fill();
+        ctx.strokeStyle = '#5c0d18'; ctx.lineWidth = 2.5; ctx.stroke();
+
+        const bodyGrad = ctx.createRadialGradient(46,44,4,56,cy,32);
+        bodyGrad.addColorStop(0, '#ff9db0');
+        bodyGrad.addColorStop(0.5, '#e63950');
+        bodyGrad.addColorStop(1, '#8f0e24');
+        ctx.beginPath();
+        ctx.ellipse(56, cy, 28, 21, 0, 0, Math.PI*2);
+        ctx.fillStyle = bodyGrad; ctx.fill();
+        ctx.strokeStyle = '#5c0d18'; ctx.lineWidth = 2.5; ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 2.5;
+        [40,50,60,70].forEach(x=>{
+          ctx.beginPath();
+          ctx.moveTo(x, cy-18);
+          ctx.lineTo(x-4, cy+18);
+          ctx.stroke();
+        });
+
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(74, cy-4, 6, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#5c0d18'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.arc(76, cy-4, 3, 0, Math.PI*2); ctx.fill();
+
+        // 禁止符號：圈與斜線都是白色（含細邊框）
+        ctx.save();
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(56, cy, 34, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.lineWidth = 5.5;
+        ctx.strokeStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(56, cy, 34, 0, Math.PI*2);
+        ctx.stroke();
+
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(56-24, cy-24);
+        ctx.lineTo(56+24, cy+24);
+        ctx.stroke();
+        ctx.lineWidth = 5.5;
+        ctx.strokeStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(56-24, cy-24);
+        ctx.lineTo(56+24, cy+24);
+        ctx.stroke();
+        ctx.restore();
+      },
+
+      // 冰塊 — 立體等角方塊
+      ice(ctx){
+        const cx = 50, cy = 52;
+        dropShadow(ctx, cx, 86, 26, 5);
+
+        const top = [[50,16],[76,30],[50,44],[24,30]];
+        const left = [[24,30],[50,44],[50,78],[24,64]];
+        const right = [[76,30],[50,44],[50,78],[76,64]];
+
+        function poly(pts, grad){
+          ctx.beginPath();
+          ctx.moveTo(pts[0][0], pts[0][1]);
+          for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0], pts[i][1]);
+          ctx.closePath();
+          ctx.fillStyle = grad;
+          ctx.fill();
+          ctx.strokeStyle = '#0B5A82'; ctx.lineWidth = 2.5;
+          ctx.stroke();
+        }
+
+        const topGrad = ctx.createLinearGradient(24,16,76,44);
+        topGrad.addColorStop(0, '#eafcff');
+        topGrad.addColorStop(1, '#bfeeff');
+        poly(top, topGrad);
+
+        const leftGrad = ctx.createLinearGradient(24,30,50,78);
+        leftGrad.addColorStop(0, '#bfeeff');
+        leftGrad.addColorStop(1, '#6fc8ea');
+        poly(left, leftGrad);
+
+        const rightGrad = ctx.createLinearGradient(50,44,76,64);
+        rightGrad.addColorStop(0, '#9adcf2');
+        rightGrad.addColorStop(1, '#3f9fc9');
+        poly(right, rightGrad);
+
+        ctx.strokeStyle = 'rgba(11,90,130,0.55)'; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(50,44); ctx.lineTo(50,60);
+        ctx.moveTo(38,52); ctx.lineTo(58,58);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.beginPath();
+        ctx.moveTo(40,24); ctx.lineTo(50,20); ctx.lineTo(46,30);
+        ctx.closePath(); ctx.fill();
+
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(68,24); ctx.lineTo(68,34);
+        ctx.moveTo(63,29); ctx.lineTo(73,29);
+        ctx.stroke();
+      }
+    };
+
+    // 每個圖示只在這裡畫一次並快取（canvas 供 drawImage 重複使用／dataURL 供 <img> 使用），
+    // 遊戲迴圈與畫面渲染都不會重新執行這些繪製函式。
+    const canvasCache = {};
+    function getCanvas(name){
+      if(canvasCache[name]) return canvasCache[name];
+      const {canvas, ctx} = newCtx(200); // supersampled for crisp scaling
+      drawers[name](ctx);
+      canvasCache[name] = canvas;
+      return canvas;
+    }
+
+    const out = { canvas:{} };
+    Object.keys(drawers).forEach(name=>{
+      const c = getCanvas(name);
+      out.canvas[name] = c;
+      out[name] = c.toDataURL('image/png');
+    });
+    return out;
+  })();
 
   // ---------- SFX (procedural Web Audio, no external files) ----------
   const SFX = (function(){
@@ -894,8 +1701,17 @@
   const resultBoard = document.getElementById('resultBoard');
   const endTitle = document.getElementById('endTitle');
   const endEmoji = document.getElementById('endEmoji');
+  const endEmojiImg = document.getElementById('endEmojiImg');
   const boardWrap = document.getElementById('boardWrap');
   const swipeHint = document.getElementById('swipeHint');
+
+  // wire up canvas-drawn icons
+  document.getElementById('swipeHintIcon').src = ICONS.finger;
+  document.getElementById('endBgWave').src = ICONS.wave;
+  endEmojiImg.src = ICONS.lantern;
+  document.querySelectorAll('#legendBar img[data-icon]').forEach(img=>{
+    img.src = ICONS[img.dataset.icon];
+  });
   const muteBtn = document.getElementById('muteBtn');
   const startMuteBtn = document.getElementById('startMuteBtn');
   const muteBtns = [muteBtn, startMuteBtn];
@@ -1157,19 +1973,19 @@
     clearInterval(timerId);
     SFX.ambientStop();
 
-    let emoji = '🏮', title = '收網了';
-    if(reason.includes('時間到')){ emoji = '🏆'; title = '滿載而歸！'; SFX.win(); vibrate([30,50,30,50,90]); }
-    else if(reason.includes('潮水')){ emoji = '🌊'; title = '被潮水追上了'; SFX.lose(); vibrate([50,40,50,40,100]); }
-    else if(reason.includes('撞到自己')){ emoji = '🥢'; title = '竹籤打結了'; SFX.lose(); vibrate([50,40,50,40,100]); }
-    else if(reason.includes('生態崩潰')){ emoji = '💀'; title = '生態崩潰了'; SFX.lose(); vibrate([50,40,50,40,100]); }
-    endEmoji.textContent = emoji;
+    let iconKey = 'lantern', title = '收網了';
+    if(reason.includes('時間到')){ iconKey = 'trophy'; title = '滿載而歸！'; SFX.win(); vibrate([30,50,30,50,90]); }
+    else if(reason.includes('潮水')){ iconKey = 'wave'; title = '被潮水追上了'; SFX.lose(); vibrate([50,40,50,40,100]); }
+    else if(reason.includes('撞到自己')){ iconKey = 'skewer'; title = '竹籤打結了'; SFX.lose(); vibrate([50,40,50,40,100]); }
+    else if(reason.includes('生態崩潰')){ iconKey = 'skull'; title = '生態崩潰了'; SFX.lose(); vibrate([50,40,50,40,100]); }
+    endEmojiImg.src = ICONS[iconKey];
     endTitle.textContent = title;
 
     resultBoard.innerHTML =
       `<div class="stat-row"><span class="stat-label"><span class="coin-icon"></span>魚丸</span><span class="stat-value">${ballEaten} 顆</span></div>`+
       `<div class="stat-row"><span class="stat-label">🐟 漁獲</span><span class="stat-value">${fishEaten} 尾</span></div>`+
-      `<div class="stat-row"><span class="stat-label">🌱 永續分數</span><span class="stat-value">${Math.max(0,sustain)}</span></div>`+
-      `<div class="final-score"><span class="final-label">🏆 最終分數</span><span class="final-value">${finalScore()}</span></div>`+
+      `<div class="stat-row"><span class="stat-label"><img class="icon-inline" src="${ICONS.sprout}" alt="">永續分數</span><span class="stat-value">${Math.max(0,sustain)}</span></div>`+
+      `<div class="final-score"><span class="final-label"><img class="icon-inline" src="${ICONS.trophy}" alt="">最終分數</span><span class="final-value">${finalScore()}</span></div>`+
       `<div class="end-reason">${reason}</div>`+
       buildKnowledgeBlock();
     endOverlay.classList.remove('hidden');
@@ -1269,27 +2085,9 @@
     ctx.lineWidth = 2;
     ctx.strokeRect(x0+pad+1, y0+pad+1, s-2, s-2);
 
-    ctx.font = `${Math.floor(CELL*0.58)}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#000';
-    ctx.fillText(t.emoji, x0+CELL/2, y0+CELL/2+1);
+    ctx.drawImage(ICONS.canvas[f.key], x0+pad+2, y0+pad+2, s-4, s-4);
 
-    // 冰塊專屬：刻面線條，讓外形本身就跟魚不一樣，不只是靠底色分辨
-    if(f.key==='ice'){
-      ctx.save();
-      ctx.strokeStyle = 'rgba(11,90,130,0.75)';
-      ctx.lineWidth = Math.max(1.4, s*0.07);
-      ctx.beginPath();
-      ctx.moveTo(x0+pad+s*0.12, y0+pad+s*0.88);
-      ctx.lineTo(x0+pad+s*0.5,  y0+pad+s*0.32);
-      ctx.moveTo(x0+pad+s*0.5,  y0+pad+s*0.32);
-      ctx.lineTo(x0+pad+s*0.88, y0+pad+s*0.55);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // 冰塊專屬：右上角閃光星芒，強化「反光」辨識度
+    // 冰塊專屬：右上角閃光星芒動畫，強化「反光」辨識度（其餘外形已內建在圖示裡，只畫一次即可）
     if(f.key==='ice'){
       const sparkleA = 0.5 + 0.5*Math.sin(now/260);
       const sx = x0+pad+s*0.78, sy = y0+pad+s*0.22, sr = Math.max(2, s*0.14);
