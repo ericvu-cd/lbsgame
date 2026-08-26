@@ -82,13 +82,24 @@
     padding:6px 8px;
     padding-top:calc(6px + env(safe-area-inset-top));
     display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:6px;
+    flex-direction:column;
+    gap:5px;
     flex-shrink:0;
     z-index:2;
     background:var(--ink);
     border-bottom:3px solid var(--block-yellow-dark);
+  }
+  .header-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:6px;
+  }
+  .header-controls{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex-shrink:0;
   }
   .brand{
     font-size:9.5px;
@@ -101,7 +112,16 @@
     overflow:hidden;
     text-overflow:ellipsis;
   }
-  .hud-right{ display:flex; align-items:center; gap:2px; }
+  .stat-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:rgba(255,255,255,0.06);
+    border:2px solid rgba(255,255,255,0.15);
+    border-radius:6px;
+    padding:3px 2px;
+  }
+  .stat-bar .stat-pill{ flex:1; min-width:0; }
   .stat-pill{
     background:transparent;
     border:none;
@@ -124,12 +144,12 @@
   .stat-pill.sus .n{ color:var(--pipe-green); }
   .stat-pill.reef .n{ color:#ff8a5c; }
   .timer{
-    font-size:18px;
+    font-size:16px;
     color:var(--white);
-    background:transparent;
-    border:none;
-    border-left:2px solid rgba(255,255,255,0.28);
-    padding:0 0 0 9px;
+    background:rgba(255,255,255,0.08);
+    border:2px solid rgba(255,255,255,0.28);
+    border-radius:5px;
+    padding:2px 8px;
     min-width:26px;
     text-align:center;
     text-shadow:
@@ -572,14 +592,18 @@
 <div id="app">
 
   <header>
-    <div class="brand pixel">🍥苑裡：魚丸追追樂</div>
-    <div class="hud-right">
+    <div class="header-top">
+      <div class="brand pixel">🍥苑裡：魚丸追追樂</div>
+      <div class="header-controls">
+        <div class="timer pixel" id="timerDisplay">180</div>
+        <button type="button" id="muteBtn" class="mute-btn" aria-label="音效開關" aria-pressed="false">🔊</button>
+      </div>
+    </div>
+    <div class="stat-bar">
       <div class="stat-pill score"><span class="n pixel" id="scoreN">0</span><span class="l">分數</span></div>
       <div class="stat-pill ball"><span class="n pixel" id="ballN">0</span><span class="l">魚丸</span></div>
       <div class="stat-pill sus"><span class="n pixel" id="susN">100</span><span class="l">永續</span></div>
       <div class="stat-pill reef"><span class="n pixel" id="reefN">0%</span><span class="l">復育</span></div>
-      <div class="timer pixel" id="timerDisplay">180</div>
-      <button type="button" id="muteBtn" class="mute-btn" aria-label="音效開關" aria-pressed="false">🔊</button>
     </div>
   </header>
 
@@ -2093,7 +2117,7 @@
       `<div class="stat-row"><span class="stat-label"><span class="coin-icon"></span>魚丸</span><span class="stat-value">${ballEaten} 顆</span></div>`+
       `<div class="stat-row"><span class="stat-label">🐟 漁獲</span><span class="stat-value">${fishEaten} 尾</span></div>`+
       `<div class="stat-row"><span class="stat-label"><img class="icon-inline" src="${ICONS.sprout}" alt="">永續分數</span><span class="stat-value">${Math.max(0,sustain)}</span></div>`+
-      `<div class="stat-row"><span class="stat-label"><img class="icon-inline" src="${ICONS.anemone}" alt="">復育珊瑚礁</span><span class="stat-value">${Math.floor(reefPct())}%</span></div>`+
+      `<div class="stat-row"><span class="stat-label"><img class="icon-inline" src="${ICONS.anemone}" alt="">復育珊瑚礁</span><span class="stat-value">${Math.floor(reefPct())}% <span style="color:#7CFF9E">(+${Math.floor(reefPct())})</span></span></div>`+
       `<div class="final-score"><span class="final-label"><img class="icon-inline" src="${ICONS.trophy}" alt="">最終分數</span><span class="final-value">${finalScore()}</span></div>`+
       `<div class="end-reason">${reason}</div>`+
       buildKnowledgeBlock();
@@ -2123,7 +2147,7 @@
   }
 
   function finalScore(){
-    return score + Math.max(0,sustain);
+    return score + Math.max(0,sustain) + Math.floor(reefPct());
   }
 
   // ---------- PIXEL-STYLE FOOD BADGE ----------
@@ -2257,7 +2281,7 @@
         const rcell = reef[y][x];
         const isReef = rcell.state === 1;
         const base = isReef
-          ? ((x+y)%2===0 ? '#e2632f' : '#ef7c47')   // 珊瑚礁：暖橘珊瑚色棋盤
+          ? ((x+y)%2===0 ? '#ffab84' : '#ffc09e')   // 珊瑚礁：淺珊瑚橘棋盤
           : ((x+y)%2===0 ? '#383f3a' : '#434b44');  // 荒蕪海底：暗沉灰綠棋盤
         ctx.fillStyle = base;
         ctx.fillRect(px, py, CELL, CELL);
