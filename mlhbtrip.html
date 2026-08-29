@@ -155,7 +155,7 @@
     margin:0;font-family:var(--hand);font-size:0.95rem;font-weight:400;
   }
   .passport-head .progress{font-family:var(--mono);font-size:0.68rem;color:var(--ink-soft);}
-  .stamp-row{display:flex;gap:8px;justify-content:center;}
+  .stamp-row{display:flex;gap:20px;justify-content:center;padding:2px 4px;}
   .stamp-btn{
     flex:1;
     display:flex;flex-direction:column;align-items:center;gap:3px;
@@ -164,8 +164,8 @@
     border-radius:50%;
     width:100%;
     aspect-ratio:1/1;
-    max-width:52px;
-    max-height:52px;
+    max-width:64px;
+    max-height:64px;
     font-family:var(--hand);
     font-size:0.62rem;
     color:var(--ink-soft);
@@ -281,7 +281,7 @@
     border-radius:8px;padding:8px;white-space:pre-wrap;word-break:break-all;max-height:110px;overflow-y:auto;color:var(--ink-soft);
   }
   .stamp-big-row{
-    display:flex;justify-content:center;align-items:center;gap:8px;margin:6px auto 12px;
+    display:flex;justify-content:center;align-items:center;gap:16px;margin:8px auto 14px;
   }
   .stamp-big-row img{
     width:76px;height:76px;border-radius:50%;object-fit:cover;
@@ -290,6 +290,42 @@
   .stamp-big-row img:nth-child(1){transform:rotate(-6deg);}
   .stamp-big-row img:nth-child(2){transform:rotate(3deg);}
   .stamp-big-row img:nth-child(3){transform:rotate(-3deg);}
+
+  /* ---------- stamp claim effect ---------- */
+  .stamp-fx{
+    position:fixed;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    pointer-events:none;
+    z-index:7000;
+    opacity:0;
+    background:rgba(30,22,14,0);
+  }
+  .stamp-fx.show{ animation:stampFxBg .95s ease forwards; }
+  .stamp-fx img{
+    width:150px;height:150px;border-radius:50%;
+    box-shadow:0 14px 34px rgba(20,14,8,0.4);
+    opacity:0;
+  }
+  .stamp-fx.show img{ animation:stampFxImg .95s cubic-bezier(.22,1.6,.4,1) forwards; }
+  @keyframes stampFxBg{
+    0%{opacity:0;background:rgba(30,22,14,0);}
+    12%{opacity:1;background:rgba(30,22,14,0.28);}
+    70%{opacity:1;background:rgba(30,22,14,0.28);}
+    100%{opacity:0;background:rgba(30,22,14,0);}
+  }
+  @keyframes stampFxImg{
+    0%{transform:scale(3.4) rotate(-30deg);opacity:0;}
+    30%{transform:scale(0.86) rotate(9deg);opacity:1;}
+    45%{transform:scale(1.1) rotate(-5deg);}
+    60%{transform:scale(0.96) rotate(2deg);}
+    100%{transform:scale(1) rotate(-4deg);opacity:1;}
+  }
+  .stamp-btn.stamp-pop{ animation:stampPop .5s cubic-bezier(.22,1.6,.4,1); }
+  @keyframes stampPop{
+    0%{transform:rotate(-6deg) scale(0.4);}
+    55%{transform:rotate(-6deg) scale(1.18);}
+    100%{transform:rotate(-6deg) scale(1);}
+  }
 
   .toast{
     position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(6px);
@@ -393,6 +429,7 @@
   </div>
 </div>
 
+<div class="stamp-fx" id="stamp-fx"><img id="stamp-fx-img" src="" alt=""></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -416,6 +453,7 @@ var KEY_NICK = 'miaoliNickname';
 var currentPos = null;
 var selectedId = HARBORS[0].id;
 var isSimulated = false;
+var justClaimedId = null;
 
 var el = {
   pinLayer: document.getElementById('pin-layer'),
@@ -433,6 +471,8 @@ var el = {
   nickInput: document.getElementById('nick-input'),
   nickSave: document.getElementById('nick-save'),
   celebrateSheet: document.getElementById('celebrate-sheet'),
+  stampFx: document.getElementById('stamp-fx'),
+  stampFxImg: document.getElementById('stamp-fx-img'),
   adminSheet: document.getElementById('admin-sheet'),
   adminSimRow: document.getElementById('admin-sim-row'),
   adminDebug: document.getElementById('admin-debug'),
@@ -475,6 +515,18 @@ function showToast(msg){
   showToast._t = setTimeout(function(){ el.toast.classList.remove('show'); }, 2300);
 }
 
+/* ---------- stamp claim effect ---------- */
+function playStampFx(h){
+  el.stampFxImg.src = h.stamp;
+  el.stampFxImg.alt = h.name+'通行證圖章';
+  el.stampFx.classList.remove('show');
+  void el.stampFx.offsetWidth; // restart animation if triggered again quickly
+  el.stampFx.classList.add('show');
+  clearTimeout(playStampFx._t);
+  playStampFx._t = setTimeout(function(){ el.stampFx.classList.remove('show'); }, 950);
+  if(navigator.vibrate){ navigator.vibrate([18,40,26]); }
+}
+
 /* ---------- render ---------- */
 var PIN_SVG = '<svg width="26" height="34" viewBox="0 0 26 34">'+
   '<path class="pin-body" d="M13 1C6 1 1 6.6 1 12.8c0 8.3 10.4 18.4 11.4 19.4.3.3.9.3 1.2 0C14.6 31.2 25 21.1 25 12.8 25 6.6 20 1 13 1Z" fill="#2c2116" stroke="#2c2116" stroke-width="1.2"/>'+
@@ -502,7 +554,7 @@ function renderStampRow(){
   HARBORS.forEach(function(h){
     var unlocked = hasPass(h.id);
     var btn = document.createElement('button');
-    btn.className = 'stamp-btn' + (unlocked?' got':'') + (h.id===selectedId?' active':'');
+    btn.className = 'stamp-btn' + (unlocked?' got':'') + (h.id===selectedId?' active':'') + (h.id===justClaimedId?' stamp-pop':'');
     btn.innerHTML = unlocked
       ? '<img class="stamp-img" src="'+h.stamp+'" alt="'+h.name+'通行證圖章" onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{className:\'mark\',textContent:\'印\'}))">'
       : '<span class="mark">○</span><span>'+h.short+'</span>';
@@ -510,6 +562,7 @@ function renderStampRow(){
     el.stampRow.appendChild(btn);
   });
   el.progressText.textContent = passCount()+' / '+HARBORS.length;
+  justClaimedId = null;
 }
 
 function renderDetail(){
@@ -555,9 +608,11 @@ el.claimBtn.addEventListener('click', function(){
   var h = HARBORS.filter(function(x){return x.id===selectedId;})[0];
   var isNew = grantPass(h.id);
   if(isNew){
+    playStampFx(h);
+    justClaimedId = h.id;
     showToast('已領取「'+h.name+'」通行證');
     if(passCount()===HARBORS.length){
-      setTimeout(function(){ openSheet(el.celebrateSheet); }, 500);
+      setTimeout(function(){ openSheet(el.celebrateSheet); }, 1400);
     }
   }
   renderAll();
