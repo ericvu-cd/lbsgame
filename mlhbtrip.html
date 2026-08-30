@@ -381,16 +381,6 @@
   <button class="locate-btn" id="locate-btn">回報我的位置</button>
 </div>
 
-<!-- 暱稱輸入 -->
-<div class="sheet" id="nick-sheet">
-  <div class="sheet-card">
-    <h3>在通行證封面寫下名字</h3>
-    <p>這是你這趟一日遊的探索者稱號，之後隨時可以修改。</p>
-    <input class="sheet-input" id="nick-input" maxlength="12" placeholder="例如：阿明">
-    <button class="sheet-primary" id="nick-save">開始探索</button>
-  </div>
-</div>
-
 <!-- 集滿慶祝 -->
 <div class="sheet" id="celebrate-sheet">
   <div class="sheet-card">
@@ -421,7 +411,6 @@
     <div class="admin-sub">資料管理</div>
     <div class="admin-row">
       <button class="danger" id="admin-clear-pass">清除全部通行證</button>
-      <button class="danger" id="admin-clear-nick">清除暱稱</button>
     </div>
 
     <div class="admin-sub">目前儲存內容</div>
@@ -448,12 +437,13 @@ var PIN_POSITIONS = {
 
 var UNLOCK_RADIUS_M = 500; // 解鎖半徑（公尺）
 var KEY_PASSES = 'miaoliHarborPasses';
-var KEY_NICK = 'miaoliNickname';
+var TASK_ID = 'mlhbtrip'; // 對應 data/tasks.json 的任務 id
 
 var currentPos = null;
 var selectedId = HARBORS[0].id;
 var isSimulated = false;
 var justClaimedId = null;
+var platformNickname = null; // 從平台收到 player_info 後才會有值，收到前顯示「旅人」
 
 var el = {
   pinLayer: document.getElementById('pin-layer'),
@@ -467,9 +457,6 @@ var el = {
   nickChip: document.getElementById('nick-chip'),
   nickName: document.getElementById('nick-name'),
   greetText: document.getElementById('greet-text'),
-  nickSheet: document.getElementById('nick-sheet'),
-  nickInput: document.getElementById('nick-input'),
-  nickSave: document.getElementById('nick-save'),
   celebrateSheet: document.getElementById('celebrate-sheet'),
   stampFx: document.getElementById('stamp-fx'),
   stampFxImg: document.getElementById('stamp-fx-img'),
@@ -479,6 +466,37 @@ var el = {
   brandTrigger: document.getElementById('brand-trigger'),
   mapWrap: document.querySelector('.map-wrap')
 };
+
+/* ---------- 平台通訊（對應「任務頁面通訊介面規格.md」） ---------- */
+// 每座漁港的通行證對應一個平台端的 certificateId，命名規則：TASK_ID + '_' + 漁港id
+function certIdFor(harborId){ return TASK_ID + '_' + harborId; }
+
+// 送訊息給平台（平台是用 window.open 開這個頁面，開啟者是 window.opener）。
+// 不預先假設平台網址，targetOrigin 用 '*'：這個訊息本身不含任何敏感資料，
+// 頁面若不是被平台開啟（例如直接用瀏覽器打開測試），window.opener 會是 null，這裡會靜默略過。
+function sendToPlatform(type, payload){
+  if(!window.opener) return;
+  window.opener.postMessage({
+    source: 'culture-task',
+    version: 1,
+    taskId: TASK_ID,
+    type: type,
+    payload: payload || {}
+  }, '*');
+}
+
+// 收平台送來的訊息：目前只處理 ready 之後回傳的 player_info（帶玩家暱稱）
+window.addEventListener('message', function(event){
+  var msg = event.data;
+  if(!msg || msg.source !== 'culture-platform') return;
+
+  if(msg.type === 'player_info'){
+    platformNickname = (msg.payload && msg.payload.nickname) || null;
+    renderNick();
+  }
+  // ack（回應 complete）目前不需要特別處理：通行證是就地判斷 isNew 才顯示领取效果，
+  // 不需要等平台回應才給使用者回饋；如果平台端有拒絕的情況，通行證本身不會被收回。
+});
 
 /* ---------- storage ---------- */
 function loadPasses(){
@@ -494,9 +512,6 @@ function grantPass(id){
   return true;
 }
 function passCount(){ return Object.keys(loadPasses()).length; }
-
-function loadNick(){ return localStorage.getItem(KEY_NICK) || ''; }
-function saveNick(v){ localStorage.setItem(KEY_NICK, v); }
 
 /* ---------- geo ---------- */
 function distanceMeters(lat1,lng1,lat2,lng2){
@@ -590,11 +605,9 @@ function renderDetail(){
 }
 
 function renderNick(){
-  var n = loadNick();
-  el.nickName.textContent = n || '旅人';
+  el.nickName.textContent = platformNickname || '旅人';
   var hour = new Date().getHours();
   el.greetText.textContent = hour<11 ? '早安' : (hour<18 ? '午安' : '晚安');
-  if(!n){ openSheet(el.nickSheet); }
 }
 
 function renderAll(){
@@ -611,6 +624,7 @@ el.claimBtn.addEventListener('click', function(){
     playStampFx(h);
     justClaimedId = h.id;
     showToast('已領取「'+h.name+'」通行證');
+    sendToPlatform('complete', { certificateIds: [certIdFor(h.id)] }); // 每集到一張，就上傳那一張
     if(passCount()===HARBORS.length){
       setTimeout(function(){ openSheet(el.celebrateSheet); }, 1400);
     }
@@ -670,13 +684,6 @@ document.querySelectorAll('[data-close]').forEach(function(b){
   b.addEventListener('click', function(){ closeSheet(document.getElementById(b.getAttribute('data-close'))); });
 });
 
-el.nickSave.addEventListener('click', function(){
-  var v = el.nickInput.value.trim() || '神秘旅人';
-  saveNick(v);
-  closeSheet(el.nickSheet);
-  renderNick();
-});
-
 /* ---------- admin (hidden) ---------- */
 var tapTimes = [];
 el.brandTrigger.addEventListener('click', function(){
@@ -715,16 +722,10 @@ document.getElementById('admin-clear-pass').addEventListener('click', function()
   renderAll();
   refreshAdminDebug();
 });
-document.getElementById('admin-clear-nick').addEventListener('click', function(){
-  localStorage.removeItem(KEY_NICK);
-  showToast('已清除暱稱');
-  renderNick();
-  refreshAdminDebug();
-});
 function refreshAdminDebug(){
   el.adminDebug.textContent = JSON.stringify({
     passes: loadPasses(),
-    nickname: loadNick(),
+    platformNickname: platformNickname,
     currentPos: currentPos,
     isSimulated: isSimulated
   }, null, 1);
@@ -732,7 +733,8 @@ function refreshAdminDebug(){
 
 window.addEventListener('resize', renderPins);
 
-renderNick();
+sendToPlatform('ready', {}); // 通知平台頁面已就緒，平台會回傳 player_info（含暱稱）
+renderNick(); // 先顯示預設值「旅人」，等 player_info 回來後會再更新一次
 renderAll();
 startWatch(); // 一開始就要求定位權限並開始背景追蹤，之後按按鈕不會再重複跳出詢問
 </script>

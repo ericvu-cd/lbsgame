@@ -334,6 +334,101 @@
     transition:transform .1s cubic-bezier(.34,1.56,.64,1), box-shadow .1s ease;
   }
   .sound-toggle-btn:active{transform:translateY(3px) scale(.95);box-shadow:0 1px 0 var(--wood-dark), 0 1px 0 1px var(--outline);}
+  
+  /* 新的HUD布局 */
+  .hud-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  
+  .hud-left {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  
+  .hud-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    min-width: 80px;
+  }
+  
+  .hud-right {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  
+  .hud-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 8px;
+  }
+  
+  .hud-fish-section {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  
+  .hud-tips {
+    flex: 1;
+    text-align: center;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--cream);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    padding: 4px 8px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 6px;
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .hud-buttons {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  
+  .game-header {
+    flex-direction: column;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 0 !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .game-title {
+    order: 3;
+    margin-top: 6px;
+  }
+  
+  /* 介紹頁面統計 */
+  .intro-stats {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .intro-stats .stat {
+    min-width: auto;
+    padding: 6px 12px;
+  }
+
 </style>
 </head>
 <body>
@@ -366,21 +461,55 @@
       <img src="srbg.png" alt="石滬修復玩法說明">
       <button class="intro-go-btn" id="startBtn" aria-label="開始遊戲" title="開始遊戲"></button>
     </div>
+    <div class="intro-stats" id="introStats"></div>
     </div>
   </div>
 
   <!-- 畫面二：遊戲進行 -->
   <div class="screen" id="screen-game">
     <h1 class="title">石滬修復</h1>
+    
+    <!-- 上層HUD：主要信息 -->
     <div class="game-header">
-      <div class="game-title"><span id="gameSub">點擊石塊來修堤，注意海浪來襲會沖潰毀損</span></div>
-      <div class="stat-bar">
-        <div class="stat"><b id="statTime">00:00</b><span>時間</span></div>
-        <div class="stat"><b id="statMoves">0</b><span>步數</span></div>
-        <div class="stat fish-stat"><b id="statFish">0</b><span>魚獲</span></div>
-        <div class="stat score-stat"><b id="statScore">1000</b><span>分數</span></div>
-        <button class="icon-btn" id="restartBtn">重來</button>
+      <div class="hud-top">
+        <!-- 左側：時間和步數 -->
+        <div class="hud-left">
+          <div class="stat"><b id="statTime">00:00</b><span>時間</span></div>
+          <div class="stat"><b id="statMoves">0</b><span>步數</span></div>
+        </div>
+        
+        <!-- 中心：分數（最重要） -->
+        <div class="hud-center">
+          <div class="stat score-stat"><b id="statScore">1000</b><span>分數</span></div>
+        </div>
+        
+        <!-- 右側：日夜模式 -->
+        <div class="hud-right">
+          <div class="stat" id="tidePhaseIndicator" style="color:var(--gold)">
+            <b id="tidePhaseEmoji">🌅</b><span id="tidePhaseName">日間</span>
+          </div>
+        </div>
       </div>
+      
+      <!-- 下層HUD：資源和操作 -->
+      <div class="hud-bottom">
+        <!-- 左側：鱼資源 -->
+        <div class="hud-fish-section">
+          <div class="stat fish-stat"><b id="statFish">0</b><span>魚獲</span></div>
+          <div class="stat fish-stat" style="color:var(--teal-dark)"><b id="statCollected">0</b><span>已收</span></div>
+        </div>
+        
+        <!-- 中間：提示文字 -->
+        <div class="hud-tips" id="hudTips">日間可收魚</div>
+        
+        <!-- 右側：按鈕 -->
+        <div class="hud-buttons">
+          <button class="icon-btn fish-collect-btn" id="collectFishBtn" title="日間時可收魚">🐟 收</button>
+          <button class="icon-btn" id="restartBtn">重來</button>
+        </div>
+      </div>
+      
+      <div class="game-title"><span id="gameSub">點擊石塊來修堤，注意海浪來襲會沖潰毀損</span></div>
     </div>
 
     <div class="board-wrap">
@@ -441,6 +570,7 @@
     <div class="result-grid">
       <div><b id="finalTime">00:00</b><span>總時間</span></div>
       <div><b id="finalMoves">0</b><span>使用步數</span></div>
+      <div><b id="finalCollected">0</b><span>已收魚</span></div>
     </div>
     <div class="score-breakdown" id="scoreBreakdown"></div>
     <div class="tip-carousel" id="winTipCarousel">
@@ -1041,10 +1171,36 @@ let state = null; // {cells(每格0/1/2三態陣列), moves, seconds, timerHandl
 function switchScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  
+  // 如果切換到介紹頁面，更新統計顯示
+  if(id === 'screen-intro'){
+    updateIntroStats();
+  }
+}
+
+function updateIntroStats(){
+  const stats = GameRecords.load();
+  const statsEl = document.getElementById('introStats');
+  if(!statsEl) return;
+  
+  if(stats.totalGames === 0){
+    statsEl.innerHTML = '<div style="color:var(--cream);font-size:0.9rem;">開始你的第一局修復之旅吧！</div>';
+  } else {
+    statsEl.innerHTML = `
+      <div class="stat score-stat"><b>${stats.bestScore}</b><span>最佳分數</span></div>
+      <div class="stat fish-stat"><b>${stats.bestCollected}</b><span>最多收魚</span></div>
+      <div class="stat"><b>${stats.totalGames}</b><span>遊戲局數</span></div>
+    `;
+  }
 }
 
 document.getElementById('startBtn').addEventListener('click', ()=>{ SoundFX.unlock(); SoundFX.uiClick(); startGame(); });
 document.getElementById('restartBtn').addEventListener('click', ()=>{ SoundFX.uiClick(); stopTimers(); switchScreen('screen-intro'); });
+document.getElementById('collectFishBtn').addEventListener('click', ()=>{
+  if(!state || state.over || state.tidePhase !== 'day') return;
+  SoundFX.uiClick?.();
+  collectFish();
+});
 document.getElementById('changeDiffBtn').addEventListener('click', ()=>{
   SoundFX.uiClick();
   document.getElementById('winOverlay').classList.remove('active');
@@ -1091,7 +1247,257 @@ function stopTimers(){
     clearTimeout(state.recedeHandle);
     clearTimeout(state.birdHandle);
     clearTimeout(state.toolBrokenHandle);
+    clearTimeout(state.thiefHandle);
   }
+}
+
+/* ============ 日夜模式系统 ============ */
+const THIEF_CHECK_MIN_MS = 3000, THIEF_CHECK_MAX_MS = 7000;
+const THIEF_CHANCE = 0.25;
+
+function updateTidePhase(){
+  if(!state) return;
+  state.tideCount++;
+  const newPhase = (state.tideCount % 2 === 1) ? 'day' : 'night';
+  if(newPhase !== state.tidePhase){
+    transitionToPhase(newPhase);
+  }
+}
+
+function transitionToPhase(newPhase){
+  if(!state) return;
+  state.dayNightTransitioning = true;
+  state.tidePhase = newPhase;
+  
+  if(newPhase === 'night'){
+    enterNightMode();
+  } else {
+    enterDayMode();
+  }
+  
+  updateTidePhaseUI();
+  setTimeout(()=>{ if(state) state.dayNightTransitioning = false; }, 1000);
+}
+
+function enterDayMode(){
+  if(!state) return;
+  const board = document.getElementById('board');
+  if(board) board.classList.remove('night-mode');
+  document.body.classList.remove('night-mode');
+  
+  const collectBtn = document.getElementById('collectFishBtn');
+  if(collectBtn){
+    collectBtn.disabled = false;
+    collectBtn.style.opacity = '1';
+  }
+  
+  if(state.thiefHandle){
+    clearTimeout(state.thiefHandle);
+    state.thiefHandle = null;
+  }
+  
+  state.toolBreakRateMultiplier = 1;
+  scheduleBirdCheck();
+  SoundFX.daylight?.();
+}
+
+function enterNightMode(){
+  if(!state) return;
+  const board = document.getElementById('board');
+  if(board) board.classList.add('night-mode');
+  document.body.classList.add('night-mode');
+  
+  const collectBtn = document.getElementById('collectFishBtn');
+  if(collectBtn){
+    collectBtn.disabled = true;
+    collectBtn.style.opacity = '0.5';
+  }
+  
+  if(state.birdHandle){
+    clearTimeout(state.birdHandle);
+    state.birdHandle = null;
+  }
+  
+  state.toolBreakRateMultiplier = 3;
+  scheduleThiefCheck();
+  SoundFX.nightfall?.();
+}
+
+function updateTidePhaseUI(){
+  const indicator = document.getElementById('tidePhaseIndicator');
+  const emoji = document.getElementById('tidePhaseEmoji');
+  const name = document.getElementById('tidePhaseName');
+  const tips = document.getElementById('hudTips');
+  
+  if(state?.tidePhase === 'night'){
+    if(emoji) emoji.textContent = '🌙';
+    if(name) name.textContent = '夜間';
+    if(tips) tips.textContent = '⚠️ 小偷出沒，工具易壞';
+  } else {
+    if(emoji) emoji.textContent = '🌅';
+    if(name) name.textContent = '日間';
+    if(tips) tips.textContent = '可收魚囤積 🐟';
+  }
+}
+
+function scheduleThiefCheck(){
+  if(!state || state.over || state.tidePhase !== 'night') return;
+  
+  const wait = THIEF_CHECK_MIN_MS + Math.random()*(THIEF_CHECK_MAX_MS - THIEF_CHECK_MIN_MS);
+  state.thiefHandle = setTimeout(()=>{
+    if(!state || state.over || state.tidePhase !== 'night') return;
+    
+    if(state.fishCaught > 0 && Math.random() < THIEF_CHANCE){
+      triggerThiefEvent();
+    }
+    scheduleThiefCheck();
+  }, wait);
+}
+
+function triggerThiefEvent(){
+  if(!state || state.fishCaught <= 0) return;
+  
+  const toSteal = Math.min(state.fishCaught, 1 + Math.floor(Math.random()*3));
+  state.fishCaught = Math.max(0, state.fishCaught - toSteal);
+  document.getElementById('statFish').textContent = state.fishCaught;
+  
+  playThiefEffect();
+  updateLiveScore();
+  showFishDelta(-toSteal);
+  SoundFX.steal?.();
+  vibrate([50, 100, 50]);
+}
+
+/* ============ 本地存儲和排名系統 ============ */
+const STORAGE_KEY = 'stoneweir_records';
+
+class GameRecords {
+  static load() {
+    try {
+      const data = localStorage.getItem(STORAGE_KEY);
+      return data ? JSON.parse(data) : { games: [], bestScore: 0, totalGames: 0, bestCollected: 0 };
+    } catch(e) {
+      return { games: [], bestScore: 0, totalGames: 0, bestCollected: 0 };
+    }
+  }
+  
+  static save(records) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    } catch(e) {
+      console.error('保存記錄失敗:', e);
+    }
+  }
+  
+  static addGame(score, time, moves, fishCaught, collected) {
+    const records = this.load();
+    const game = {
+      score,
+      time,
+      moves,
+      fishCaught,
+      collected,
+      timestamp: new Date().toISOString()
+    };
+    
+    records.games.unshift(game);
+    records.games = records.games.slice(0, 50); // 只保留最近50局
+    records.totalGames = records.games.length;
+    records.bestScore = Math.max(records.bestScore, score);
+    records.bestCollected = Math.max(records.bestCollected, collected);
+    
+    this.save(records);
+    return records;
+  }
+  
+  static getBestScore() {
+    return this.load().bestScore;
+  }
+  
+  static getTotalGames() {
+    return this.load().totalGames;
+  }
+}
+
+function playThiefEffect(){
+  const thief = document.createElement('div');
+  thief.className = 'thief-shadow';
+  thief.style.cssText = `
+    position: fixed;
+    top: 20%;
+    left: -100px;
+    width: 80px;
+    height: 60px;
+    background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.7) 50%, transparent 100%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 50;
+    animation: thiefDash 1.2s ease-in forwards;
+  `;
+  
+  if(!document.querySelector('style[data-thief-animation]')){
+    const style = document.createElement('style');
+    style.setAttribute('data-thief-animation', 'true');
+    style.textContent = `
+      @keyframes thiefDash {
+        0% { left: -100px; opacity: 0; }
+        20% { opacity: 1; }
+        80% { opacity: 1; }
+        100% { left: 110vw; opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  document.body.appendChild(thief);
+  setTimeout(()=>{ if(thief.parentNode) thief.remove(); }, 1250);
+}
+
+function collectFish(){
+  if(!state || state.over || state.tidePhase !== 'day') return;
+  
+  const toCollect = state.fishCaught;
+  if(toCollect <= 0) return;
+  
+  // 魚被保存到倉庫
+  state.totalFishCollected = (state.totalFishCollected || 0) + toCollect;
+  state.fishCaught = 0;
+  state.fishList = [];
+  document.getElementById('statFish').textContent = '0';
+  
+  // 更新已收魚顯示
+  updateCollectedFishDisplay();
+  
+  playCollectFishEffect();
+  SoundFX.collectFish?.();
+  vibrate([100, 50, 100]);
+}
+
+function updateCollectedFishDisplay(){
+  const collectedEl = document.getElementById('statCollected');
+  if(collectedEl){
+    collectedEl.textContent = state.totalFishCollected || 0;
+  }
+}
+
+function playCollectFishEffect(){
+  const btn = document.getElementById('collectFishBtn');
+  if(!btn) return;
+  
+  const rect = btn.getBoundingClientRect();
+  
+  state.fishList.forEach(fish=>{
+    const el = document.getElementById(fish.id);
+    if(!el) return;
+    
+    el.style.transition = 'transform 0.6s ease-in, opacity 0.6s ease-in';
+    el.style.transform += ` translate(${rect.left - fish.x}px, ${rect.top - fish.y}px) scale(0.3)`;
+    el.style.opacity = '0';
+  });
+  
+  setTimeout(()=>{ 
+    clearFish();
+  }, 650);
 }
 
 /* ---- 水位控制：倒數期間緩緩上升，撞擊後快速退回 ---- */
@@ -1169,6 +1575,8 @@ function scheduleTide(){
     tideStrike();
     state.tideInterval = Math.max(TIDE_INTERVAL_MIN, state.tideInterval - 1); // 沖刷一次後間隔縮短1秒，最短6秒
     if(state && !state.over && !isFullyRepaired()){
+      // 海浪撞擊後檢查是否切換日夜
+      updateTidePhase();
       // 畫面震動播完之後，海水才開始往下退
       state.shakeWaitHandle = setTimeout(()=>{
         if(!state || state.over) return;
@@ -1195,16 +1603,24 @@ function startGame(){
     seconds: 0,
     fishCaught: 0,
     fishList: [],
+    totalFishCollected: 0,  // 倉庫裡的魚
     over: false,
     toolBroken: false,
     toolBreakSafeClicksLeft: 0,
     timerHandle: null,
     tideHandle: null,
-    tideInterval: undefined
+    tideInterval: undefined,
+    // 日夜模式
+    tidePhase: 'day',
+    tideCount: 0,
+    toolBreakRateMultiplier: 1,
+    thiefHandle: null,
+    dayNightTransitioning: false
   };
   document.getElementById('statTime').textContent = '00:00';
   document.getElementById('statMoves').textContent = '0';
   document.getElementById('statFish').textContent = '0';
+  document.getElementById('statCollected').textContent = '0';
   document.getElementById('statScore').textContent = String(BASE_SCORE);
   document.getElementById('statScore').parentElement.classList.remove('danger');
   document.getElementById('toolBrokenBanner').classList.remove('show');
@@ -1213,6 +1629,8 @@ function startGame(){
   renderBoard();
   clearFish();
   switchScreen('screen-game');
+  updateTidePhaseUI();
+  updateCollectedFishDisplay();
   scheduleBirdCheck();
 
   state.timerHandle = setInterval(()=>{
@@ -1335,9 +1753,13 @@ function onCellClick(id, g){
   if(state.toolBroken) return; // 工具維修中，暫時無法點擊修復
   if(state.toolBreakSafeClicksLeft > 0){
     state.toolBreakSafeClicksLeft--; // 保障期內，這次點擊不參與故障判定
-  } else if(Math.random() < TOOL_BREAK_CHANCE){
-    triggerToolBroken();
-    return; // 這次點擊沒有修復到，石塊狀態不變
+  } else {
+    const multiplier = state.toolBreakRateMultiplier || 1;
+    const breakChance = TOOL_BREAK_CHANCE * multiplier;
+    if(Math.random() < breakChance){
+      triggerToolBroken();
+      return; // 這次點擊沒有修復到，石塊狀態不變
+    }
   }
   const oldCells = state.cells.slice();
   SoundFX.stoneTap();
@@ -1558,17 +1980,25 @@ function finishGame(){
   vibrate([30, 40, 30, 40, 60]); // 修復完成，輕快的慶祝震動
   document.getElementById('finalTime').textContent = formatTime(state.seconds);
   document.getElementById('finalMoves').textContent = state.moves;
+  document.getElementById('finalCollected').textContent = state.totalFishCollected || 0;
 
   const { timePenalty, movePenalty, fishBonus, total } = computeScore(state.seconds, state.moves, state.fishCaught);
   document.getElementById('finalScore').textContent = total;
   renderStars('finalStars', computeStars(total));
+  
+  // 保存成績到本地存儲
+  const records = GameRecords.addGame(total, state.seconds, state.moves, state.fishCaught, state.totalFishCollected || 0);
+  const isNewBest = total === records.bestScore;
 
   document.getElementById('scoreBreakdown').innerHTML = `
     <div class="sb-row"><span>基礎分</span><span>${BASE_SCORE}</span></div>
     <div class="sb-row"><span>耗時扣分 (${state.seconds}秒 × ${PENALTY_PER_SEC})</span><span>-${timePenalty}</span></div>
     <div class="sb-row"><span>步數扣分 (${state.moves}步 × ${PENALTY_PER_MOVE})</span><span>-${movePenalty}</span></div>
     <div class="sb-row"><span>魚獲加分 (${state.fishCaught}尾 × ${BONUS_PER_FISH})</span><span>+${fishBonus}</span></div>
+    <div class="sb-row"><span>已收魚 (倉庫)</span><span>${state.totalFishCollected || 0}尾</span></div>
     <div class="sb-row sb-total"><span>總分</span><span>${total}</span></div>
+    ${isNewBest ? '<div class="sb-row sb-best" style="background:rgba(255,200,0,0.2);border-radius:6px;"><span>✨ 個人新高！</span><span>🏆</span></div>' : `<div class="sb-row"><span>個人最佳</span><span>${records.bestScore}</span></div>`}
+    <div class="sb-row"><span>總局數</span><span>${records.totalGames}</span></div>
   `;
 
   winTipCarousel.showRandom();
@@ -1815,6 +2245,9 @@ function finishGame(){
   place('iconTipWin', 26, drawBulb);
   place('iconTipLose', 26, drawBulb);
 })();
+
+// 页面加载时初始化统计显示
+updateIntroStats();
 </script>
 </body>
 </html>
