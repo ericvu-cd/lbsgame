@@ -148,12 +148,13 @@
     box-shadow:0 1px 0 var(--gold-dark), 0 1px 0 1px var(--outline), 0 3px 6px rgba(0,0,0,.3),
       inset 0 2px 0 rgba(255,255,255,.4);}
 
-  /* ---- 遊戲畫面 ---- */
-  .game-header{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0;}
-  .game-title{font-family:'Noto Sans TC',sans-serif;font-weight:900;font-size:1.1rem;color:var(--cream);
-    text-shadow:0 2px 0 var(--outline), 0 3px 0 var(--outline);letter-spacing:1px;}
-  .game-title span{display:block;font-size:0.86rem;color:var(--ink);text-shadow:none;
-    font-family:'Noto Sans TC',sans-serif;font-weight:700;margin-top:2px;opacity:.95;}
+  /* ---- 遊戲畫面：HUD ---- */
+  .game-header{display:flex;flex-direction:column;align-items:center;gap:7px;margin-bottom:8px;flex-shrink:0;}
+  .hud-row{display:flex;flex-wrap:wrap;align-items:stretch;justify-content:center;gap:6px;width:100%;}
+  .hud-row.hud-actions{gap:10px;}
+  .game-title{font-family:'Noto Sans TC',sans-serif;font-weight:700;font-size:0.8rem;color:var(--ink);
+    text-align:center;opacity:.9;width:100%;}
+  .game-title span{display:block;}
   .stat-bar{display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
   .stat{
     position:relative;background:linear-gradient(180deg,#fffaea 0%, #ecd792 100%);
@@ -335,85 +336,13 @@
   }
   .sound-toggle-btn:active{transform:translateY(3px) scale(.95);box-shadow:0 1px 0 var(--wood-dark), 0 1px 0 1px var(--outline);}
   
-  /* 新的HUD布局 */
-  .hud-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    gap: 12px;
-    margin-bottom: 8px;
-  }
-  
-  .hud-left {
-    display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-  
-  .hud-center {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    min-width: 80px;
-  }
-  
-  .hud-right {
-    display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-  
-  .hud-bottom {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    gap: 8px;
-  }
-  
-  .hud-fish-section {
-    display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-  
-  .hud-tips {
-    flex: 1;
-    text-align: center;
-    font-family: 'Noto Sans TC', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--cream);
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    padding: 4px 8px;
-    background: rgba(0,0,0,0.2);
-    border-radius: 6px;
-    min-height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .hud-buttons {
-    display: flex;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-  
-  .game-header {
-    flex-direction: column;
-    align-items: stretch !important;
-    justify-content: flex-start !important;
-    gap: 0 !important;
-    margin-bottom: 8px !important;
-  }
-  
-  .game-title {
-    order: 3;
-    margin-top: 6px;
-  }
-  
+  /* 統計 chip 尺寸微調，讓 5 個 chip + 2 顆按鈕在小螢幕也能排得整齊 */
+  .hud-stats .stat{padding:4px 8px 5px;min-width:0;flex:1 1 0;}
+  .hud-stats .stat.score-stat{flex:1.15 1 0;width:auto;}
+  .hud-actions .icon-btn{flex:1 1 0;padding:8px 10px;text-align:center;}
+  .hud-actions #restartBtn{flex:0 0 auto;padding:6px 14px;font-size:0.72rem;
+    background:linear-gradient(180deg,#e8e2d0 0%, var(--rock) 55%, var(--rock-dark) 100%);}
+
   /* 介紹頁面統計 */
   .intro-stats {
     display: flex;
@@ -427,6 +356,24 @@
   .intro-stats .stat {
     min-width: auto;
     padding: 6px 12px;
+  }
+  
+  /* 日夜模式：石滬本體只做很輕微的降彩度，主要靠下面的罩層來營造夜色，
+     避免多層濾鏡疊加讓畫面暗到看不清楚、沒法玩 */
+  #board.night-mode {
+    filter: brightness(0.88) saturate(0.85);
+  }
+
+  body.night-mode {
+    --ocean-glow: #051215;
+  }
+
+  /* 全螢幕夜晚罩層：從左滑入蓋住畫面、退場時往右滑出（用 transform 由 JS 控制方向），
+     顏色也調淡很多，維持看得清楚石塊狀態、還能玩的亮度，只是帶點夜色氛圍 */
+  #nightOverlay{
+    position:fixed;inset:0;z-index:20;pointer-events:none;
+    background:linear-gradient(100deg, rgba(4,14,34,.4) 0%, rgba(6,20,42,.32) 55%, rgba(6,20,42,.2) 100%);
+    transform:translateX(-100%);
   }
 
 </style>
@@ -449,6 +396,7 @@
   <svg class="crest crest-foam" viewBox="0 0 1600 140" preserveAspectRatio="none"><path d="M0,72 C180,22 380,112 580,62 C780,12 980,112 1180,62 C1380,12 1500,82 1600,62" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/></svg>
   <div class="fill"></div>
 </div>
+<div id="nightOverlay"></div>
 <div id="tideFlash"></div>
 
 <button class="sound-toggle-btn" id="muteBtn" aria-label="切換音效" title="切換音效">🔊</button>
@@ -471,44 +419,19 @@
     
     <!-- 上層HUD：主要信息 -->
     <div class="game-header">
-      <div class="hud-top">
-        <!-- 左側：時間和步數 -->
-        <div class="hud-left">
-          <div class="stat"><b id="statTime">00:00</b><span>時間</span></div>
-          <div class="stat"><b id="statMoves">0</b><span>步數</span></div>
-        </div>
-        
-        <!-- 中心：分數（最重要） -->
-        <div class="hud-center">
-          <div class="stat score-stat"><b id="statScore">1000</b><span>分數</span></div>
-        </div>
-        
-        <!-- 右側：日夜模式 -->
-        <div class="hud-right">
-          <div class="stat" id="tidePhaseIndicator" style="color:var(--gold)">
-            <b id="tidePhaseEmoji">🌅</b><span id="tidePhaseName">日間</span>
-          </div>
-        </div>
+      <div class="hud-row hud-stats">
+        <div class="stat"><b id="statTime">00:00</b><span>時間</span></div>
+        <div class="stat"><b id="statMoves">0</b><span>步數</span></div>
+        <div class="stat score-stat"><b id="statScore">1000</b><span>分數</span></div>
+        <div class="stat fish-stat"><b id="statFish">0</b><span>魚獲</span></div>
+        <div class="stat fish-stat" style="color:var(--teal-dark)"><b id="statCollected">0</b><span>已收</span></div>
       </div>
-      
-      <!-- 下層HUD：資源和操作 -->
-      <div class="hud-bottom">
-        <!-- 左側：鱼資源 -->
-        <div class="hud-fish-section">
-          <div class="stat fish-stat"><b id="statFish">0</b><span>魚獲</span></div>
-          <div class="stat fish-stat" style="color:var(--teal-dark)"><b id="statCollected">0</b><span>已收</span></div>
-        </div>
-        
-        <!-- 中間：提示文字 -->
-        <div class="hud-tips" id="hudTips">日間可收魚</div>
-        
-        <!-- 右側：按鈕 -->
-        <div class="hud-buttons">
-          <button class="icon-btn fish-collect-btn" id="collectFishBtn" title="日間時可收魚">🐟 收</button>
-          <button class="icon-btn" id="restartBtn">重來</button>
-        </div>
+
+      <div class="hud-row hud-actions">
+        <button class="icon-btn fish-collect-btn" id="collectFishBtn" title="日間時可收魚">🐟 收魚</button>
+        <button class="icon-btn" id="restartBtn">🔄 重來</button>
       </div>
-      
+
       <div class="game-title"><span id="gameSub">點擊石塊來修堤，注意海浪來襲會沖潰毀損</span></div>
     </div>
 
@@ -1041,6 +964,13 @@ function spawnFish(n, riseDurationMs){
   const layer = document.getElementById('fishLayer');
   const room = MAX_FISH_SHOWN - state.fishList.length;
   const toSpawn = Math.max(0, Math.min(n, room));
+  
+  // 如果没法生成所有的鱼，调整fishCaught以匹配实际显示数
+  if(toSpawn < n){
+    state.fishCaught = Math.max(0, state.fishCaught - (n - toSpawn));
+    document.getElementById('statFish').textContent = state.fishCaught;
+  }
+  
   const posDurS = (Math.max(600, riseDurationMs || 900) / 1000).toFixed(2);
   for(let i=0;i<toSpawn;i++){
     const r = Math.random() * (R_IN - 45);
@@ -1142,12 +1072,13 @@ function applyMask(cellsArr, idx, delta){
 const BASE_SCORE = 1000;
 const PENALTY_PER_SEC = 6;     // 每秒扣分
 const PENALTY_PER_MOVE = 10;   // 每步扣分
-const BONUS_PER_FISH = 10;     // 每尾留在滬內的魚加分
+const BONUS_PER_FISH = 20;     // 每尾留在滬內的魚加分
 
-function computeScore(seconds, moves, fishCaught){
+function computeScore(seconds, moves, fishCaught, totalFishCollected){
   const timePenalty = seconds * PENALTY_PER_SEC;
   const movePenalty = moves * PENALTY_PER_MOVE;
-  const fishBonus = (fishCaught||0) * BONUS_PER_FISH;
+  // 分數要算「還在石滬裡的魚」加上「已經收進倉庫的魚」，收魚才不會白忙一場
+  const fishBonus = ((fishCaught||0) + (totalFishCollected||0)) * BONUS_PER_FISH;
   const total = Math.max(0, BASE_SCORE - timePenalty - movePenalty + fishBonus);
   return { timePenalty, movePenalty, fishBonus, total };
 }
@@ -1252,16 +1183,45 @@ function stopTimers(){
 }
 
 /* ============ 日夜模式系统 ============ */
-const THIEF_CHECK_MIN_MS = 3000, THIEF_CHECK_MAX_MS = 7000;
-const THIEF_CHANCE = 0.25;
+const THIEF_CHECK_MIN_MS = 2000, THIEF_CHECK_MAX_MS = 5000;
+const THIEF_CHANCE = 0.5;  // 提高到 50%，更容易出现
 
 function updateTidePhase(){
   if(!state) return;
   state.tideCount++;
-  const newPhase = (state.tideCount % 2 === 1) ? 'day' : 'night';
+  // 遊戲一開始是白天，第 1 波沖刷後轉夜，第 2 波轉回白天，如此純交替：日→夜→日→夜
+  const newPhase = (state.tideCount % 2 === 1) ? 'night' : 'day';
   if(newPhase !== state.tidePhase){
     transitionToPhase(newPhase);
   }
+}
+
+/* 夜晚罩層：進場一律從左滑入、退場一律往右滑出，方向不對稱，
+   所以不能只切換一個 class 讓瀏覽器自己算，要分開控制 transform 才行。
+   用 nightOverlayShown 記著目前是不是「正蓋在畫面上」，避免重來/一開始時
+   在畫面上跑一段不必要的滑動。 */
+let nightOverlayShown = false;
+function slideNightOverlayIn(){
+  const el = document.getElementById('nightOverlay');
+  if(!el) return;
+  el.style.transition = 'none';
+  el.style.transform = 'translateX(-100%)';
+  void el.offsetWidth; // 強制 reflow，確保下一行的 transition 真的會生效
+  el.style.transition = 'transform 2s ease';
+  el.style.transform = 'translateX(0)';
+  nightOverlayShown = true;
+}
+function slideNightOverlayOut(){
+  const el = document.getElementById('nightOverlay');
+  if(!el) return;
+  if(!nightOverlayShown){
+    el.style.transition = 'none';
+    el.style.transform = 'translateX(-100%)';
+    return;
+  }
+  el.style.transition = 'transform 2s ease';
+  el.style.transform = 'translateX(100%)';
+  nightOverlayShown = false;
 }
 
 function transitionToPhase(newPhase){
@@ -1275,7 +1235,6 @@ function transitionToPhase(newPhase){
     enterDayMode();
   }
   
-  updateTidePhaseUI();
   setTimeout(()=>{ if(state) state.dayNightTransitioning = false; }, 1000);
 }
 
@@ -1284,6 +1243,7 @@ function enterDayMode(){
   const board = document.getElementById('board');
   if(board) board.classList.remove('night-mode');
   document.body.classList.remove('night-mode');
+  slideNightOverlayOut();
   
   const collectBtn = document.getElementById('collectFishBtn');
   if(collectBtn){
@@ -1306,6 +1266,7 @@ function enterNightMode(){
   const board = document.getElementById('board');
   if(board) board.classList.add('night-mode');
   document.body.classList.add('night-mode');
+  slideNightOverlayIn();
   
   const collectBtn = document.getElementById('collectFishBtn');
   if(collectBtn){
@@ -1313,44 +1274,45 @@ function enterNightMode(){
     collectBtn.style.opacity = '0.5';
   }
   
+  // 停止海鳥檢查
   if(state.birdHandle){
     clearTimeout(state.birdHandle);
     state.birdHandle = null;
   }
   
+  // 停止舊的小偷檢查（如果有）
+  if(state.thiefHandle){
+    clearTimeout(state.thiefHandle);
+    state.thiefHandle = null;
+  }
+  
   state.toolBreakRateMultiplier = 3;
+  
+  // 立即啟動小偷檢查
   scheduleThiefCheck();
   SoundFX.nightfall?.();
 }
 
-function updateTidePhaseUI(){
-  const indicator = document.getElementById('tidePhaseIndicator');
-  const emoji = document.getElementById('tidePhaseEmoji');
-  const name = document.getElementById('tidePhaseName');
-  const tips = document.getElementById('hudTips');
-  
-  if(state?.tidePhase === 'night'){
-    if(emoji) emoji.textContent = '🌙';
-    if(name) name.textContent = '夜間';
-    if(tips) tips.textContent = '⚠️ 小偷出沒，工具易壞';
-  } else {
-    if(emoji) emoji.textContent = '🌅';
-    if(name) name.textContent = '日間';
-    if(tips) tips.textContent = '可收魚囤積 🐟';
-  }
-}
-
 function scheduleThiefCheck(){
-  if(!state || state.over || state.tidePhase !== 'night') return;
+  if(!state || state.over) return;
+  if(state.tidePhase !== 'night') return;
   
   const wait = THIEF_CHECK_MIN_MS + Math.random()*(THIEF_CHECK_MAX_MS - THIEF_CHECK_MIN_MS);
   state.thiefHandle = setTimeout(()=>{
-    if(!state || state.over || state.tidePhase !== 'night') return;
+    // 检查时才判断，允许跨越阶段
+    if(!state || state.over) return;
     
-    if(state.fishCaught > 0 && Math.random() < THIEF_CHANCE){
-      triggerThiefEvent();
+    // 只在夜间且有鱼时才考虑小偷
+    if(state.tidePhase === 'night' && state.fishCaught > 0){
+      if(Math.random() < THIEF_CHANCE){
+        triggerThiefEvent();
+      }
     }
-    scheduleThiefCheck();
+    
+    // 如果还是夜间，继续调度
+    if(state && !state.over && state.tidePhase === 'night'){
+      scheduleThiefCheck();
+    }
   }, wait);
 }
 
@@ -1360,6 +1322,7 @@ function triggerThiefEvent(){
   const toSteal = Math.min(state.fishCaught, 1 + Math.floor(Math.random()*3));
   state.fishCaught = Math.max(0, state.fishCaught - toSteal);
   document.getElementById('statFish').textContent = state.fishCaught;
+  despawnFish(toSteal, 700); // 石滬裡實際要少掉對應數量的魚圖示，數字才會跟畫面對得起來
   
   playThiefEffect();
   updateLiveScore();
@@ -1419,38 +1382,79 @@ class GameRecords {
   }
 }
 
+/* 偷魚小賊造型：紅頭巾扛著魚袋的角色，頭、身體、手、腳畫成同一組連續形狀，
+   避免看起來像各部位分開的零件拼湊在一起。從畫面左側跑進來，往右側跑出去。 */
+function thiefFigureSVG(){
+  return `
+    <svg viewBox="0 0 260 300" width="100%" height="100%">
+      <ellipse cx="150" cy="286" rx="76" ry="10" fill="#000000" opacity="0.15"/>
+
+      <path d="M65,102 C60,130 60,160 65,190 C66,215 64,245 68,265 C72,272 82,274 90,270 C96,266 96,255 93,245 C97,220 96,198 92,188 L108,188 C104,198 103,220 107,245 C104,255 104,266 110,270 C118,274 128,272 132,265 C136,245 134,215 135,190 C140,160 140,130 135,102 C122,94 78,94 65,102 Z"
+        fill="#d0842f" stroke="#241407" stroke-width="3" stroke-linejoin="round"/>
+
+      <path d="M69,225 L92,222" stroke="#8a4b16" stroke-width="2.5" stroke-linecap="round" opacity="0.65"/>
+      <path d="M108,222 L131,225" stroke="#8a4b16" stroke-width="2.5" stroke-linecap="round" opacity="0.65"/>
+
+      <path d="M65,150 L135,150" stroke="#8a4b16" stroke-width="4"/>
+      <circle cx="100" cy="150" r="6" fill="#c2280f" stroke="#241407" stroke-width="1.5"/>
+
+      <path d="M128,108 C145,100 160,90 172,86 C180,84 187,88 187,96 C187,104 179,109 170,107 C158,105 145,109 133,117 Z"
+        fill="#e0a878" stroke="#241407" stroke-width="3" stroke-linejoin="round"/>
+
+      <circle cx="100" cy="66" r="42" fill="#e0a878" stroke="#241407" stroke-width="3"/>
+
+      <path d="M64,55 C64,30 84,20 100,20 C116,20 136,30 136,55 C136,42 118,34 100,38 C82,34 64,42 64,55 Z"
+        fill="#ff4327" stroke="#241407" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M130,42 C154,44 168,60 166,80 C155,72 143,70 131,74 Z" fill="#c2280f" stroke="#241407" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M126,36 C150,32 166,44 170,64 C157,58 144,58 132,64 Z" fill="#ff4327" stroke="#241407" stroke-width="2.5" stroke-linejoin="round"/>
+
+      <path d="M76,58 Q83,53 90,57" fill="none" stroke="#241407" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M100,57 Q107,53 114,58" fill="none" stroke="#241407" stroke-width="2.5" stroke-linecap="round"/>
+      <ellipse cx="84" cy="65" rx="3" ry="4" fill="#241407"/>
+      <ellipse cx="106" cy="65" rx="3" ry="4" fill="#241407"/>
+      <path d="M82,80 Q94,86 106,79" fill="none" stroke="#8a4b16" stroke-width="2.5" stroke-linecap="round"/>
+
+      <path d="M172,86 Q184,72 196,64" fill="none" stroke="#8a4b16" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="205" cy="108" rx="34" ry="42" fill="#087a89" stroke="#241407" stroke-width="3"/>
+      <path d="M205,68 Q211,62 219,68 L215,82 Q205,78 195,82 Z" fill="#00d4c2" stroke="#241407" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M183,102 Q205,94 227,104" fill="none" stroke="#065c66" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+    </svg>
+  `;
+}
+
 function playThiefEffect(){
   const thief = document.createElement('div');
-  thief.className = 'thief-shadow';
+  thief.className = 'thief-figure';
   thief.style.cssText = `
     position: fixed;
-    top: 20%;
+    top: 38%;
     left: -100px;
-    width: 80px;
-    height: 60px;
-    background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.7) 50%, transparent 100%);
-    border-radius: 50%;
+    width: 84px;
+    height: 97px;
     pointer-events: none;
     z-index: 50;
-    animation: thiefDash 1.2s ease-in forwards;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,.35));
+    animation: thiefDash 1.35s ease-in-out forwards;
   `;
-  
+  thief.innerHTML = thiefFigureSVG();
+
   if(!document.querySelector('style[data-thief-animation]')){
     const style = document.createElement('style');
     style.setAttribute('data-thief-animation', 'true');
     style.textContent = `
       @keyframes thiefDash {
-        0% { left: -100px; opacity: 0; }
-        20% { opacity: 1; }
-        80% { opacity: 1; }
-        100% { left: 110vw; opacity: 0; }
+        0% { left: -100px; opacity: 0; transform: translateY(0) scale(.92); }
+        14% { opacity: 1; }
+        50% { transform: translateY(-6px) scale(1); }
+        86% { opacity: 1; }
+        100% { left: 110vw; opacity: 0; transform: translateY(0) scale(.92); }
       }
     `;
     document.head.appendChild(style);
   }
-  
+
   document.body.appendChild(thief);
-  setTimeout(()=>{ if(thief.parentNode) thief.remove(); }, 1250);
+  setTimeout(()=>{ if(thief.parentNode) thief.remove(); }, 1400);
 }
 
 function collectFish(){
@@ -1462,13 +1466,13 @@ function collectFish(){
   // 魚被保存到倉庫
   state.totalFishCollected = (state.totalFishCollected || 0) + toCollect;
   state.fishCaught = 0;
-  state.fishList = [];
   document.getElementById('statFish').textContent = '0';
   
   // 更新已收魚顯示
   updateCollectedFishDisplay();
+  updateLiveScore(); // 立刻刷新分數顯示（魚的加總其實沒變，但保險起見還是跟偷魚一樣即時刷新一次）
   
-  playCollectFishEffect();
+  playCollectFishEffect(); // 要在清空 fishList 之前呼叫，飛向收魚按鈕的動畫才有魚可以飛
   SoundFX.collectFish?.();
   vibrate([100, 50, 100]);
 }
@@ -1526,7 +1530,7 @@ function recedeOceanQuickly(){
 }
 
 function updateLiveScore(){
-  const { total } = computeScore(state.seconds, state.moves, state.fishCaught);
+  const { total } = computeScore(state.seconds, state.moves, state.fishCaught, state.totalFishCollected);
   const scoreEl = document.getElementById('statScore');
   scoreEl.textContent = total;
   scoreEl.parentElement.classList.toggle('danger', total <= 150);
@@ -1611,7 +1615,7 @@ function startGame(){
     tideHandle: null,
     tideInterval: undefined,
     // 日夜模式
-    tidePhase: 'day',
+    tidePhase: 'day',  // 遊戲開場一律先是白天
     tideCount: 0,
     toolBreakRateMultiplier: 1,
     thiefHandle: null,
@@ -1629,9 +1633,8 @@ function startGame(){
   renderBoard();
   clearFish();
   switchScreen('screen-game');
-  updateTidePhaseUI();
   updateCollectedFishDisplay();
-  scheduleBirdCheck();
+  enterDayMode(); // 重來時把上一局可能殘留的夜間狀態（罩層、按鈕停用等）重設乾淨，並排好白天該有的鳥事件
 
   state.timerHandle = setInterval(()=>{
     state.seconds++;
@@ -1982,7 +1985,7 @@ function finishGame(){
   document.getElementById('finalMoves').textContent = state.moves;
   document.getElementById('finalCollected').textContent = state.totalFishCollected || 0;
 
-  const { timePenalty, movePenalty, fishBonus, total } = computeScore(state.seconds, state.moves, state.fishCaught);
+  const { timePenalty, movePenalty, fishBonus, total } = computeScore(state.seconds, state.moves, state.fishCaught, state.totalFishCollected);
   document.getElementById('finalScore').textContent = total;
   renderStars('finalStars', computeStars(total));
   
@@ -1994,8 +1997,7 @@ function finishGame(){
     <div class="sb-row"><span>基礎分</span><span>${BASE_SCORE}</span></div>
     <div class="sb-row"><span>耗時扣分 (${state.seconds}秒 × ${PENALTY_PER_SEC})</span><span>-${timePenalty}</span></div>
     <div class="sb-row"><span>步數扣分 (${state.moves}步 × ${PENALTY_PER_MOVE})</span><span>-${movePenalty}</span></div>
-    <div class="sb-row"><span>魚獲加分 (${state.fishCaught}尾 × ${BONUS_PER_FISH})</span><span>+${fishBonus}</span></div>
-    <div class="sb-row"><span>已收魚 (倉庫)</span><span>${state.totalFishCollected || 0}尾</span></div>
+    <div class="sb-row"><span>魚獲加分 (${(state.fishCaught||0) + (state.totalFishCollected||0)}尾 × ${BONUS_PER_FISH})</span><span>+${fishBonus}</span></div>
     <div class="sb-row sb-total"><span>總分</span><span>${total}</span></div>
     ${isNewBest ? '<div class="sb-row sb-best" style="background:rgba(255,200,0,0.2);border-radius:6px;"><span>✨ 個人新高！</span><span>🏆</span></div>' : `<div class="sb-row"><span>個人最佳</span><span>${records.bestScore}</span></div>`}
     <div class="sb-row"><span>總局數</span><span>${records.totalGames}</span></div>
