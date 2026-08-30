@@ -485,14 +485,19 @@ function sendToPlatform(type, payload){
   }, '*');
 }
 
-// 收平台送來的訊息：目前只處理 ready 之後回傳的 player_info（帶玩家暱稱）
+// 收平台送來的訊息：ready 之後回傳的 player_info，帶玩家暱稱與已擁有的證書清單
 window.addEventListener('message', function(event){
   var msg = event.data;
   if(!msg || msg.source !== 'culture-platform') return;
 
   if(msg.type === 'player_info'){
     platformNickname = (msg.payload && msg.payload.nickname) || null;
+    // 用平台這個帳號「當下實際擁有」的證書清單覆寫本地通行證狀態（不是合併）：
+    // localStorage 不分帳號，同一支手機瀏覽器換帳號測試會共用同一份資料，
+    // 若只用本地資料判斷已領取，會把別的帳號領過的通行證也顯示出來，所以每次都要用平台資料校正。
+    syncPassesFromPlatform((msg.payload && msg.payload.certificates) || []);
     renderNick();
+    renderAll();
   }
   // ack（回應 complete）目前不需要特別處理：通行證是就地判斷 isNew 才顯示领取效果，
   // 不需要等平台回應才給使用者回饋；如果平台端有拒絕的情況，通行證本身不會被收回。
@@ -512,6 +517,19 @@ function grantPass(id){
   return true;
 }
 function passCount(){ return Object.keys(loadPasses()).length; }
+
+// 用平台的 certificates 清單重建本地通行證狀態：平台有的才算已領取，平台沒有的一律視為未領取。
+// 領取時間（at）若本地剛好還留著同一枚的舊紀錄就沿用，沒有就不補造假時間（顯示會是空字串，見 renderDetail）。
+function syncPassesFromPlatform(certificates){
+  var prev = loadPasses();
+  var synced = {};
+  HARBORS.forEach(function(h){
+    if(certificates.indexOf(certIdFor(h.id)) !== -1){
+      synced[h.id] = prev[h.id] || { at: null };
+    }
+  });
+  savePasses(synced);
+}
 
 /* ---------- geo ---------- */
 function distanceMeters(lat1,lng1,lat2,lng2){
