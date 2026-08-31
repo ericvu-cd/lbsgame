@@ -149,7 +149,7 @@
       inset 0 2px 0 rgba(255,255,255,.4);}
 
   /* ---- 遊戲畫面：HUD ---- */
-  .game-header{display:flex;flex-direction:column;align-items:center;gap:7px;margin-bottom:8px;flex-shrink:0;}
+  .game-header{display:flex;flex-direction:column;align-items:center;gap:7px;margin:14px 0 8px;flex-shrink:0;}
   .hud-row{display:flex;flex-wrap:wrap;align-items:stretch;justify-content:center;gap:6px;width:100%;}
   .hud-row.hud-actions{gap:10px;}
   .game-title{font-family:'Noto Sans TC',sans-serif;font-weight:700;font-size:0.8rem;color:var(--ink);
@@ -179,7 +179,7 @@
   }
   .icon-btn:active{transform:translateY(3px) scale(.97);box-shadow:0 1px 0 var(--wood-dark), 0 1px 0 1px var(--outline);}
 
-  .board-wrap{position:relative;display:flex;flex:1;min-height:0;align-items:center;justify-content:center;margin-bottom:6px;}
+  .board-wrap{position:relative;display:flex;flex:1;min-height:0;align-items:center;justify-content:center;margin:38px 0 6px;}
   .tool-broken-banner{
     position:absolute;top:6px;left:50%;transform:translateX(-50%) scale(.85);z-index:40;
     background:linear-gradient(180deg,#ffdc7a 0%, var(--coral) 100%);color:#fff;
@@ -335,13 +335,26 @@
     transition:transform .1s cubic-bezier(.34,1.56,.64,1), box-shadow .1s ease;
   }
   .sound-toggle-btn:active{transform:translateY(3px) scale(.95);box-shadow:0 1px 0 var(--wood-dark), 0 1px 0 1px var(--outline);}
-  
-  /* 統計 chip 尺寸微調，讓 5 個 chip + 2 顆按鈕在小螢幕也能排得整齊 */
+  .sound-toggle-btn.corner-left{left:10px;right:auto;}
+
+  /* 竹簍收魚按鈕：畫在石滬缺口正上方，滑鼠移過去/按下去有輕微回饋。
+     transform-origin 明確指定 0 0，位置完全由這裡的 translate+scale 決定，
+     避免跟 SVG 元素本身的 transform 屬性混用導致位置跑掉。
+     Y 值算過：整個竹簍（含簍口）都收在 viewBox 的 y=0~100 之間，
+     完全不會跑到 SVG 上緣以外的「board-wrap 額外留白區」，
+     才不會跟畫在那個留白區裡的「工具壞了」警示條疊在一起。 */
+  .basket-btn{
+    cursor:pointer;
+    transform-origin:0 0;
+    transform:translate(203px,-18.4px) scale(0.4);
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1);
+  }
+  .basket-btn:hover{transform:translate(203px,-22px) scale(0.42);}
+  .basket-btn:active{transform:translate(203px,-14px) scale(0.37);}
+
+  /* 統計 chip 尺寸微調，讓 5 個 chip 在小螢幕也能排得整齊 */
   .hud-stats .stat{padding:4px 8px 5px;min-width:0;flex:1 1 0;}
   .hud-stats .stat.score-stat{flex:1.15 1 0;width:auto;}
-  .hud-actions .icon-btn{flex:1 1 0;padding:8px 10px;text-align:center;}
-  .hud-actions #restartBtn{flex:0 0 auto;padding:6px 14px;font-size:0.72rem;
-    background:linear-gradient(180deg,#e8e2d0 0%, var(--rock) 55%, var(--rock-dark) 100%);}
 
   /* 介紹頁面統計 */
   .intro-stats {
@@ -399,6 +412,7 @@
 <div id="nightOverlay"></div>
 <div id="tideFlash"></div>
 
+<button class="sound-toggle-btn corner-left" id="restartBtn" aria-label="重來" title="重來" style="display:none">🔄</button>
 <button class="sound-toggle-btn" id="muteBtn" aria-label="切換音效" title="切換音效">🔊</button>
 
 <div class="app">
@@ -425,11 +439,6 @@
         <div class="stat score-stat"><b id="statScore">1000</b><span>分數</span></div>
         <div class="stat fish-stat"><b id="statFish">0</b><span>魚獲</span></div>
         <div class="stat fish-stat" style="color:var(--teal-dark)"><b id="statCollected">0</b><span>已收</span></div>
-      </div>
-
-      <div class="hud-row hud-actions">
-        <button class="icon-btn fish-collect-btn" id="collectFishBtn" title="日間時可收魚">🐟 收魚</button>
-        <button class="icon-btn" id="restartBtn">🔄 重來</button>
       </div>
 
       <div class="game-title"><span id="gameSub">點擊石塊來修堤，注意海浪來襲會沖潰毀損</span></div>
@@ -474,6 +483,41 @@
       <g id="connectorLayer"></g>
       <g id="fishLayer"></g>
       <g id="stoneLayer"></g>
+
+      <!-- 收魚：畫成竹簍，擺在石滬缺口正上方（開口朝天的方向），取代原本的按鈕。
+           線條比預覽版加粗，跟遊戲整體的粗框卡通風格更搭。
+           位置完全交給 CSS 的 transform 控制（不用 SVG 的 transform 屬性），
+           避免兩邊互相覆蓋導致位置跑掉、沒有真正置中在缺口正中間。 -->
+      <g id="collectFishBtn" class="basket-btn" role="button" tabindex="0" aria-label="日間時可收魚" title="日間時可收魚">
+        <path d="M64,72 C40,110 34,150 42,190 C48,225 62,255 90,278 C110,292 190,292 210,278 C238,255 252,225 258,190 C266,150 260,110 236,72 C220,84 180,90 150,90 C120,90 80,84 64,72 Z"
+          fill="#d0842f" stroke="#241407" stroke-width="4.5" stroke-linejoin="round"/>
+
+        <ellipse cx="150" cy="282" rx="62" ry="14" fill="#8a4b16" stroke="#241407" stroke-width="3.5"/>
+
+        <path d="M85,80 C65,120 62,160 70,195 C76,225 86,250 100,270" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.85"/>
+        <path d="M118,86 C108,130 106,170 110,205 C112,235 116,258 122,275" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.85"/>
+        <path d="M150,88 C150,140 150,180 150,215 C150,245 150,262 150,278" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.85"/>
+        <path d="M182,86 C192,130 194,170 190,205 C188,235 184,258 178,275" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.85"/>
+        <path d="M215,80 C235,120 238,160 230,195 C224,225 214,250 200,270" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.85"/>
+
+        <path d="M56,124 Q150,138 244,124" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.7"/>
+        <path d="M46,158 Q150,174 254,158" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.7"/>
+        <path d="M42,192 Q150,208 258,192" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.7"/>
+        <path d="M52,226 Q150,240 248,226" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.7"/>
+        <path d="M70,256 Q150,268 230,256" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.7"/>
+
+        <path d="M70,78 Q38,112 52,148 Q64,160 80,150" fill="none" stroke="#c9a876" stroke-width="8.5" stroke-linecap="round"/>
+        <path d="M70,78 Q38,112 52,148 Q64,160 80,150" fill="none" stroke="#8a4b16" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+        <path d="M230,78 Q262,112 248,148 Q236,160 220,150" fill="none" stroke="#c9a876" stroke-width="8.5" stroke-linecap="round"/>
+        <path d="M230,78 Q262,112 248,148 Q236,160 220,150" fill="none" stroke="#8a4b16" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+
+        <ellipse cx="150" cy="74" rx="87" ry="19" fill="none" stroke="#8a4b16" stroke-width="13"/>
+        <ellipse cx="150" cy="74" rx="87" ry="19" fill="none" stroke="#241407" stroke-width="3.5"/>
+        <ellipse cx="150" cy="71" rx="66" ry="12" fill="#3a2313" stroke="#241407" stroke-width="2.5"/>
+
+        <path d="M160,60 Q167,53 176,60 L171,76 Q160,71 151,76 Z" fill="#00d4c2" stroke="#241407" stroke-width="3.5" stroke-linejoin="round"/>
+        <path d="M154,64 Q160,68 166,64" fill="none" stroke="#065c66" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+      </g>
     </svg></div>
 
     <div class="legend-mini">
@@ -965,10 +1009,9 @@ function spawnFish(n, riseDurationMs){
   const room = MAX_FISH_SHOWN - state.fishList.length;
   const toSpawn = Math.max(0, Math.min(n, room));
   
-  // 如果没法生成所有的鱼，调整fishCaught以匹配实际显示数
+  // 如果没法生成所有的鱼，调整fishCaught以匹配实际显示数（畫面上的數字統一交給呼叫端在魚游到定位後才更新）
   if(toSpawn < n){
     state.fishCaught = Math.max(0, state.fishCaught - (n - toSpawn));
-    document.getElementById('statFish').textContent = state.fishCaught;
   }
   
   const posDurS = (Math.max(600, riseDurationMs || 900) / 1000).toFixed(2);
@@ -1102,6 +1145,10 @@ let state = null; // {cells(每格0/1/2三態陣列), moves, seconds, timerHandl
 function switchScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+
+  // 重來按鈕只在遊戲畫面才有意義，說明頁不該出現
+  const restartBtn = document.getElementById('restartBtn');
+  if(restartBtn) restartBtn.style.display = (id === 'screen-game') ? '' : 'none';
   
   // 如果切換到介紹頁面，更新統計顯示
   if(id === 'screen-intro'){
@@ -1128,6 +1175,13 @@ function updateIntroStats(){
 document.getElementById('startBtn').addEventListener('click', ()=>{ SoundFX.unlock(); SoundFX.uiClick(); startGame(); });
 document.getElementById('restartBtn').addEventListener('click', ()=>{ SoundFX.uiClick(); stopTimers(); switchScreen('screen-intro'); });
 document.getElementById('collectFishBtn').addEventListener('click', ()=>{
+  if(!state || state.over || state.tidePhase !== 'day') return;
+  SoundFX.uiClick?.();
+  collectFish();
+});
+document.getElementById('collectFishBtn').addEventListener('keydown', (e)=>{
+  if(e.key !== 'Enter' && e.key !== ' ') return;
+  e.preventDefault();
   if(!state || state.over || state.tidePhase !== 'day') return;
   SoundFX.uiClick?.();
   collectFish();
@@ -1174,6 +1228,7 @@ function stopTimers(){
     clearInterval(state.timerHandle);
     clearTimeout(state.tideHandle);
     clearTimeout(state.fishInHandle);
+    clearTimeout(state.fishArriveHandle);
     clearTimeout(state.shakeWaitHandle);
     clearTimeout(state.recedeHandle);
     clearTimeout(state.birdHandle);
@@ -1247,7 +1302,7 @@ function enterDayMode(){
   
   const collectBtn = document.getElementById('collectFishBtn');
   if(collectBtn){
-    collectBtn.disabled = false;
+    collectBtn.style.pointerEvents = 'auto';
     collectBtn.style.opacity = '1';
   }
   
@@ -1270,7 +1325,7 @@ function enterNightMode(){
   
   const collectBtn = document.getElementById('collectFishBtn');
   if(collectBtn){
-    collectBtn.disabled = true;
+    collectBtn.style.pointerEvents = 'none';
     collectBtn.style.opacity = '0.5';
   }
   
@@ -1568,11 +1623,18 @@ function scheduleTide(){
   state.fishInHandle = setTimeout(()=>{
     if(!state || state.over) return;
     const fishIn = 2 + Math.floor(Math.random()*4); // 每次漲潮帶入2~5尾
-    state.fishCaught += fishIn;
-    document.getElementById('statFish').textContent = state.fishCaught;
-    spawnFish(fishIn, delay - fishInDelay);
-    showFishDelta(fishIn);
+    const riseDur = delay - fishInDelay;
+    state.fishCaught += fishIn; // 先內部累加，讓 spawnFish 需要裁切（超過畫面上限）時能正確判斷
+    spawnFish(fishIn, riseDur); // 魚開始從海裡游過來；這段期間魚還在路上，畫面數字先不要動
     SoundFX.fishIn();
+
+    // 等魚真的游到石滬定位（跟海浪撞擊同一時間抵達）才更新魚獲數字，
+    // 不然數字比魚提早出現，會讓人覺得魚還在海裡就先算進魚獲了
+    state.fishArriveHandle = setTimeout(()=>{
+      if(!state || state.over) return;
+      document.getElementById('statFish').textContent = state.fishCaught;
+      showFishDelta(fishIn);
+    }, riseDur);
   }, fishInDelay);
 
   state.tideHandle = setTimeout(()=>{

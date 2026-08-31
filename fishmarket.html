@@ -34,6 +34,7 @@
         #top-bar { background-color: var(--primary-color); color: white; padding: 12px 15px; z-index: 20; box-shadow: 0 3px 0 rgba(0,20,50,0.35), 0 4px 8px rgba(0,0,0,0.2); flex-shrink: 0; border-bottom: 3px solid #003A82; }
         #top-bar-row1 { display: flex; justify-content: space-between; font-weight: bold; font-size: 1rem; }
         #top-bar-row2 { display: flex; justify-content: space-between; font-size: 0.82rem; margin-top: 4px; color: #D6ECFA; }
+        #ui-nickname { font-size: 0.78rem; color: #D6ECFA; white-space: nowrap; }
 
         #main-content { flex: 1; width: 100%; min-height: 0; background-color: var(--bg-color); background-image: radial-gradient(circle, rgba(255,255,255,0.5) 0 4px, transparent 4.5px); background-size: 20px 20px; display: flex; flex-direction: column; overflow: hidden; }
 
@@ -182,6 +183,7 @@
         #final-result-body .final-round-list div { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px dashed rgba(31,42,56,0.18); }
         #final-result-body .final-summary { font-size: 0.95rem; line-height: 1.9; margin-top: 6px; }
         #final-result-body .final-grade { font-size: 1.15rem; margin-top: 8px; }
+        #final-result-body .final-report-notice { margin-top: 12px; padding: 10px 14px; background: #FFF6DD; border: 2px solid var(--gold-color-dark); border-radius: 10px; font-size: 0.92rem; font-weight: bold; color: #4A2E00; line-height: 1.7; }
         #final-result-btn-row { flex-shrink: 0; display: flex; gap: 10px; padding: 14px 20px 20px; border-top: 1px solid #EDE7DA; }
         #final-result-btn-row .btn-bid { flex: 1; }
     </style>
@@ -212,6 +214,7 @@
         <div id="top-bar-row2">
             <div id="ui-inventory-summary">本季尚未購入</div>
             <div style="display:flex; align-items:center; gap:10px;">
+                <div id="ui-nickname"></div>
                 <div id="ui-stage-label">📋 看板整備中</div>
                 <button id="sound-toggle" onclick="toggleSound()" aria-label="切換音效">🔊</button>
                 <button id="history-fab" onclick="openHistoryDrawer()">📊 紀錄</button>
@@ -296,6 +299,13 @@
     <script>
         const SEASONS = ['🌸 春季', '☀️ 夏季', '🍂 秋季', '❄️ 冬季'];
         const TOTAL_ROUNDS = 4;
+
+        // ---------- 平台通訊相關 ----------
+        const TASK_ID = 'fishmarket';
+        const BADGE_ID = 'fishmarket_sustainability'; // 徽章「永續推廣者」，達到 S 級（海洋保衛者）才發放
+        let platformNickname = null;      // 收到 player_info 後才會有值
+        let platformBadges = [];          // 玩家目前已擁有的徽章清單（收到 player_info 時帶入）
+        let myBestScore = null;           // 這個任務的個人最佳成績 { scoreLabel, scoreValue } | null
 
         // 魚種資料庫（參考「海紋守護團」db.js 內容改寫，並依本遊戲拍賣機制
         // 補上 matureSize／basePrice，判斷 method 友善或破壞性、挑選代表漁法）
@@ -464,6 +474,8 @@
             if (btn && SFX.isMuted()) { btn.innerText = '🔇'; btn.classList.add('muted'); }
         })();
 
+        sendToPlatform('ready', {}); // 越早送出，player_info 越有機會在玩家按下「開始拍賣」前就準備好
+
         // 通用按鈕點擊音效（拍賣出價／放棄按鈕另有專屬音效，此處排除以免重複）
         document.addEventListener('click', (e) => {
             const btn = e.target.closest('button');
@@ -484,6 +496,40 @@
         function pushBidLog(name, price) {
             auctionState.bidLog.unshift(`${name} 出價 ${price} 元`);
             auctionState.bidLog = auctionState.bidLog.slice(0, 3);
+        }
+
+        /* ---------- 平台通訊（對應「任務頁面通訊介面規格.md」） ---------- */
+        // 送訊息給平台（平台用 window.open 開這個頁面，開啟者是 window.opener）。
+        // targetOrigin 用 '*'：不預先假設平台網址，這則訊息也不含敏感資料，可接受。
+        function sendToPlatform(type, payload) {
+            if (!window.opener) return;
+            window.opener.postMessage({
+                source: 'culture-task',
+                version: 1,
+                taskId: TASK_ID,
+                type: type,
+                payload: payload || {}
+            }, '*');
+        }
+
+        // 收平台送來的訊息：ready 之後回傳的 player_info，帶玩家暱稱、已擁有徽章、這個任務的個人最佳成績
+        window.addEventListener('message', function (event) {
+            const msg = event.data;
+            if (!msg || msg.source !== 'culture-platform') return;
+
+            if (msg.type === 'player_info') {
+                platformNickname = (msg.payload && msg.payload.nickname) || null;
+                platformBadges = (msg.payload && msg.payload.badges) || [];
+                myBestScore = (msg.payload && msg.payload.myScore) || null;
+                renderNicknameChip();
+            }
+        });
+
+        // 頂部列顯示暱稱（沒收到 player_info 前不顯示，避免顯示假資料）
+        function renderNicknameChip() {
+            const el = document.getElementById('ui-nickname');
+            if (!el) return;
+            el.innerText = platformNickname ? `👤 ${platformNickname}` : '';
         }
 
         function setStageLabel(text) {
@@ -831,6 +877,7 @@
                 }).join('');
 
             const gradeInfo = getGradeComment(totalScore, hasEndangered);
+            const reportHtml = reportResultToPlatform(totalScore, gradeInfo);
 
             document.getElementById('final-result-body').innerHTML = `
                 <div class="idle-emoji">🏆</div>
@@ -841,8 +888,51 @@
                     永續總積分：<strong style="color:#012F72; font-size:1.2em;">${totalScore} 分</strong>
                 </div>
                 <div class="final-grade">最終評級：<strong style="color:${gradeInfo.color};">${gradeInfo.grade}級【${gradeInfo.comment}】</strong></div>
+                ${reportHtml}
             `;
             document.getElementById('final-result-screen').classList.add('show');
+        }
+
+        // 整局結束時，把總分跟徽章上傳給平台，並回傳要顯示在結算畫面的提示文字。
+        // 徽章「永續推廣者」的發放門檻是 S 級（海洋保衛者，totalScore>=600 且無保育類），不是原本 A 級的門檻。
+        function reportResultToPlatform(totalScore, gradeInfo) {
+            const earnsBadge = gradeInfo.grade === 'S';
+            const alreadyHasBadge = platformBadges.includes(BADGE_ID);
+            const hasPreviousRecord = myBestScore !== null;
+            const previousBestValue = hasPreviousRecord ? myBestScore.scoreValue : null;
+            // 沒有舊紀錄（第一次玩）不算「破紀錄」，不給這 1 金幣，只有存在舊紀錄且這次分數更高才算
+            const isNewBest = hasPreviousRecord && totalScore > previousBestValue;
+
+            let coins = 0;
+            if (earnsBadge && !alreadyHasBadge) coins += 20;
+            if (isNewBest) coins += 1;
+
+            sendToPlatform('complete', {
+                coins: coins,
+                badgeIds: earnsBadge ? [BADGE_ID] : []
+            });
+            sendToPlatform('score', { scoreLabel: `${totalScore} 分`, scoreValue: totalScore });
+
+            // 更新本地暫存狀態：避免同一次連線內重玩時重複請領「首次徽章」的 20 金幣，
+            // 也讓下一輪結算能正確比較「這次連線內打過的最佳紀錄」
+            if (earnsBadge && !alreadyHasBadge) platformBadges = platformBadges.concat([BADGE_ID]);
+            if (!hasPreviousRecord || totalScore > previousBestValue) {
+                myBestScore = { scoreLabel: `${totalScore} 分`, scoreValue: totalScore };
+            }
+
+            const notices = [];
+            if (earnsBadge && !alreadyHasBadge) {
+                notices.push('🏅 恭喜首次獲得「永續推廣者」徽章！（+20 金幣）');
+            } else if (earnsBadge) {
+                notices.push('🏅 再次達成「永續推廣者」等級（徽章已持有）');
+            }
+            if (isNewBest) {
+                notices.push(`🎉 打破個人紀錄！原紀錄 ${previousBestValue} 分（+1 金幣）`);
+            } else if (hasPreviousRecord) {
+                notices.push(`歷史最佳：${previousBestValue} 分`);
+            }
+
+            return notices.length ? `<div class="final-report-notice">${notices.join('<br>')}</div>` : '';
         }
 
         function closeFinalResultAndRestart() {
