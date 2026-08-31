@@ -34,7 +34,7 @@
         #top-bar { background-color: var(--primary-color); color: white; padding: 12px 15px; z-index: 20; box-shadow: 0 3px 0 rgba(0,20,50,0.35), 0 4px 8px rgba(0,0,0,0.2); flex-shrink: 0; border-bottom: 3px solid #003A82; }
         #top-bar-row1 { display: flex; justify-content: space-between; font-weight: bold; font-size: 1rem; }
         #top-bar-row2 { display: flex; justify-content: space-between; font-size: 0.82rem; margin-top: 4px; color: #D6ECFA; }
-        #ui-nickname { font-size: 0.78rem; color: #D6ECFA; white-space: nowrap; }
+        .idle-nickname { font-size: 0.85rem; color: #6B6255; margin-bottom: 4px; }
 
         #main-content { flex: 1; width: 100%; min-height: 0; background-color: var(--bg-color); background-image: radial-gradient(circle, rgba(255,255,255,0.5) 0 4px, transparent 4.5px); background-size: 20px 20px; display: flex; flex-direction: column; overflow: hidden; }
 
@@ -214,7 +214,6 @@
         <div id="top-bar-row2">
             <div id="ui-inventory-summary">本季尚未購入</div>
             <div style="display:flex; align-items:center; gap:10px;">
-                <div id="ui-nickname"></div>
                 <div id="ui-stage-label">📋 看板整備中</div>
                 <button id="sound-toggle" onclick="toggleSound()" aria-label="切換音效">🔊</button>
                 <button id="history-fab" onclick="openHistoryDrawer()">📊 紀錄</button>
@@ -521,16 +520,8 @@
                 platformNickname = (msg.payload && msg.payload.nickname) || null;
                 platformBadges = (msg.payload && msg.payload.badges) || [];
                 myBestScore = (msg.payload && msg.payload.myScore) || null;
-                renderNicknameChip();
             }
         });
-
-        // 頂部列顯示暱稱（沒收到 player_info 前不顯示，避免顯示假資料）
-        function renderNicknameChip() {
-            const el = document.getElementById('ui-nickname');
-            if (!el) return;
-            el.innerText = platformNickname ? `👤 ${platformNickname}` : '';
-        }
 
         function setStageLabel(text) {
             document.getElementById('ui-stage-label').innerText = text;
@@ -637,7 +628,11 @@
             document.getElementById('today-box-count').innerText = gameState.todayBoxes.length;
 
             renderBoard();
+            const nicknameLine = (gameState.round === 1 && platformNickname)
+                ? `<div class="idle-nickname">👤 ${platformNickname}，歡迎回來！</div>`
+                : '';
             showArenaIdle(`
+                ${nicknameLine}
                 <div class="idle-title">${SEASONS[gameState.seasonIndex]}看板已就緒</div>
                 <div class="idle-sub">共 ${gameState.todayBoxes.length} 箱魚貨，看板上方隨時看得到狀態。準備好開始這回合的拍賣了嗎？</div>
                 <button class="btn-bid idle-btn" onclick="startRoundAuction()">開始本季拍賣</button>
@@ -881,7 +876,7 @@
 
             document.getElementById('final-result-body').innerHTML = `
                 <div class="idle-emoji">🏆</div>
-                <div class="idle-title">整局最終結算</div>
+                <div class="idle-title">${platformNickname ? platformNickname + ' 的' : ''}整局最終結算</div>
                 <div class="final-round-list">${roundLines}</div>
                 <div class="final-summary">
                     總花費：<strong style="color:#012F72;">${totalSpent} 元</strong>　｜　剩餘現金：<strong style="color:#012F72;">${gameState.budget} 元</strong><br>
