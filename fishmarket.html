@@ -184,6 +184,31 @@
         #final-result-body .final-summary { font-size: 0.95rem; line-height: 1.9; margin-top: 6px; }
         #final-result-body .final-grade { font-size: 1.15rem; margin-top: 8px; }
         #final-result-body .final-report-notice { margin-top: 12px; padding: 10px 14px; background: #FFF6DD; border: 2px solid var(--gold-color-dark); border-radius: 10px; font-size: 0.92rem; font-weight: bold; color: #4A2E00; line-height: 1.7; }
+
+        #badge-popup {
+            position: fixed; inset: 0; z-index: 200;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(0,10,20,0.4);
+            pointer-events: none;
+        }
+        #badge-popup.show { display: flex; }
+        #badge-popup-img {
+            width: 55vw; max-width: 260px; border-radius: 20px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+            animation: badgePopIn 0.6s cubic-bezier(.34,1.56,.64,1) both;
+        }
+        #badge-popup-img.fade-out {
+            animation: badgeFadeOut 1.5s ease forwards;
+        }
+        @keyframes badgePopIn {
+            0% { transform: scale(0) rotate(-12deg); opacity: 0; }
+            60% { transform: scale(1.15) rotate(4deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes badgeFadeOut {
+            0% { opacity: 1; transform: scale(1) translateY(0); }
+            100% { opacity: 0; transform: scale(0.85) translateY(-24px); }
+        }
         #final-result-btn-row { flex-shrink: 0; display: flex; gap: 10px; padding: 14px 20px 20px; border-top: 1px solid #EDE7DA; }
         #final-result-btn-row .btn-bid { flex: 1; }
     </style>
@@ -204,6 +229,10 @@
                 <button class="btn-bid" style="background:#3C8577;" onclick="closeFinalResultAndRestart()">關閉</button>
             </div>
         </div>
+    </div>
+
+    <div id="badge-popup">
+        <img src="fmbd1.jpg" alt="永續推廣者徽章" id="badge-popup-img">
     </div>
 
     <header id="top-bar">
@@ -297,6 +326,12 @@
 
     <script>
         const SEASONS = ['🌸 春季', '☀️ 夏季', '🍂 秋季', '❄️ 冬季'];
+        const SEASON_WELCOME_LINES = [
+            '一起用心挑選當季好魚吧！',
+            '夏天的魚貨最新鮮，眼光放亮點！',
+            '秋天盛產的魚種不少，仔細比較再出手！',
+            '寒流來的季節，好魚不等人，把握機會！'
+        ];
         const TOTAL_ROUNDS = 4;
 
         // ---------- 平台通訊相關 ----------
@@ -523,6 +558,21 @@
             }
         });
 
+        // 徽章蹦出特效：出現(0.6秒彈跳) → 停留5秒 → 淡出(1.5秒)後整個隱藏
+        function playBadgeUnlockEffect() {
+            const overlay = document.getElementById('badge-popup');
+            const img = document.getElementById('badge-popup-img');
+            img.classList.remove('fade-out');
+            overlay.classList.add('show');
+            void img.offsetWidth; // 強制重排，確保動畫每次都會重新播放
+
+            setTimeout(() => { img.classList.add('fade-out'); }, 5000);
+            setTimeout(() => {
+                overlay.classList.remove('show');
+                img.classList.remove('fade-out');
+            }, 5000 + 1500);
+        }
+
         function setStageLabel(text) {
             document.getElementById('ui-stage-label').innerText = text;
         }
@@ -628,8 +678,8 @@
             document.getElementById('today-box-count').innerText = gameState.todayBoxes.length;
 
             renderBoard();
-            const nicknameLine = (gameState.round === 1 && platformNickname)
-                ? `<div class="idle-nickname">👤 ${platformNickname}，歡迎回來！</div>`
+            const nicknameLine = platformNickname
+                ? `<div class="idle-nickname">👤 ${platformNickname}，${SEASON_WELCOME_LINES[gameState.seasonIndex] || '歡迎回來！'}</div>`
                 : '';
             showArenaIdle(`
                 ${nicknameLine}
@@ -731,7 +781,7 @@
             detail.push({ label: box.size >= fish.matureSize ? '🐟 成魚' : '🐟 幼魚', score: matureScore });
             total += matureScore;
 
-            let seasonScore = fish.bestSeasons.includes(gameState.seasonIndex) ? 15 : 0;
+            let seasonScore = fish.bestSeasons.includes(gameState.seasonIndex) ? 25 : 0;
             detail.push({ label: seasonScore > 0 ? '🍂 當季盛產' : '❌ 非當季', score: seasonScore });
             total += seasonScore;
 
@@ -754,7 +804,7 @@
         function getGradeComment(totalScore, hasEndangered) {
             // 門檻已依「四回合加總」重新調整（約為原本單回合門檻的4倍）
             if (totalScore < 0 || hasEndangered) return { grade: 'F', comment: '海洋破壞者', color: '#A6321F' };
-            if (totalScore >= 600) return { grade: 'S', comment: '海洋保衛者', color: '#E8A33D' };
+            if (totalScore >= 550) return { grade: 'S', comment: '海洋保衛者', color: '#E8A33D' };
             if (totalScore >= 320) return { grade: 'A', comment: '永續推廣者', color: '#3C8577' };
             if (totalScore >= 120) return { grade: 'B', comment: '普通買家', color: '#0B4F5C' };
             return { grade: 'C', comment: '只顧賺錢', color: '#C9791E' };
@@ -872,7 +922,7 @@
                 }).join('');
 
             const gradeInfo = getGradeComment(totalScore, hasEndangered);
-            const reportHtml = reportResultToPlatform(totalScore, gradeInfo);
+            const reportHtml = reportResultToPlatform(totalScore, gradeInfo, hasEndangered);
 
             document.getElementById('final-result-body').innerHTML = `
                 <div class="idle-emoji">🏆</div>
@@ -889,8 +939,8 @@
         }
 
         // 整局結束時，把總分跟徽章上傳給平台，並回傳要顯示在結算畫面的提示文字。
-        // 徽章「永續推廣者」的發放門檻是 S 級（海洋保衛者，totalScore>=600 且無保育類），不是原本 A 級的門檻。
-        function reportResultToPlatform(totalScore, gradeInfo) {
+        // 徽章「永續推廣者」的發放門檻是 S 級（海洋保衛者，totalScore>=550 且無保育類），不是原本 A 級的門檻。
+        function reportResultToPlatform(totalScore, gradeInfo, hasEndangered) {
             const earnsBadge = gradeInfo.grade === 'S';
             const alreadyHasBadge = platformBadges.includes(BADGE_ID);
             const hasPreviousRecord = myBestScore !== null;
@@ -918,6 +968,7 @@
             const notices = [];
             if (earnsBadge && !alreadyHasBadge) {
                 notices.push('🏅 恭喜首次獲得「永續推廣者」徽章！（+20 金幣）');
+                playBadgeUnlockEffect();
             } else if (earnsBadge) {
                 notices.push('🏅 再次達成「永續推廣者」等級（徽章已持有）');
             }
@@ -925,6 +976,16 @@
                 notices.push(`🎉 打破個人紀錄！原紀錄 ${previousBestValue} 分（+1 金幣）`);
             } else if (hasPreviousRecord) {
                 notices.push(`歷史最佳：${previousBestValue} 分`);
+            }
+
+            // 還沒拿過徽章、這次也沒達到 S 級：提醒還差多少分，鼓勵下次再挑戰
+            if (!alreadyHasBadge && !earnsBadge) {
+                if (hasEndangered) {
+                    notices.push('💡 這次有標到保育類／瀕危物種，就算分數夠高也拿不到「永續推廣者」徽章，下次記得完全避開！');
+                } else {
+                    const pointsNeeded = 550 - totalScore;
+                    notices.push(`💡 再努力 ${pointsNeeded} 分就能拿到「永續推廣者」徽章（達到 S 級：海洋保衛者）！`);
+                }
             }
 
             return notices.length ? `<div class="final-report-notice">${notices.join('<br>')}</div>` : '';
