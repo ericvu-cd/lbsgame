@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>石滬修復</title>
 <link rel="icon" type="image/png" href="sricon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -44,7 +44,16 @@
     --ab-red-3:#c2280f;
   }
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;height:100%;overflow:hidden;}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;overscroll-behavior:none;}
+  /* 避免長按畫面時跳出系統選單（複製/分享/儲存圖片等），
+     也避免長按選取到文字或觸發放大鏡 */
+  html,body,button,.stat,.icon-btn,.sound-toggle-btn,.basket-btn,#board,.board-wrap{
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
+    touch-action:manipulation;
+  }
+  img,svg,use{-webkit-user-drag:none;user-drag:none;-khtml-user-drag:none;-moz-user-drag:none;-o-user-drag:none;}
   body{
     font-family:'Noto Sans TC', sans-serif;
     color:var(--ink);
@@ -88,7 +97,8 @@
     40%,60%{transform:translateX(4px);}
   }
 
-  .app{position:relative;z-index:1;display:flex;flex-direction:column;flex:1;min-height:0;padding:10px 14px 16px;}
+  .app{position:relative;z-index:1;display:flex;flex-direction:column;flex:1;min-height:0;
+    padding:calc(10px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));}
 
   h1.title{
     font-family:'Noto Sans TC', sans-serif;font-weight:900;font-size:1.5rem;letter-spacing:3px;
@@ -326,7 +336,7 @@
   .icon-slot canvas{display:block;}
 
   .sound-toggle-btn{
-    position:fixed;top:10px;right:10px;z-index:70;
+    position:fixed;top:calc(10px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right));z-index:70;
     width:40px;height:40px;border-radius:50%;
     background:linear-gradient(180deg,#f0c988 0%, var(--wood) 55%, var(--wood-dark) 100%);
     border:3px solid var(--outline);color:var(--cream);font-size:1.1rem;line-height:1;
@@ -335,7 +345,7 @@
     transition:transform .1s cubic-bezier(.34,1.56,.64,1), box-shadow .1s ease;
   }
   .sound-toggle-btn:active{transform:translateY(3px) scale(.95);box-shadow:0 1px 0 var(--wood-dark), 0 1px 0 1px var(--outline);}
-  .sound-toggle-btn.corner-left{left:10px;right:auto;}
+  .sound-toggle-btn.corner-left{left:calc(10px + env(safe-area-inset-left));right:auto;}
 
   /* 竹簍收魚按鈕：畫在石滬缺口正上方，滑鼠移過去/按下去有輕微回饋。
      transform-origin 明確指定 0 0，位置完全由這裡的 translate+scale 決定，
@@ -345,16 +355,20 @@
      才不會跟畫在那個留白區裡的「工具壞了」警示條疊在一起。 */
   .basket-btn{
     cursor:pointer;
+    outline:none;
+    -webkit-tap-highlight-color:transparent;
     transform-origin:0 0;
     transform:translate(203px,-18.4px) scale(0.4);
     transition:transform .15s cubic-bezier(.34,1.56,.64,1);
   }
+  .basket-btn:focus-visible{outline:4px dashed var(--gold);outline-offset:6px;}
   .basket-btn:hover{transform:translate(203px,-22px) scale(0.42);}
   .basket-btn:active{transform:translate(203px,-14px) scale(0.37);}
 
   /* 統計 chip 尺寸微調，讓 5 個 chip 在小螢幕也能排得整齊 */
   .hud-stats .stat{padding:4px 8px 5px;min-width:0;flex:1 1 0;}
   .hud-stats .stat.score-stat{flex:1.15 1 0;width:auto;}
+  .hud-stats .stat.time-stat{flex:1.35 1 0;}
 
   /* 介紹頁面統計 */
   .intro-stats {
@@ -434,7 +448,7 @@
     <!-- 上層HUD：主要信息 -->
     <div class="game-header">
       <div class="hud-row hud-stats">
-        <div class="stat"><b id="statTime">00:00</b><span>時間</span></div>
+        <div class="stat time-stat"><b id="statTime">00:00</b><span>時間</span></div>
         <div class="stat"><b id="statMoves">0</b><span>步數</span></div>
         <div class="stat score-stat"><b id="statScore">1000</b><span>分數</span></div>
         <div class="stat fish-stat"><b id="statFish">0</b><span>魚獲</span></div>
@@ -1173,6 +1187,8 @@ function updateIntroStats(){
 }
 
 document.getElementById('startBtn').addEventListener('click', ()=>{ SoundFX.unlock(); SoundFX.uiClick(); startGame(); });
+// 長按畫面時（尤其是石塊、竹簍）避免跳出系統的右鍵/長按選單
+document.addEventListener('contextmenu', (e)=>{ e.preventDefault(); });
 document.getElementById('restartBtn').addEventListener('click', ()=>{ SoundFX.uiClick(); stopTimers(); switchScreen('screen-intro'); });
 document.getElementById('collectFishBtn').addEventListener('click', ()=>{
   if(!state || state.over || state.tidePhase !== 'day') return;
