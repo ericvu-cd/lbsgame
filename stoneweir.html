@@ -315,7 +315,7 @@
   .modal .tip-carousel:active{cursor:grabbing;}
   .tip-icon{font-size:1.15rem;line-height:1.45;flex-shrink:0;filter:drop-shadow(0 1px 0 rgba(0,0,0,.2));}
   .tip-body{flex:1;min-width:0;}
-  .tip-text{font-size:0.88rem;color:var(--ink-dim);line-height:1.45;min-height:3.8rem;}
+  .tip-text{font-size:0.92rem;color:var(--ink-dim);line-height:1.48;min-height:4.6rem;}
   .tip-text.slide-next{animation:tipSlideNext .28s ease both;}
   .tip-text.slide-prev{animation:tipSlidePrev .28s ease both;}
   @keyframes tipSlideNext{0%{opacity:0;transform:translateX(14px);}100%{opacity:1;transform:translateX(0);}}
@@ -2078,7 +2078,6 @@ function finishGame(){
     <div class="sb-row"><span>魚獲加分 (${(state.fishCaught||0) + (state.totalFishCollected||0)}尾 × ${BONUS_PER_FISH})</span><span>+${fishBonus}</span></div>
     <div class="sb-row sb-total"><span>總分</span><span>${total}</span></div>
     ${isNewBest ? '<div class="sb-row sb-best" style="background:rgba(255,200,0,0.2);border-radius:6px;"><span>✨ 個人新高！</span><span>🏆</span></div>' : `<div class="sb-row"><span>個人最佳</span><span>${records.bestScore}</span></div>`}
-    <div class="sb-row"><span>總局數</span><span>${records.totalGames}</span></div>
   `;
 
   winTipCarousel.showRandom();
