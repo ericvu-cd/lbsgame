@@ -268,7 +268,7 @@
   .modal{
     position:relative;
     background:linear-gradient(180deg,#fffaea 0%, #ecd792 100%);color:var(--ink);
-    border:5px solid var(--outline);border-radius:24px;max-width:340px;width:100%;padding:16px 18px 14px;text-align:center;
+    border:5px solid var(--outline);border-radius:24px;max-width:340px;width:100%;padding:12px 16px 10px;text-align:center;
     max-height:94dvh;overflow-y:auto;box-shadow:0 10px 0 var(--outline), 0 16px 30px rgba(0,0,0,.45),
       inset 0 3px 0 rgba(255,255,255,.55);
     animation:bounceIn .5s cubic-bezier(.34,1.56,.64,1) both;
@@ -315,31 +315,30 @@
     100%{opacity:0;transform:translate(-50%,-70%) scale(.7);}
   }
 
-  .badge-hint{
-    background:rgba(255,205,0,.18);border:2px dashed var(--gold-dark);border-radius:10px;
-    padding:7px 10px;margin-bottom:8px;font-size:0.8rem;font-weight:700;color:var(--gold-dark);
-    text-align:center;
-  }
-  .score-rank{display:flex;align-items:baseline;justify-content:center;gap:6px;margin:4px 0 5px;}
+  .score-rank{display:flex;align-items:baseline;justify-content:center;gap:6px;margin:2px 0 3px;}
   .score-rank b{font-family:'JetBrains Mono',monospace;font-size:1.85rem;font-weight:800;color:var(--gold-dark);}
   .score-rank .score-unit{font-size:0.8rem;color:var(--ink-dim);font-weight:700;}
   .score-breakdown{
     background:rgba(0,0,0,.06);border:2px solid rgba(0,0,0,.15);border-radius:10px;
-    padding:6px 12px;margin-bottom:7px;font-family:'JetBrains Mono',monospace;font-size:0.72rem;
-    color:var(--ink-dim);text-align:left;line-height:1.42;
+    padding:5px 10px;margin-bottom:5px;font-family:'JetBrains Mono',monospace;font-size:0.72rem;
+    color:var(--ink-dim);text-align:left;line-height:1.36;
   }
   .score-breakdown .sb-row{display:flex;justify-content:space-between;}
   .score-breakdown .sb-total{color:var(--gold-dark);border-top:2px dashed rgba(0,0,0,.2);margin-top:2px;padding-top:2px;font-weight:800;}
   .score-breakdown .sb-notice{
-    margin-top:6px;padding:7px 9px;background:rgba(255,200,0,0.18);border-radius:8px;
-    color:var(--gold-dark);font-weight:800;line-height:1.6;
+    margin-top:4px;padding:5px 8px;background:rgba(255,200,0,0.18);border-radius:8px;
+    color:var(--gold-dark);font-weight:800;line-height:1.5;
   }
-  .modal .result-grid{display:flex;justify-content:center;gap:12px;margin:6px 0 7px;flex-wrap:wrap;}
+  .ack-notice{
+    margin-top:6px;padding:6px 9px;background:rgba(200,40,40,.14);border:1.5px solid rgba(200,40,40,.4);
+    border-radius:8px;color:#8a2323;font-weight:700;font-size:0.78rem;line-height:1.5;text-align:left;
+  }
+  .modal .result-grid{display:flex;justify-content:center;gap:12px;margin:4px 0 5px;flex-wrap:wrap;}
   .modal .result-grid div b{display:block;font-size:1.05rem;font-family:'JetBrains Mono',monospace;color:var(--ink);}
   .modal .result-grid div span{font-size:0.7rem;color:var(--ink-dim);}
   .modal .tip-carousel{
     display:flex;align-items:flex-start;gap:8px;background:rgba(0,0,0,.05);border:2px solid rgba(0,0,0,.1);
-    border-radius:10px;padding:7px 10px 8px;margin-bottom:6px;text-align:left;
+    border-radius:10px;padding:5px 8px 6px;margin-bottom:4px;text-align:left;
     touch-action:pan-y;user-select:none;cursor:grab;
   }
   .modal .tip-carousel:active{cursor:grabbing;}
@@ -589,7 +588,7 @@
       <div><b id="finalCollected">0</b><span>已收魚</span></div>
     </div>
     <div class="score-breakdown" id="scoreBreakdown"></div>
-    <div class="badge-hint" id="badgeHint" style="display:none;"></div>
+    <div class="ack-notice" id="platformAckNotice" style="display:none;"></div>
     <div class="tip-carousel" id="winTipCarousel">
       <div class="tip-icon"><span class="icon-slot" id="iconTipWin"></span></div>
       <div class="tip-body">
@@ -648,7 +647,7 @@ function sendToPlatform(type, payload){
   }, '*');
 }
 
-// 收平台送來的訊息：ready 之後回傳的 player_info，帶玩家暱稱、已擁有徽章、這個任務的個人最佳成績
+// 收平台送來的訊息：ready 之後回傳的 player_info；complete 之後回傳的 ack（可能帶拒絕原因）
 window.addEventListener('message', function(event){
   const msg = event.data;
   if(!msg || msg.source !== 'culture-platform') return;
@@ -658,6 +657,20 @@ window.addEventListener('message', function(event){
     platformBadges = (msg.payload && msg.payload.badges) || [];
     myBestScore = (msg.payload && msg.payload.myScore) || null;
     if(typeof updateIntroStats === 'function') updateIntroStats();
+  }
+
+  if(msg.type === 'ack' && msg.forType === 'complete'){
+    const result = msg.result || {};
+    const noticeEl = document.getElementById('platformAckNotice');
+    if(noticeEl){
+      if(result.rejectedReason){
+        // 平台有拒絕的部分（通常是金幣，徽章本身很少被拒），明確顯示原因，不要讓玩家以為系統沒反應
+        noticeEl.style.display = 'block';
+        noticeEl.textContent = `⚠️ 部分獎勵未發放成功：${result.rejectedReason}`;
+      } else {
+        noticeEl.style.display = 'none';
+      }
+    }
   }
 });
 
@@ -1198,7 +1211,7 @@ function applyMask(cellsArr, idx, delta){
 
 /* ============ 計分基準 ============ */
 const BASE_SCORE = 1000;
-const PENALTY_PER_SEC = 6;     // 每秒扣分
+const PENALTY_PER_SEC = 5;     // 每秒扣分
 const PENALTY_PER_MOVE = 10;   // 每步扣分
 const BONUS_PER_FISH = 20;     // 每尾留在滬內的魚加分
 
@@ -2087,6 +2100,7 @@ function finishGame(){
   document.getElementById('finalTime').textContent = formatTime(state.seconds);
   document.getElementById('finalMoves').textContent = state.moves;
   document.getElementById('finalCollected').textContent = state.totalFishCollected || 0;
+  document.getElementById('platformAckNotice').style.display = 'none'; // 重玩時先清掉上一局可能殘留的拒絕提示
 
   const { timePenalty, movePenalty, fishBonus, total } = computeScore(state.seconds, state.moves, state.fishCaught, state.totalFishCollected);
   document.getElementById('finalScore').textContent = total;
@@ -2101,14 +2115,13 @@ function finishGame(){
     ${reportResultToPlatform(total)}
   `;
 
-  handleBadge(total);
-
   winTipCarousel.showRandom();
   document.getElementById('winOverlay').classList.add('active');
 }
 
 // 整局結束時，把總分跟徽章上傳給平台，並回傳要注入 scoreBreakdown 的提示 HTML。
-// 徽章「石滬達人」的發放門檻是 BADGE_SCORE（800分），跟畫面上「再努力X分」提示用的門檻是同一個。
+// 徽章「石滬達人」的發放門檻是 BADGE_SCORE（800分），跟「還差X分」提示用的門檻是同一個，
+// 「歷史最佳/打破紀錄」跟「還差X分拿徽章」合併成同一個提示框，不再各自佔一塊版面。
 function reportResultToPlatform(total){
   const earnsBadge = total >= BADGE_SCORE;
   const alreadyHasBadge = platformBadges.includes(BADGE_ID);
@@ -2148,21 +2161,13 @@ function reportResultToPlatform(total){
   } else if(hasPreviousRecord){
     notices.push(`歷史最佳：${previousBestValue} 分`);
   }
+  // 還沒拿過徽章、這次也沒達標：合併顯示還差幾分，不再另外開一個框
+  if(!alreadyHasBadge && !earnsBadge){
+    const remain = BADGE_SCORE - total;
+    notices.push(`🏅 再努力 ${remain} 分就能拿到「石滬達人」徽章！`);
+  }
 
   return notices.length ? `<div class="sb-row sb-notice" style="flex-direction:column;align-items:flex-start;">${notices.join('<br>')}</div>` : '';
-}
-
-function handleBadge(total){
-  const hintEl = document.getElementById('badgeHint');
-  const alreadyEarned = platformBadges.includes(BADGE_ID);
-
-  if(total >= BADGE_SCORE || alreadyEarned){
-    hintEl.style.display = 'none';
-  } else {
-    const remain = BADGE_SCORE - total;
-    hintEl.style.display = 'block';
-    hintEl.textContent = `🏅 再努力 ${remain} 分就能拿到徽章！`;
-  }
 }
 
 function showBadgePopup(){
