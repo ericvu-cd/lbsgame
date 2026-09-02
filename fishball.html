@@ -595,7 +595,8 @@
     <div class="header-top">
       <div class="brand pixel">🍥苑裡：魚丸追追樂</div>
       <div class="header-controls">
-        <div class="timer pixel" id="timerDisplay">180</div>
+        <div class="timer pixel" id="levelBadge" style="min-width:auto; padding:2px 6px;">Lv1</div>
+        <div class="timer pixel" id="timerDisplay">55</div>
         <button type="button" id="muteBtn" class="mute-btn" aria-label="音效開關" aria-pressed="false">🔊</button>
       </div>
     </div>
@@ -1696,17 +1697,33 @@
 
   // ---------- CONFIG ----------
   const COLS = 15, ROWS = 21;
-  const GAME_SECONDS = 180;
+  let LEVEL_SECONDS = 55;              // 每關時間長度，依 LEVELS[currentLevel-1].time 設定
   const TICK_MS_START = 500;           // 開局每步 500ms
   const SPEEDUP_STEP_MS = 40;          // 每個週期加快 40ms
   const SPEEDUP_INTERVAL_S = 20;       // 每 20 秒加速一次
-  const TICK_MS_MIN = 140;             // 180秒內共加速9次的下限（安全下限）
+  const TICK_MS_MIN = 140;             // 加速下限（安全下限）
   const TIDE_FIRST_DELAY_MS = 25000;   // 前 25 秒完全不縮小
   const TIDE_INTERVAL_MS = 25000;      // 之後每 25 秒縮 1 格
   const TIDE_MAX_INSET = 6;
   const TIDE_WARN_MS = 2200;           // 縮小前，即將被淹沒的那一圈要先閃動警示
   const FOOD_TARGET_COUNT = 6;
   const BALL_SPAWN_EVERY = 4;
+
+  // ---------- 10 關卡地圖 ----------
+  // walls：每關固定障礙物座標（0-index，x:0~14, y:0~20）。
+  // 撞到牆不會失敗，只會自動轉向（見 step() 內的撞牆處理）。
+  const LEVELS = [
+    { name:'新手漁港',       time:55, walls:[] },
+    { name:'竹筏蚵棚',       time:55, walls:[[4,4],[7,4],[10,4],[4,16],[7,16],[10,16]] },
+    { name:'消波塊海堤',     time:55, walls:[[2,8],[2,9],[2,12],[2,13],[12,8],[12,9],[12,12],[12,13]] },
+    { name:'定置漁網區',     time:65, walls:[[2,5],[5,5],[7,5],[10,5],[12,5],[2,15],[5,15],[7,15],[10,15],[12,15]] },
+    { name:'沉船遺跡',       time:65, walls:[[5,12],[6,12],[7,12],[8,12],[9,12],[10,12],[5,13],[5,14],[10,13],[10,14],[5,15],[10,15]] },
+    { name:'紅樹林根區',     time:65, walls:[[2,3],[3,3],[3,4],[4,4],[12,3],[11,3],[11,4],[2,17],[3,17],[3,16],[12,17],[11,17],[11,16],[10,16]] },
+    { name:'潮間帶礁岩群',   time:70, walls:[[2,6],[2,7],[2,8],[12,6],[12,7],[12,8],[4,18],[5,18],[9,18],[10,18],[2,13],[3,13],[11,13],[12,13]] },
+    { name:'定置漁網迷宮',   time:70, walls:[[3,3],[3,4],[3,5],[6,7],[6,8],[6,9],[9,3],[9,4],[9,5],[12,7],[12,8],[12,9],[6,16],[6,17],[9,16],[9,17]] },
+    { name:'颱風夜巡港',     time:75, walls:[[1,2],[2,2],[13,2],[12,2],[1,18],[2,18],[13,18],[12,18],[4,2],[10,2],[4,18],[10,18],[2,9],[12,9],[2,11],[12,11]] },
+    { name:'苑港終幕・滿載而歸', time:75, walls:[[1,1],[2,1],[12,1],[13,1],[1,19],[2,19],[12,19],[13,19],[4,6],[10,6],[4,14],[10,14],[7,4],[7,16],[1,11],[13,11],[1,6],[13,6]] }
+  ];
 
   const TYPES = {
     normal:    { emoji:"🐟", grow:1,  score:5,   sus:0,   weight:50, fill:'#22B14C', ring:'#0A6B24', comboStep:4 },
@@ -1727,6 +1744,7 @@
   const susN = document.getElementById('susN');
   const reefN = document.getElementById('reefN');
   const timerDisplay = document.getElementById('timerDisplay');
+  const levelBadge = document.getElementById('levelBadge');
   const startOverlay = document.getElementById('startOverlay');
   const endOverlay = document.getElementById('endOverlay');
   const startBtn = document.getElementById('startBtn');
@@ -1816,6 +1834,18 @@
   let tideWarning = false;
   let lastEatAt = -9999; // 上次吃到東西的時間戳，用來畫頭部短暫張嘴的動畫
 
+  // ---------- 關卡進度：每次開頁都從 Lv1 開始，不儲存進度 ----------
+  let currentLevel = 1;      // 1~10
+  let totalScore = 0;        // 每關分數累計加總，失敗或全破時顯示的就是這個
+  let pendingAction = 'restart'; // 結算頁主按鈕動作：'next'=下一關 / 'restart'=整輪重來
+
+  // ---------- 地圖障礙物（牆） ----------
+  let wallSet = new Set();
+  function buildWallSet(level){
+    wallSet = new Set(level.walls.map(([x,y]) => x+','+y));
+  }
+  function isWall(x,y){ return wallSet.has(x+','+y); }
+
   // ---------- 復育系統：魚丸串走過的格子會從「荒蕪」變成「珊瑚礁」 ----------
   // reef[y][x] = { state: 0荒蕪|1珊瑚, since: 變成珊瑚的時間戳（給裝飾生長用）}
   let reef, reefCount, reefTier;
@@ -1889,6 +1919,10 @@
   }
 
   function resetState(){
+    const lvl = LEVELS[currentLevel-1];
+    LEVEL_SECONDS = lvl.time;
+    buildWallSet(lvl);
+
     snake = [];
     const cx = Math.floor(COLS/2), cy = Math.floor(ROWS/2);
     for(let i=0;i<4;i++) snake.push({x:cx-i, y:cy});
@@ -1905,7 +1939,7 @@
     fishEaten = 0;
     ballEaten = 0;
     fishSinceBall = 0;
-    timeLeft = GAME_SECONDS;
+    timeLeft = LEVEL_SECONDS;
     running = false;
     floatMsgs = [];
     comboKey = null;
@@ -1928,6 +1962,7 @@
   }
 
   function cellFree(x,y){
+    if(isWall(x,y)) return false;
     if(snake.some(s=>s.x===x&&s.y===y)) return false;
     if(foods.some(f=>f.x===x&&f.y===y)) return false;
     return true;
@@ -1990,17 +2025,52 @@
     reefN.textContent = Math.floor(reefPct()) + '%';
     timerDisplay.textContent = Math.max(0, Math.ceil(timeLeft));
     timerDisplay.classList.toggle('warn', timeLeft<=10);
+    levelBadge.textContent = 'Lv' + currentLevel;
   }
 
   function addFloat(x,y,text,color,variant){
     floatMsgs.push({x,y,text,color,variant:variant||'score',born:performance.now()});
   }
 
+  // ---------- 撞牆自動轉向：不會失敗，只會改變方向 ----------
+  // 判斷某格對「轉向後的下一步」而言是不是走不通（牆／潮水邊界／自己身體）
+  function isBlockedForDeflect(cx, cy){
+    if(isWall(cx,cy)) return true;
+    const minB = tideInset, maxBx = COLS-1-tideInset, maxBy = ROWS-1-tideInset;
+    if(cx<minB || cx>maxBx || cy<minB || cy>maxBy) return true;
+    // 用目前蛇身粗略檢查（不含尾端，尾端這一步通常會讓出來），只是拿來挑轉向方向，
+    // 真正的自撞判定仍交給後面既有的邏輯處理
+    if(snake.slice(0, -1).some(s=>s.x===cx && s.y===cy)) return true;
+    return false;
+  }
+  // 優先右轉、其次左轉；兩邊都走不通就回傳 null（視同被困住）
+  function pickDeflectDir(head, curDir){
+    const rightTurn = {x:-curDir.y, y:curDir.x};
+    const leftTurn  = {x:curDir.y,  y:-curDir.x};
+    for(const cand of [rightTurn, leftTurn]){
+      const cx = head.x + cand.x, cy = head.y + cand.y;
+      if(!isBlockedForDeflect(cx, cy)) return cand;
+    }
+    return null;
+  }
+
   // ---------- GAME LOOP ----------
   function step(){
     dir = nextDir;
     const head = snake[0];
-    const nx = head.x + dir.x, ny = head.y + dir.y;
+    let nx = head.x + dir.x, ny = head.y + dir.y;
+
+    // 撞到地圖障礙物：不算失敗，自動轉向（優先右轉、其次左轉）
+    if(isWall(nx, ny)){
+      const alt = pickDeflectDir(head, dir);
+      if(!alt){
+        return gameOver('魚丸串被地圖困住了，動彈不得！');
+      }
+      dir = alt;
+      nextDir = alt;
+      nx = head.x + dir.x;
+      ny = head.y + dir.y;
+    }
 
     const minB = tideInset, maxBx = COLS-1-tideInset, maxBy = ROWS-1-tideInset;
     if(nx<minB || nx>maxBx || ny<minB || ny>maxBy){
@@ -2099,30 +2169,67 @@
     '「保育類魚種」代表牠們的族群數量已經很稀少，一旦被捕撈就很難恢復，各國漁業法規多半明文禁捕或限捕，違者可能面臨罰則。'
   ];
 
+  // 任一關失敗（撞到自己／潮水淹過／永續歸零／被地圖困住）＝整輪遊戲結束。
+  // 分數是累計制，所以失敗不能重試本關，只能從 Lv1 整輪重新開始。
   function gameOver(reason){
     running = false;
     cancelAnimationFrame(rafId);
     clearInterval(timerId);
     SFX.ambientStop();
+    totalScore += score;
 
     let iconKey = 'lantern', title = '收網了';
-    if(reason.includes('時間到')){ iconKey = 'trophy'; title = '滿載而歸！'; SFX.win(); vibrate([30,50,30,50,90]); }
-    else if(reason.includes('潮水')){ iconKey = 'wave'; title = '被潮水追上了'; SFX.lose(); vibrate([50,40,50,40,100]); }
-    else if(reason.includes('撞到自己')){ iconKey = 'skewer'; title = '竹籤打結了'; SFX.lose(); vibrate([50,40,50,40,100]); }
-    else if(reason.includes('生態崩潰')){ iconKey = 'skull'; title = '生態崩潰了'; SFX.lose(); vibrate([50,40,50,40,100]); }
+    if(reason.includes('潮水')){ iconKey = 'wave'; title = '被潮水追上了'; }
+    else if(reason.includes('困住')){ iconKey = 'skewer'; title = '魚丸串被困住了'; }
+    else if(reason.includes('撞到自己')){ iconKey = 'skewer'; title = '竹籤打結了'; }
+    else if(reason.includes('生態崩潰')){ iconKey = 'skull'; title = '生態崩潰了'; }
+    SFX.lose(); vibrate([50,40,50,40,100]);
     endEmojiImg.src = ICONS[iconKey];
     endTitle.textContent = title;
 
     resultBoard.innerHTML =
+      `<div class="stat-row"><span class="stat-label">失敗於</span><span class="stat-value">第${currentLevel}關・${LEVELS[currentLevel-1].name}</span></div>`+
       `<div class="stat-row"><span class="stat-label"><span class="coin-icon"></span>魚丸</span><span class="stat-value">${ballEaten} 顆</span></div>`+
       `<div class="stat-row"><span class="stat-label">🐟 漁獲</span><span class="stat-value">${fishEaten} 尾</span></div>`+
       `<div class="stat-row"><span class="stat-label"><img class="icon-inline" src="${ICONS.sprout}" alt="">永續分數</span><span class="stat-value">${Math.max(0,sustain)}</span></div>`+
-      `<div class="stat-row"><span class="stat-label"><img class="icon-inline" src="${ICONS.anemone}" alt="">復育珊瑚礁</span><span class="stat-value">${Math.floor(reefPct())}% <span style="color:#7CFF9E">(+${Math.floor(reefPct())})</span></span></div>`+
-      `<div class="final-score"><span class="final-label"><img class="icon-inline" src="${ICONS.trophy}" alt="">最終分數</span><span class="final-value">${finalScore()}</span></div>`+
+      `<div class="stat-row"><span class="stat-label"><img class="icon-inline" src="${ICONS.anemone}" alt="">復育珊瑚礁</span><span class="stat-value">${Math.floor(reefPct())}%</span></div>`+
+      `<div class="final-score"><span class="final-label"><img class="icon-inline" src="${ICONS.trophy}" alt="">最終累計總分</span><span class="final-value">${totalScore}</span></div>`+
       `<div class="end-reason">${reason}</div>`+
       buildKnowledgeBlock();
+    restartBtn.textContent = '重新開始';
+    pendingAction = 'restart';
     endOverlay.classList.remove('hidden');
     initLoreCarousel();
+  }
+
+  // 時間到＝這關過關。第10關過關＝全破，其餘關卡顯示「下一關」，
+  // 玩家要自己按下去才會開始下一關，不會自動接關。
+  function levelClear(){
+    running = false;
+    cancelAnimationFrame(rafId);
+    clearInterval(timerId);
+    SFX.ambientStop();
+    totalScore += score;
+
+    const isFinal = currentLevel >= LEVELS.length;
+    SFX.win(); vibrate([30,50,30,50,90]);
+    endEmojiImg.src = ICONS.trophy;
+    endTitle.textContent = isFinal ? '滿載而歸！十關全破！' : `第 ${currentLevel} 關過關！`;
+
+    resultBoard.innerHTML =
+      `<div class="stat-row"><span class="stat-label">本關分數</span><span class="stat-value">${score}</span></div>`+
+      `<div class="stat-row"><span class="stat-label"><span class="coin-icon"></span>魚丸</span><span class="stat-value">${ballEaten} 顆</span></div>`+
+      `<div class="stat-row"><span class="stat-label">🐟 漁獲</span><span class="stat-value">${fishEaten} 尾</span></div>`+
+      `<div class="stat-row"><span class="stat-label"><img class="icon-inline" src="${ICONS.sprout}" alt="">永續分數</span><span class="stat-value">${Math.max(0,sustain)}</span></div>`+
+      `<div class="stat-row"><span class="stat-label"><img class="icon-inline" src="${ICONS.anemone}" alt="">復育珊瑚礁</span><span class="stat-value">${Math.floor(reefPct())}%</span></div>`+
+      `<div class="final-score"><span class="final-label"><img class="icon-inline" src="${ICONS.trophy}" alt="">累計總分</span><span class="final-value">${totalScore}</span></div>`+
+      (isFinal
+        ? buildKnowledgeBlock()
+        : `<div class="end-reason">準備好前往第 ${currentLevel+1} 關：${LEVELS[currentLevel].name}</div>`);
+    restartBtn.textContent = isFinal ? '重新開始' : '下一關';
+    pendingAction = isFinal ? 'restart' : 'next';
+    endOverlay.classList.remove('hidden');
+    if(isFinal) initLoreCarousel();
   }
 
   function buildKnowledgeBlock(){
@@ -2144,10 +2251,6 @@
       const idx = Math.round(track.scrollLeft / track.clientWidth);
       for(let i=0;i<dots.length;i++) dots[i].classList.toggle('active', i===idx);
     }, {passive:true});
-  }
-
-  function finalScore(){
-    return score + Math.max(0,sustain) + Math.floor(reefPct());
   }
 
   // ---------- PIXEL-STYLE FOOD BADGE ----------
@@ -2269,6 +2372,49 @@
     return (h >>> 0);
   }
 
+  // 地圖障礙物（淺色消波塊/礁石風格，刻意跟背景拉開對比，撞到會自動轉向，不會死）
+  function drawWalls(){
+    if(wallSet.size === 0) return;
+    const now = performance.now();
+    for(const key of wallSet){
+      const parts = key.split(',');
+      const wx = Number(parts[0]), wy = Number(parts[1]);
+      const px = wx*CELL, py = wy*CELL;
+      const bevel = Math.max(2, Math.floor(CELL*0.16));
+
+      // 外圈淡黃警示暈光（脈動），先畫在底下，讓障礙物在任何背景上都跳出來
+      const pulse = 0.35 + 0.25*Math.sin(now/450 + (wx*7+wy*13));
+      ctx.save();
+      ctx.globalAlpha = pulse;
+      ctx.fillStyle = '#FFD700';
+      ctx.fillRect(px-1, py-1, CELL+2, CELL+2);
+      ctx.restore();
+
+      // 淺灰水泥色本體（跟深色荒蕪海底、橘色珊瑚礁都拉開對比）
+      ctx.fillStyle = '#C9C4B8';
+      ctx.fillRect(px+2, py+2, CELL-4, CELL-4);
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fillRect(px+2, py+2, CELL-4, bevel);
+      ctx.fillRect(px+2, py+2, bevel, CELL-4);
+      ctx.fillStyle = 'rgba(0,0,0,0.30)';
+      ctx.fillRect(px+2, py+CELL-2-bevel, CELL-4, bevel);
+      ctx.fillRect(px+CELL-2-bevel, py+2, bevel, CELL-4);
+
+      // 水泥紋理：兩條交叉裂痕線
+      ctx.strokeStyle = 'rgba(90,80,70,0.55)';
+      ctx.lineWidth = Math.max(1, CELL*0.045);
+      ctx.beginPath();
+      ctx.moveTo(px+CELL*0.28, py+CELL*0.22); ctx.lineTo(px+CELL*0.62, py+CELL*0.55);
+      ctx.moveTo(px+CELL*0.70, py+CELL*0.30); ctx.lineTo(px+CELL*0.45, py+CELL*0.78);
+      ctx.stroke();
+
+      // 粗黑外框，字塊感更明顯
+      ctx.strokeStyle = '#101010';
+      ctx.lineWidth = Math.max(2, CELL*0.09);
+      ctx.strokeRect(px+2, py+2, CELL-4, CELL-4);
+    }
+  }
+
   function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.imageSmoothingEnabled = false;
@@ -2329,6 +2475,8 @@
         }
       }
     }
+
+    drawWalls();
 
     // 潮汐區：已淹沒範圍改為灰色（用浮動內插值繪製，讓潮水用一小段時間「淹過來」
     // 而不是瞬間變色塊；判定用的 tideInset 本身仍是整數、即時生效，只有畫面漸進）
@@ -2518,7 +2666,7 @@
     const dt = ts - lastTs;
     lastTs = ts;
 
-    const elapsed = Math.min(GAME_SECONDS, GAME_SECONDS - timeLeft);
+    const elapsed = Math.min(LEVEL_SECONDS, LEVEL_SECONDS - timeLeft);
     const steps = Math.floor(elapsed / SPEEDUP_INTERVAL_S);
     tickMs = Math.max(TICK_MS_MIN, TICK_MS_START - steps * SPEEDUP_STEP_MS);
 
@@ -2595,7 +2743,7 @@
       updateHUD();
       if(timeLeft<=0){
         timeLeft = 0;
-        gameOver('時間到，滿載而歸！');
+        levelClear();
       }
     }, 1000);
   }
@@ -2667,13 +2815,28 @@
     cancelAnimationFrame(rafId);
   }
 
-  startBtn.addEventListener('click', startGame);
-  restartBtn.addEventListener('click', ()=>{ stopIntervals(); startGame(); });
+  startBtn.addEventListener('click', ()=>{
+    currentLevel = 1;
+    totalScore = 0;
+    startGame();
+  });
+  restartBtn.addEventListener('click', ()=>{
+    stopIntervals();
+    if(pendingAction === 'next'){
+      currentLevel = Math.min(LEVELS.length, currentLevel + 1);
+    } else {
+      currentLevel = 1;
+      totalScore = 0;
+    }
+    startGame();
+  });
   backToInstructionsBtn.addEventListener('click', ()=>{
     SFX.uiTap();
     SFX.ambientStop();
     stopIntervals();
     running = false;
+    currentLevel = 1;
+    totalScore = 0;
     endOverlay.classList.add('hidden');
     startOverlay.classList.remove('hidden');
   });
