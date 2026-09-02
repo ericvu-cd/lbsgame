@@ -1244,9 +1244,10 @@ function switchScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 
-  // 重來按鈕只在遊戲畫面才有意義，說明頁不該出現
+  // 重來按鈕先關閉不使用（暫時停用，之後要恢復的話把這行改回原本的三元判斷式就好）：
+  // if(restartBtn) restartBtn.style.display = (id === 'screen-game') ? '' : 'none';
   const restartBtn = document.getElementById('restartBtn');
-  if(restartBtn) restartBtn.style.display = (id === 'screen-game') ? '' : 'none';
+  if(restartBtn) restartBtn.style.display = 'none';
   
   // 如果切換到介紹頁面，更新統計顯示
   if(id === 'screen-intro'){
@@ -1271,7 +1272,10 @@ function updateIntroStats(){
 document.getElementById('startBtn').addEventListener('click', ()=>{ SoundFX.unlock(); SoundFX.uiClick(); startGame(); });
 // 長按畫面時（尤其是石塊、竹簍）避免跳出系統的右鍵/長按選單
 document.addEventListener('contextmenu', (e)=>{ e.preventDefault(); });
-document.getElementById('restartBtn').addEventListener('click', ()=>{ SoundFX.uiClick(); stopTimers(); switchScreen('screen-intro'); });
+document.getElementById('restartBtn').addEventListener('click', ()=>{
+  // 重來按鈕暫時停用中，先不要有任何作用（連同上面 switchScreen 裡固定隱藏是雙重保險）
+  return;
+});
 document.getElementById('collectFishBtn').addEventListener('click', ()=>{
   if(!state || state.over || state.tidePhase !== 'day') return;
   SoundFX.uiClick?.();
