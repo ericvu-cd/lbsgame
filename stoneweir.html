@@ -1242,23 +1242,17 @@ function switchScreen(id){
 }
 
 function updateIntroStats(){
-  const stats = GameRecords.load();
   const statsEl = document.getElementById('introStats');
   if(!statsEl) return;
 
   const nicknameHtml = platformNickname
     ? `<div style="color:var(--cream);font-size:0.95rem;font-weight:bold;margin-bottom:6px;">👤 ${platformNickname}，歡迎回來！</div>`
     : '';
+  const bestScoreHtml = myBestScore
+    ? `<div class="stat score-stat"><b>${myBestScore.scoreValue}</b><span>歷史最佳</span></div>`
+    : '<div style="color:var(--cream);font-size:0.9rem;">開始你的第一局修復之旅吧！</div>';
 
-  if(stats.totalGames === 0){
-    statsEl.innerHTML = nicknameHtml + '<div style="color:var(--cream);font-size:0.9rem;">開始你的第一局修復之旅吧！</div>';
-  } else {
-    statsEl.innerHTML = nicknameHtml + `
-      <div class="stat score-stat"><b>${stats.bestScore}</b><span>最佳分數</span></div>
-      <div class="stat fish-stat"><b>${stats.bestCollected}</b><span>最多收魚</span></div>
-      <div class="stat"><b>${stats.totalGames}</b><span>遊戲局數</span></div>
-    `;
-  }
+  statsEl.innerHTML = nicknameHtml + bestScoreHtml;
 }
 
 document.getElementById('startBtn').addEventListener('click', ()=>{ SoundFX.unlock(); SoundFX.uiClick(); startGame(); });
@@ -1475,57 +1469,6 @@ function triggerThiefEvent(){
   showFishDelta(-toSteal);
   SoundFX.steal?.();
   vibrate([50, 100, 50]);
-}
-
-/* ============ 本地存儲和排名系統 ============ */
-const STORAGE_KEY = 'stoneweir_records';
-
-class GameRecords {
-  static load() {
-    try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      return data ? JSON.parse(data) : { games: [], bestScore: 0, totalGames: 0, bestCollected: 0 };
-    } catch(e) {
-      return { games: [], bestScore: 0, totalGames: 0, bestCollected: 0 };
-    }
-  }
-  
-  static save(records) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-    } catch(e) {
-      console.error('保存記錄失敗:', e);
-    }
-  }
-  
-  static addGame(score, time, moves, fishCaught, collected) {
-    const records = this.load();
-    const game = {
-      score,
-      time,
-      moves,
-      fishCaught,
-      collected,
-      timestamp: new Date().toISOString()
-    };
-    
-    records.games.unshift(game);
-    records.games = records.games.slice(0, 50); // 只保留最近50局
-    records.totalGames = records.games.length;
-    records.bestScore = Math.max(records.bestScore, score);
-    records.bestCollected = Math.max(records.bestCollected, collected);
-    
-    this.save(records);
-    return records;
-  }
-  
-  static getBestScore() {
-    return this.load().bestScore;
-  }
-  
-  static getTotalGames() {
-    return this.load().totalGames;
-  }
 }
 
 /* 偷魚小賊造型：紅頭巾扛著魚袋的角色，頭、身體、手、腳畫成同一組連續形狀，
@@ -2117,7 +2060,6 @@ function triggerToolBroken(){
    門檻對應下修，讓 3★ 仍然要接近理想解法才拿得到、但不是理論上摸不到的天花板 */
 const STAR_THRESHOLDS = [720, 350, 120]; // 依序對應 3★ / 2★ / 1★ 的最低分數
 const BADGE_SCORE = 800; // 達到此分數可獲得徽章
-const BADGE_STORAGE_KEY = 'stoneweir_badge_earned';
 function computeStars(total){
   if(total >= STAR_THRESHOLDS[0]) return 3;
   if(total >= STAR_THRESHOLDS[1]) return 2;
@@ -2150,17 +2092,12 @@ function finishGame(){
   document.getElementById('finalScore').textContent = total;
   renderStars('finalStars', computeStars(total));
   
-  // 保存成績到本地存儲
-  const records = GameRecords.addGame(total, state.seconds, state.moves, state.fishCaught, state.totalFishCollected || 0);
-  const isNewBest = total === records.bestScore;
-
   document.getElementById('scoreBreakdown').innerHTML = `
     <div class="sb-row"><span>基礎分</span><span>${BASE_SCORE}</span></div>
     <div class="sb-row"><span>耗時扣分 (${state.seconds}秒 × ${PENALTY_PER_SEC})</span><span>-${timePenalty}</span></div>
     <div class="sb-row"><span>步數扣分 (${state.moves}步 × ${PENALTY_PER_MOVE})</span><span>-${movePenalty}</span></div>
     <div class="sb-row"><span>魚獲加分 (${(state.fishCaught||0) + (state.totalFishCollected||0)}尾 × ${BONUS_PER_FISH})</span><span>+${fishBonus}</span></div>
     <div class="sb-row sb-total"><span>總分</span><span>${total}</span></div>
-    ${isNewBest ? '<div class="sb-row sb-best" style="background:rgba(255,200,0,0.2);border-radius:6px;"><span>✨ 個人新高！</span><span>🏆</span></div>' : `<div class="sb-row"><span>個人最佳</span><span>${records.bestScore}</span></div>`}
     ${reportResultToPlatform(total)}
   `;
 
@@ -2174,7 +2111,7 @@ function finishGame(){
 // 徽章「石滬達人」的發放門檻是 BADGE_SCORE（800分），跟畫面上「再努力X分」提示用的門檻是同一個。
 function reportResultToPlatform(total){
   const earnsBadge = total >= BADGE_SCORE;
-  const alreadyHasBadge = platformBadges.includes(BADGE_ID) || localStorage.getItem(BADGE_STORAGE_KEY) === '1';
+  const alreadyHasBadge = platformBadges.includes(BADGE_ID);
   const hasPreviousRecord = myBestScore !== null;
   const previousBestValue = hasPreviousRecord ? myBestScore.scoreValue : null;
   // 沒有舊紀錄（第一次玩）不算「破紀錄」，不給這 1 金幣，只有存在舊紀錄且這次分數更高才算
@@ -2192,12 +2129,9 @@ function reportResultToPlatform(total){
 
   // 更新本地暫存狀態：避免同一次連線內重玩時重複請領「首次徽章」的 20 金幣，
   // 也讓下一局結算能正確比較「這次連線內打過的最佳紀錄」
-  if(earnsBadge){
-    localStorage.setItem(BADGE_STORAGE_KEY, '1'); // 保留本地備援，離開平台單獨測試時也能記得已拿過
-    if(!alreadyHasBadge){
-      platformBadges = platformBadges.concat([BADGE_ID]);
-      showBadgePopup();
-    }
+  if(earnsBadge && !alreadyHasBadge){
+    platformBadges = platformBadges.concat([BADGE_ID]);
+    showBadgePopup();
   }
   if(!hasPreviousRecord || total > previousBestValue){
     myBestScore = { scoreLabel: `${total} 分`, scoreValue: total };
@@ -2212,7 +2146,7 @@ function reportResultToPlatform(total){
   if(isNewBestOnPlatform){
     notices.push(`🎉 打破個人紀錄！原紀錄 ${previousBestValue} 分（+1 金幣）`);
   } else if(hasPreviousRecord){
-    notices.push(`歷史最佳（平台紀錄）：${previousBestValue} 分`);
+    notices.push(`歷史最佳：${previousBestValue} 分`);
   }
 
   return notices.length ? `<div class="sb-row sb-notice" style="flex-direction:column;align-items:flex-start;">${notices.join('<br>')}</div>` : '';
@@ -2220,7 +2154,7 @@ function reportResultToPlatform(total){
 
 function handleBadge(total){
   const hintEl = document.getElementById('badgeHint');
-  const alreadyEarned = platformBadges.includes(BADGE_ID) || localStorage.getItem(BADGE_STORAGE_KEY) === '1';
+  const alreadyEarned = platformBadges.includes(BADGE_ID);
 
   if(total >= BADGE_SCORE || alreadyEarned){
     hintEl.style.display = 'none';
