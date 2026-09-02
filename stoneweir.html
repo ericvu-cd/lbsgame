@@ -597,8 +597,7 @@
       </div>
     </div>
     <div class="btn-row">
-      <button class="start-btn" id="playAgainBtn" style="padding:12px 30px;">再修一次</button>
-      <button class="icon-btn" id="changeDiffBtn">回到說明</button>
+      <button class="start-btn" id="closeGameBtn" style="padding:12px 30px;">關閉</button>
     </div>
   </div>
 </div>
@@ -620,8 +619,7 @@
       </div>
     </div>
     <div class="btn-row">
-      <button class="start-btn" id="retryBtn" style="padding:12px 30px;">再修一次</button>
-      <button class="icon-btn" id="loseBackBtn">回到說明</button>
+      <button class="start-btn" id="closeGameLoseBtn" style="padding:12px 30px;">關閉</button>
     </div>
   </div>
 </div>
@@ -1288,25 +1286,15 @@ document.getElementById('collectFishBtn').addEventListener('keydown', (e)=>{
   SoundFX.uiClick?.();
   collectFish();
 });
-document.getElementById('changeDiffBtn').addEventListener('click', ()=>{
+document.getElementById('closeGameBtn').addEventListener('click', ()=>{
   SoundFX.uiClick();
-  document.getElementById('winOverlay').classList.remove('active');
-  switchScreen('screen-intro');
+  sendToPlatform('exit', {}); // 通知平台這個任務視窗要關了，平台會清掉對應的記錄
+  window.close();
 });
-document.getElementById('playAgainBtn').addEventListener('click', ()=>{
+document.getElementById('closeGameLoseBtn').addEventListener('click', ()=>{
   SoundFX.uiClick();
-  document.getElementById('winOverlay').classList.remove('active');
-  startGame();
-});
-document.getElementById('loseBackBtn').addEventListener('click', ()=>{
-  SoundFX.uiClick();
-  document.getElementById('loseOverlay').classList.remove('active');
-  switchScreen('screen-intro');
-});
-document.getElementById('retryBtn').addEventListener('click', ()=>{
-  SoundFX.uiClick();
-  document.getElementById('loseOverlay').classList.remove('active');
-  startGame();
+  sendToPlatform('exit', {}); // 通知平台這個任務視窗要關了，平台會清掉對應的記錄
+  window.close();
 });
 
 /* ============ 遊戲邏輯 ============ */
