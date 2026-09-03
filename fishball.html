@@ -586,6 +586,71 @@
     background:#e2cd8f; transition:all .2s;
   }
   .lore-dot.active{ background:var(--block-yellow-dark); width:13px; border-radius:3px; }
+
+  /* ---------- 徽章特效彈窗 ---------- */
+  .badge-popup{
+    position:fixed; inset:0;
+    z-index:500;
+    display:flex; align-items:center; justify-content:center;
+    pointer-events:none;
+    opacity:0;
+  }
+  .badge-popup.hidden{ display:none; }
+  .badge-popup.show{
+    opacity:1;
+    animation: badgePopIn .6s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  .badge-popup.fade-out{
+    animation: badgeFadeOut .9s ease forwards;
+  }
+  @keyframes badgePopIn{
+    0%{ opacity:0; transform:scale(.25) rotate(-10deg); }
+    55%{ opacity:1; transform:scale(1.12) rotate(3deg); }
+    100%{ opacity:1; transform:scale(1) rotate(0deg); }
+  }
+  @keyframes badgeFadeOut{
+    0%{ opacity:1; transform:scale(1); }
+    100%{ opacity:0; transform:scale(.82); }
+  }
+  .badge-glow{
+    position:absolute;
+    width:min(78vw,360px); height:min(78vw,360px);
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(255,215,0,0.55) 0%, rgba(255,215,0,0) 70%);
+    animation: badgeGlowPulse 1.3s ease-in-out infinite;
+  }
+  @keyframes badgeGlowPulse{
+    0%,100%{ transform:scale(.88); opacity:.65; }
+    50%{ transform:scale(1.15); opacity:1; }
+  }
+  .badge-card{
+    position:relative;
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+  }
+  .badge-unlock-tag{
+    background:var(--block-yellow-dark, #d69a2a);
+    color:#fff;
+    padding:4px 10px;
+    border-radius:6px;
+    font-size:11px;
+    border:2px solid #101010;
+    box-shadow:2px 2px 0 rgba(0,0,0,0.35);
+  }
+  .badge-img{
+    width:min(74vw, 300px);
+    border-radius:12px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.55), 0 0 0 3px rgba(255,255,255,0.85);
+  }
+  .badge-sparkle{
+    position:absolute;
+    font-size:20px;
+    opacity:0;
+    animation: badgeTwinkle 1.6s ease-in-out infinite;
+  }
+  @keyframes badgeTwinkle{
+    0%,100%{ opacity:0; transform:scale(.4) rotate(0deg); }
+    50%{ opacity:1; transform:scale(1.1) rotate(20deg); }
+  }
 </style>
 </head>
 <body>
@@ -660,6 +725,21 @@
       <button class="btn btn-outline pixel" id="backToInstructionsBtn">關閉</button>
     </div>
    </div>
+  </div>
+
+  <!-- 徽章特效彈窗：全通10關且累計總分≥1000才會出現，顯示5秒後淡出 -->
+  <div id="badgePopup" class="badge-popup hidden" aria-hidden="true">
+    <div class="badge-glow"></div>
+    <span class="badge-sparkle" style="top:8%; left:18%; animation-delay:0s;">✨</span>
+    <span class="badge-sparkle" style="top:14%; right:14%; animation-delay:0.3s;">✨</span>
+    <span class="badge-sparkle" style="bottom:14%; left:12%; animation-delay:0.6s;">✨</span>
+    <span class="badge-sparkle" style="bottom:10%; right:18%; animation-delay:0.15s;">✨</span>
+    <span class="badge-sparkle" style="top:46%; left:4%; animation-delay:0.45s;">✨</span>
+    <span class="badge-sparkle" style="top:42%; right:4%; animation-delay:0.75s;">✨</span>
+    <div class="badge-card">
+      <div class="badge-unlock-tag pixel">🏅 達成成就！</div>
+      <img src="fbbd1.png" alt="魚丸守護神徽章" class="badge-img">
+    </div>
   </div>
 
 </div>
@@ -1784,6 +1864,7 @@
   else startBgImg.addEventListener('load', positionStartButton);
   const restartBtn = document.getElementById('restartBtn');
   const backToInstructionsBtn = document.getElementById('backToInstructionsBtn');
+  const badgePopup = document.getElementById('badgePopup');
   const resultBoard = document.getElementById('resultBoard');
   const endTitle = document.getElementById('endTitle');
   const endEmoji = document.getElementById('endEmoji');
@@ -2215,6 +2296,22 @@
     initLoreCarousel();
   }
 
+  // 徽章特效：畫面中央彈出，顯示5秒後淡出消失
+  let badgeShowTimer = null, badgeHideTimer = null;
+  function showBadge(){
+    clearTimeout(badgeShowTimer); clearTimeout(badgeHideTimer);
+    badgePopup.classList.remove('hidden', 'fade-out', 'show');
+    void badgePopup.offsetWidth; // 強制重排，讓動畫可以重新觸發
+    badgePopup.classList.add('show');
+    badgeShowTimer = setTimeout(() => {
+      badgePopup.classList.add('fade-out');
+      badgeHideTimer = setTimeout(() => {
+        badgePopup.classList.remove('show', 'fade-out');
+        badgePopup.classList.add('hidden');
+      }, 900);
+    }, 5000);
+  }
+
   // 時間到＝這關過關。第10關過關＝全破，其餘關卡顯示「下一關」，
   // 玩家要自己按下去才會開始下一關，不會自動接關。
   function levelClear(){
@@ -2237,12 +2334,13 @@
       `<div class="stat-row"><span class="stat-label"><img class="icon-inline" src="${ICONS.anemone}" alt="">復育珊瑚礁</span><span class="stat-value">${Math.floor(reefPct())}%</span></div>`+
       `<div class="final-score"><span class="final-label"><img class="icon-inline" src="${ICONS.trophy}" alt="">累計總分</span><span class="final-value">${totalScore}</span></div>`+
       (isFinal
-        ? buildKnowledgeBlock()
+        ? (totalScore >= 1000 ? `<div class="end-reason">🏅 恭喜獲得「魚丸守護神」徽章！</div>` : '') + buildKnowledgeBlock()
         : `<div class="end-reason">準備好前往第 ${currentLevel+1} 關：${LEVELS[currentLevel].name}</div>`);
     if(isFinal){
       restartBtn.style.display = 'none';
       backToInstructionsBtn.style.display = '';
       initLoreCarousel();
+      if(totalScore >= 1000) showBadge(); // 全通10關＋總分≥1000 → 「魚丸守護神」徽章
     } else {
       restartBtn.textContent = '下一關';
       restartBtn.style.display = '';
@@ -2864,6 +2962,13 @@
       invBtn.style.background = devInvincible ? '#2ecc71' : '';
     });
     devPanel.appendChild(invBtn);
+
+    const badgeBtn = document.createElement('button');
+    badgeBtn.type = 'button';
+    badgeBtn.textContent = '測試徽章特效';
+    badgeBtn.style.cssText = 'width:100%;font-size:10px;padding:4px;cursor:pointer;margin-top:4px;';
+    badgeBtn.addEventListener('click', () => showBadge());
+    devPanel.appendChild(badgeBtn);
 
     document.body.appendChild(devPanel);
     console.log('[dev] 開發者模式已啟用：可直接跳關、跳過本關、開無敵模式。');

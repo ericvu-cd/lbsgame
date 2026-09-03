@@ -158,9 +158,9 @@
         #arena-sold-overlay.show.other { color: #B9C9C4; }
         #arena-sold-overlay.show.unsold { color: #7A8F89; }
 
-        #history-fab { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; font-weight: bold; cursor: pointer; flex-shrink: 0; }
+        #history-fab { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; flex-shrink: 0; }
         #history-fab:active { opacity: 0.85; }
-        #exit-fab { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; font-weight: bold; cursor: pointer; flex-shrink: 0; }
+        #exit-fab { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; flex-shrink: 0; }
         #exit-fab:active { opacity: 0.85; }
         #sound-toggle { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 10px; font-size: 0.85rem; font-weight: bold; cursor: pointer; flex-shrink: 0; line-height: 1.4; }
         #sound-toggle:active { opacity: 0.85; }
@@ -256,7 +256,10 @@
     <header id="top-bar">
         <div id="top-bar-row1">
             <div id="ui-day-season">🌸春季</div>
-            <div id="ui-budget">💰 現金: 1500元</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div id="ui-budget">💰 現金: 1500元</div>
+                <button id="exit-fab" onclick="exitAndReturnToPlatform()" aria-label="返回平台">↩️ 返回</button>
+            </div>
         </div>
         <div id="top-bar-row2">
             <div id="ui-inventory-summary">本季尚未購入</div>
@@ -264,7 +267,6 @@
                 <div id="ui-stage-label">📋 看板整備中</div>
                 <button id="sound-toggle" onclick="toggleSound()" aria-label="切換音效">🔊</button>
                 <button id="history-fab" onclick="openHistoryDrawer()">📊 紀錄</button>
-                <button id="exit-fab" onclick="exitAndReturnToPlatform()" aria-label="返回平台">↩️ 返回</button>
             </div>
         </div>
     </header>
