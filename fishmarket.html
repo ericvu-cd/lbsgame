@@ -17,6 +17,16 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Noto Sans TC", "Helvetica Neue", Arial, sans-serif; }
         html, body { height: 100%; }
+        .portrait-warning{
+            display:none;position:fixed;inset:0;z-index:9999;
+            background:rgba(20,20,20,.94);color:#fff;
+            flex-direction:column;align-items:center;justify-content:center;
+            text-align:center;padding:24px;
+        }
+        .portrait-warning-icon{font-size:48px;margin-bottom:16px;}
+        @media screen and (orientation:landscape){
+            .portrait-warning{display:flex;}
+        }
         body {
             background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; overflow: hidden;
             background-image: radial-gradient(circle at center, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.55) 32%, transparent 33%);
@@ -215,6 +225,12 @@
 </head>
 <body>
 
+    <div id="portrait-warning" class="portrait-warning">
+        <div class="portrait-warning-icon">📱↻</div>
+        <h2>請將手機轉為直式</h2>
+        <p>本頁面專為直式螢幕設計，以提供最佳體驗。</p>
+    </div>
+
     <div id="intro-screen">
         <div id="intro-card">
             <img src="fmbg.png" alt="永續魚市拍賣場：漁港開賣！永續海洋決勝負">
@@ -226,7 +242,7 @@
         <div id="final-result-card" class="brick-panel">
             <div id="final-result-body"></div>
             <div id="final-result-btn-row">
-                <button class="btn-bid" style="background:#3C8577;" onclick="closeFinalResultAndRestart()">關閉</button>
+                <button class="btn-bid" style="background:#3C8577;" onclick="closeAndReturnToPlatform()">關閉</button>
             </div>
         </div>
     </div>
@@ -991,27 +1007,11 @@
             return notices.length ? `<div class="final-report-notice">${notices.join('<br>')}</div>` : '';
         }
 
-        function closeFinalResultAndRestart() {
-            document.getElementById('final-result-screen').classList.remove('show');
-            resetGameState();
-            document.getElementById('intro-screen').style.display = 'flex';
-        }
-
-        function resetGameState() {
-            gameState.round = 1;
-            gameState.seasonIndex = 0;
-            gameState.budget = 0;
-            gameState.todayBoxes = [];
-            gameState.playerInventory = [];
-            gameState.history = [];
-            gameState.aiBudgets = {};
-            gameState.lastTopUp = 0;
-            renderHistory();
-        }
-
-        function newGame() {
-            resetGameState();
-            initRound();
+        // 結算畫面的「關閉」按鈕：送 exit 訊息通知平台、強制關閉分頁返回平台，
+        // 不再是原本「重設遊戲狀態、回到開場畫面重玩」的行為（原本按鈕文字跟實際行為不一致）。
+        function closeAndReturnToPlatform() {
+            sendToPlatform('exit', {});
+            window.close();
         }
 
         function updateInventorySummary() {

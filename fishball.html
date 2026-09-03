@@ -657,7 +657,7 @@
     </div>
     <div class="end-btn-row">
       <button class="btn pixel" id="restartBtn">再玩一次</button>
-      <button class="btn btn-outline pixel" id="backToInstructionsBtn">回到說明</button>
+      <button class="btn btn-outline pixel" id="backToInstructionsBtn">關閉</button>
     </div>
    </div>
   </div>
@@ -1698,10 +1698,10 @@
   // ---------- CONFIG ----------
   const COLS = 15, ROWS = 21;
   let LEVEL_SECONDS = 55;              // 每關時間長度，依 LEVELS[currentLevel-1].time 設定
-  const TICK_MS_START = 500;           // 開局每步 500ms
-  const SPEEDUP_STEP_MS = 40;          // 每個週期加快 40ms
-  const SPEEDUP_INTERVAL_S = 20;       // 每 20 秒加速一次
-  const TICK_MS_MIN = 140;             // 加速下限（安全下限）
+  const TICK_MS_START = 450;           // 開局每步 450ms
+  const SPEEDUP_STEP_MS = 20;          // 每個週期加快 20ms
+  const SPEEDUP_INTERVAL_S = 10;       // 每 10 秒加速一次
+  const TICK_MS_MIN = 200;             // 加速下限
   const TIDE_FIRST_DELAY_MS = 25000;   // 前 25 秒完全不縮小
   const TIDE_INTERVAL_MS = 25000;      // 之後每 25 秒縮 1 格
   const TIDE_MAX_INSET = 6;
@@ -1709,29 +1709,33 @@
   const FOOD_TARGET_COUNT = 6;
   const BALL_SPAWN_EVERY = 4;
 
+  // ---------- 開發者模式（測試用，加 ?dev=1 網址參數才會啟用，一般玩家看不到） ----------
+  const DEV_MODE = new URLSearchParams(location.search).has('dev');
+  let devInvincible = false;
+
   // ---------- 10 關卡地圖 ----------
   // walls：每關固定障礙物座標（0-index，x:0~14, y:0~20）。
   // 撞到牆不會失敗，只會自動轉向（見 step() 內的撞牆處理）。
   const LEVELS = [
-    { name:'新手漁港',       time:55, walls:[] },
-    { name:'竹筏蚵棚',       time:55, walls:[[4,4],[7,4],[10,4],[4,16],[7,16],[10,16]] },
-    { name:'消波塊海堤',     time:55, walls:[[2,8],[2,9],[2,12],[2,13],[12,8],[12,9],[12,12],[12,13]] },
-    { name:'定置漁網區',     time:65, walls:[[2,5],[5,5],[7,5],[10,5],[12,5],[2,15],[5,15],[7,15],[10,15],[12,15]] },
-    { name:'沉船遺跡',       time:65, walls:[[5,12],[6,12],[7,12],[8,12],[9,12],[10,12],[5,13],[5,14],[10,13],[10,14],[5,15],[10,15]] },
-    { name:'紅樹林根區',     time:65, walls:[[2,3],[3,3],[3,4],[4,4],[12,3],[11,3],[11,4],[2,17],[3,17],[3,16],[12,17],[11,17],[11,16],[10,16]] },
-    { name:'潮間帶礁岩群',   time:70, walls:[[2,6],[2,7],[2,8],[12,6],[12,7],[12,8],[4,18],[5,18],[9,18],[10,18],[2,13],[3,13],[11,13],[12,13]] },
-    { name:'定置漁網迷宮',   time:70, walls:[[3,3],[3,4],[3,5],[6,7],[6,8],[6,9],[9,3],[9,4],[9,5],[12,7],[12,8],[12,9],[6,16],[6,17],[9,16],[9,17]] },
-    { name:'颱風夜巡港',     time:75, walls:[[1,2],[2,2],[13,2],[12,2],[1,18],[2,18],[13,18],[12,18],[4,2],[10,2],[4,18],[10,18],[2,9],[12,9],[2,11],[12,11]] },
-    { name:'苑港終幕・滿載而歸', time:75, walls:[[1,1],[2,1],[12,1],[13,1],[1,19],[2,19],[12,19],[13,19],[4,6],[10,6],[4,14],[10,14],[7,4],[7,16],[1,11],[13,11],[1,6],[13,6]] }
+    { name:'新手漁港',       time:30,  walls:[] },
+    { name:'竹筏蚵棚',       time:40,  walls:[[4,4],[7,4],[10,4],[4,16],[7,16],[10,16]] },
+    { name:'消波塊海堤',     time:50,  walls:[[2,8],[2,9],[2,12],[2,13],[12,8],[12,9],[12,12],[12,13]] },
+    { name:'定置漁網區',     time:60,  walls:[[2,5],[5,5],[7,5],[10,5],[12,5],[2,15],[5,15],[7,15],[10,15],[12,15]] },
+    { name:'沉船遺跡',       time:70,  walls:[[5,12],[6,12],[7,12],[8,12],[9,12],[10,12],[5,13],[5,14],[10,13],[10,14],[5,15],[10,15]] },
+    { name:'紅樹林根區',     time:80,  walls:[[2,3],[3,3],[3,4],[4,4],[12,3],[11,3],[11,4],[2,17],[3,17],[3,16],[12,17],[11,17],[11,16],[10,16]] },
+    { name:'潮間帶礁岩群',   time:90,  walls:[[2,6],[2,7],[2,8],[12,6],[12,7],[12,8],[4,18],[5,18],[9,18],[10,18],[2,13],[3,13],[4,13],[11,13],[12,13],[10,13]] },
+    { name:'定置漁網迷宮',   time:100, walls:[[3,3],[3,4],[3,5],[6,7],[6,8],[6,9],[9,3],[9,4],[9,5],[12,7],[12,8],[12,9],[6,16],[6,17],[6,18],[9,16],[9,17],[9,18]] },
+    { name:'颱風夜巡港',     time:110, walls:[[1,2],[2,2],[13,2],[12,2],[1,18],[2,18],[13,18],[12,18],[4,2],[10,2],[4,18],[10,18],[2,9],[12,9],[2,11],[12,11],[6,2],[8,2],[6,18],[8,18]] },
+    { name:'苑港終幕・滿載而歸', time:120, walls:[[1,1],[2,1],[12,1],[13,1],[1,19],[2,19],[12,19],[13,19],[4,6],[10,6],[4,14],[10,14],[7,4],[7,16],[1,11],[13,11],[1,6],[13,6],[1,14],[13,14],[2,16],[12,16]] }
   ];
 
   const TYPES = {
-    normal:    { emoji:"🐟", grow:1,  score:5,   sus:0,   weight:50, fill:'#22B14C', ring:'#0A6B24', comboStep:4 },
+    normal:    { emoji:"🐟", grow:1,  score:5,   sus:0,   weight:55, fill:'#22B14C', ring:'#0A6B24', comboStep:4 },
     shark:     { emoji:"🦈", grow:3,  score:10,  sus:0,   weight:14, fill:'#1E1E1E', ring:'#000000', comboStep:8 },
-    juvenile:  { emoji:"🐠", grow:-1, score:-5,  sus:-5,  weight:22, fill:'#FFE066', ring:'#8a6c0e', comboStep:2 },
-    protected: { emoji:"🚫", grow:-1, score:-20, sus:-20, weight:14, fill:'#FF3B5C', ring:'#7a0a20', comboStep:2 },
+    juvenile:  { emoji:"🐠", grow:-1, score:-5,  sus:-5,  weight:14, fill:'#FFE066', ring:'#8a6c0e', comboStep:2 },
+    protected: { emoji:"🚫", grow:-1, score:-20, sus:-20, weight:8,  fill:'#FF3B5C', ring:'#7a0a20', comboStep:2 },
     ball:      { emoji:"🍥", grow:0,  score:20,  sus:0,   weight:0,  fill:'#FFD700', ring:'#8a6c0e', comboStep:12 },
-    ice:       { emoji:"🧊", grow:0,  score:0,   sus:10,  weight:12, fill:'#FFFFFF', ring:'#0B5A82', comboStep:0 }
+    ice:       { emoji:"🧊", grow:0,  score:0,   sus:10,  weight:18, fill:'#FFFFFF', ring:'#0B5A82', comboStep:0 }
   };
 
   // ---------- DOM ----------
@@ -1837,7 +1841,6 @@
   // ---------- 關卡進度：每次開頁都從 Lv1 開始，不儲存進度 ----------
   let currentLevel = 1;      // 1~10
   let totalScore = 0;        // 每關分數累計加總，失敗或全破時顯示的就是這個
-  let pendingAction = 'restart'; // 結算頁主按鈕動作：'next'=下一關 / 'restart'=整輪重來
 
   // ---------- 地圖障礙物（牆） ----------
   let wallSet = new Set();
@@ -2064,6 +2067,7 @@
     if(isWall(nx, ny)){
       const alt = pickDeflectDir(head, dir);
       if(!alt){
+        if(DEV_MODE && devInvincible) return; // 開發者無敵模式：卡死時原地不動，不觸發失敗
         return gameOver('魚丸串被地圖困住了，動彈不得！');
       }
       dir = alt;
@@ -2074,7 +2078,12 @@
 
     const minB = tideInset, maxBx = COLS-1-tideInset, maxBy = ROWS-1-tideInset;
     if(nx<minB || nx>maxBx || ny<minB || ny>maxBy){
-      return gameOver('潮水淹過了漁港邊界！');
+      if(DEV_MODE && devInvincible){
+        nx = Math.min(maxBx, Math.max(minB, nx));
+        ny = Math.min(maxBy, Math.max(minB, ny));
+      } else {
+        return gameOver('潮水淹過了漁港邊界！');
+      }
     }
     let ate = null;
     const fi = foods.findIndex(f=>f.x===nx && f.y===ny);
@@ -2088,7 +2097,7 @@
     if(gProbe <= 0){ willPop++; }
     const bodyToCheck = willPop > 0 ? snake.slice(0, Math.max(0, snake.length - willPop)) : snake;
     if(bodyToCheck.some(s=>s.x===nx && s.y===ny)){
-      return gameOver('魚丸串撞到自己了！');
+      if(!(DEV_MODE && devInvincible)) return gameOver('魚丸串撞到自己了！');
     }
 
     snake.unshift({x:nx,y:ny});
@@ -2152,7 +2161,7 @@
 
       refillFoods();
       if(sustain<=0){
-        return gameOver('過度捕撈，漁港生態崩潰！');
+        if(!(DEV_MODE && devInvincible)) return gameOver('過度捕撈，漁港生態崩潰！');
       }
     } else {
       snake.pop();
@@ -2196,8 +2205,8 @@
       `<div class="final-score"><span class="final-label"><img class="icon-inline" src="${ICONS.trophy}" alt="">最終累計總分</span><span class="final-value">${totalScore}</span></div>`+
       `<div class="end-reason">${reason}</div>`+
       buildKnowledgeBlock();
-    restartBtn.textContent = '重新開始';
-    pendingAction = 'restart';
+    restartBtn.style.display = 'none';
+    backToInstructionsBtn.style.display = '';
     endOverlay.classList.remove('hidden');
     initLoreCarousel();
   }
@@ -2226,10 +2235,16 @@
       (isFinal
         ? buildKnowledgeBlock()
         : `<div class="end-reason">準備好前往第 ${currentLevel+1} 關：${LEVELS[currentLevel].name}</div>`);
-    restartBtn.textContent = isFinal ? '重新開始' : '下一關';
-    pendingAction = isFinal ? 'restart' : 'next';
+    if(isFinal){
+      restartBtn.style.display = 'none';
+      backToInstructionsBtn.style.display = '';
+      initLoreCarousel();
+    } else {
+      restartBtn.textContent = '下一關';
+      restartBtn.style.display = '';
+      backToInstructionsBtn.style.display = 'none';
+    }
     endOverlay.classList.remove('hidden');
-    if(isFinal) initLoreCarousel();
   }
 
   function buildKnowledgeBlock(){
@@ -2372,46 +2387,14 @@
     return (h >>> 0);
   }
 
-  // 地圖障礙物（淺色消波塊/礁石風格，刻意跟背景拉開對比，撞到會自動轉向，不會死）
+  // 地圖障礙物（純白色填滿，無框無圖案無暈光）
   function drawWalls(){
     if(wallSet.size === 0) return;
-    const now = performance.now();
+    ctx.fillStyle = '#FFFFFF';
     for(const key of wallSet){
       const parts = key.split(',');
       const wx = Number(parts[0]), wy = Number(parts[1]);
-      const px = wx*CELL, py = wy*CELL;
-      const bevel = Math.max(2, Math.floor(CELL*0.16));
-
-      // 外圈淡黃警示暈光（脈動），先畫在底下，讓障礙物在任何背景上都跳出來
-      const pulse = 0.35 + 0.25*Math.sin(now/450 + (wx*7+wy*13));
-      ctx.save();
-      ctx.globalAlpha = pulse;
-      ctx.fillStyle = '#FFD700';
-      ctx.fillRect(px-1, py-1, CELL+2, CELL+2);
-      ctx.restore();
-
-      // 淺灰水泥色本體（跟深色荒蕪海底、橘色珊瑚礁都拉開對比）
-      ctx.fillStyle = '#C9C4B8';
-      ctx.fillRect(px+2, py+2, CELL-4, CELL-4);
-      ctx.fillStyle = 'rgba(255,255,255,0.55)';
-      ctx.fillRect(px+2, py+2, CELL-4, bevel);
-      ctx.fillRect(px+2, py+2, bevel, CELL-4);
-      ctx.fillStyle = 'rgba(0,0,0,0.30)';
-      ctx.fillRect(px+2, py+CELL-2-bevel, CELL-4, bevel);
-      ctx.fillRect(px+CELL-2-bevel, py+2, bevel, CELL-4);
-
-      // 水泥紋理：兩條交叉裂痕線
-      ctx.strokeStyle = 'rgba(90,80,70,0.55)';
-      ctx.lineWidth = Math.max(1, CELL*0.045);
-      ctx.beginPath();
-      ctx.moveTo(px+CELL*0.28, py+CELL*0.22); ctx.lineTo(px+CELL*0.62, py+CELL*0.55);
-      ctx.moveTo(px+CELL*0.70, py+CELL*0.30); ctx.lineTo(px+CELL*0.45, py+CELL*0.78);
-      ctx.stroke();
-
-      // 粗黑外框，字塊感更明顯
-      ctx.strokeStyle = '#101010';
-      ctx.lineWidth = Math.max(2, CELL*0.09);
-      ctx.strokeRect(px+2, py+2, CELL-4, CELL-4);
+      ctx.fillRect(wx*CELL, wy*CELL, CELL, CELL);
     }
   }
 
@@ -2822,12 +2805,7 @@
   });
   restartBtn.addEventListener('click', ()=>{
     stopIntervals();
-    if(pendingAction === 'next'){
-      currentLevel = Math.min(LEVELS.length, currentLevel + 1);
-    } else {
-      currentLevel = 1;
-      totalScore = 0;
-    }
+    currentLevel = Math.min(LEVELS.length, currentLevel + 1);
     startGame();
   });
   backToInstructionsBtn.addEventListener('click', ()=>{
@@ -2840,6 +2818,52 @@
     endOverlay.classList.add('hidden');
     startOverlay.classList.remove('hidden');
   });
+
+  function devJumpToLevel(n){
+    stopIntervals();
+    currentLevel = n;
+    startGame();
+  }
+
+  if(DEV_MODE){
+    const devPanel = document.createElement('div');
+    devPanel.style.cssText = 'position:fixed;left:6px;top:6px;z-index:99999;background:rgba(0,0,0,0.78);color:#fff;padding:6px;border-radius:8px;font:11px/1.4 monospace;display:flex;flex-wrap:wrap;gap:4px;max-width:150px;box-shadow:0 2px 8px rgba(0,0,0,0.5);';
+
+    const title = document.createElement('div');
+    title.textContent = '🛠 開發者模式';
+    title.style.cssText = 'width:100%;font-weight:bold;margin-bottom:2px;';
+    devPanel.appendChild(title);
+
+    for(let n=1; n<=LEVELS.length; n++){
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = 'Lv' + n;
+      b.style.cssText = 'font-size:10px;padding:2px 5px;cursor:pointer;';
+      b.addEventListener('click', () => devJumpToLevel(n));
+      devPanel.appendChild(b);
+    }
+
+    const skipBtn = document.createElement('button');
+    skipBtn.type = 'button';
+    skipBtn.textContent = '跳下一關（本關立即過關）';
+    skipBtn.style.cssText = 'width:100%;font-size:10px;padding:4px;cursor:pointer;margin-top:4px;';
+    skipBtn.addEventListener('click', () => { if(running) levelClear(); });
+    devPanel.appendChild(skipBtn);
+
+    const invBtn = document.createElement('button');
+    invBtn.type = 'button';
+    invBtn.textContent = '無敵模式：關';
+    invBtn.style.cssText = 'width:100%;font-size:10px;padding:4px;cursor:pointer;margin-top:4px;';
+    invBtn.addEventListener('click', () => {
+      devInvincible = !devInvincible;
+      invBtn.textContent = '無敵模式：' + (devInvincible ? '開' : '關');
+      invBtn.style.background = devInvincible ? '#2ecc71' : '';
+    });
+    devPanel.appendChild(invBtn);
+
+    document.body.appendChild(devPanel);
+    console.log('[dev] 開發者模式已啟用：可直接跳關、跳過本關、開無敵模式。');
+  }
 
   // init
   sizeCanvas();

@@ -25,6 +25,16 @@
   }
   *{box-sizing:border-box;}
   html,body{height:100%;margin:0;overflow:hidden;}
+  .portrait-warning{
+    display:none;position:fixed;inset:0;z-index:9999;
+    background:rgba(20,20,20,.94);color:#fff;
+    flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:24px;
+  }
+  .portrait-warning-icon{font-size:48px;margin-bottom:16px;}
+  @media screen and (orientation:landscape){
+    .portrait-warning{display:flex;}
+  }
   body{
     background:
       radial-gradient(circle, var(--rule) 1px, transparent 1.3px) 0 0/16px 16px,
@@ -344,6 +354,12 @@
 </style>
 </head>
 <body>
+
+<div id="portrait-warning" class="portrait-warning">
+  <div class="portrait-warning-icon">📱↻</div>
+  <h2>請將手機轉為直式</h2>
+  <p>本頁面專為直式螢幕設計，以提供最佳體驗。</p>
+</div>
 
 <header>
   <div class="brand" id="brand-trigger">
