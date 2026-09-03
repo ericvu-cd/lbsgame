@@ -472,7 +472,7 @@
 <div id="nightOverlay"></div>
 <div id="tideFlash"></div>
 
-<button class="sound-toggle-btn corner-left" id="restartBtn" aria-label="重來" title="重來" style="display:none">🔄</button>
+<button class="sound-toggle-btn corner-left" id="restartBtn" aria-label="返回平台" title="返回平台" style="display:none">↩️</button>
 <button class="sound-toggle-btn" id="muteBtn" aria-label="切換音效" title="切換音效">🔊</button>
 
 <div class="app">
@@ -1258,10 +1258,9 @@ function switchScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 
-  // 重來按鈕先關閉不使用（暫時停用，之後要恢復的話把這行改回原本的三元判斷式就好）：
-  // if(restartBtn) restartBtn.style.display = (id === 'screen-game') ? '' : 'none';
+  // 返回按鈕（原本是重來按鈕，改成強制返回平台用）：只在遊戲進行中顯示，說明頁/結算頁不需要
   const restartBtn = document.getElementById('restartBtn');
-  if(restartBtn) restartBtn.style.display = 'none';
+  if(restartBtn) restartBtn.style.display = (id === 'screen-game') ? '' : 'none';
   
   // 如果切換到介紹頁面，更新統計顯示
   if(id === 'screen-intro'){
@@ -1287,8 +1286,10 @@ document.getElementById('startBtn').addEventListener('click', ()=>{ SoundFX.unlo
 // 長按畫面時（尤其是石塊、竹簍）避免跳出系統的右鍵/長按選單
 document.addEventListener('contextmenu', (e)=>{ e.preventDefault(); });
 document.getElementById('restartBtn').addEventListener('click', ()=>{
-  // 重來按鈕暫時停用中，先不要有任何作用（連同上面 switchScreen 裡固定隱藏是雙重保險）
-  return;
+  SoundFX.uiClick();
+  if(!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
+  sendToPlatform('exit', {});
+  window.close();
 });
 document.getElementById('collectFishBtn').addEventListener('click', ()=>{
   if(!state || state.over || state.tidePhase !== 'day') return;
