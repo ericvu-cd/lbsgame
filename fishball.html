@@ -295,6 +295,16 @@
   }
 
   /* ---------- OVERLAYS (full screen, mario menu style) ---------- */
+  .portrait-warning{
+    display:none;position:fixed;inset:0;z-index:9999;
+    background:rgba(20,20,20,.94);color:#fff;
+    flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:24px;
+  }
+  .portrait-warning-icon{font-size:48px;margin-bottom:16px;}
+  @media screen and (orientation:landscape){
+    .portrait-warning{display:flex;}
+  }
   .overlay{
     position:fixed; inset:0;
     background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bot) 100%);
@@ -343,7 +353,7 @@
     width:1em; height:1em;
     display:block;
   }
-  #endOverlay .overlay-inner{ justify-content:flex-start; padding-top:3vh; }
+  #endOverlay .overlay-inner{ justify-content:flex-start; padding-top:1.5vh; }
   .start-bg-wrap{
     position:relative;
     width:100%;
@@ -508,7 +518,7 @@
       repeating-linear-gradient(90deg, transparent 0 17px, rgba(0,0,0,0.35) 17px 20px),
       var(--brick);
     border-bottom:4px solid var(--ink);
-    padding:14px 10px 10px;
+    padding:9px 10px 7px;
     display:flex; flex-direction:column; align-items:center; gap:2px;
   }
   .end-card-head .big-emoji{
@@ -519,10 +529,10 @@
     font-size:17px; margin:6px 0 0; color:var(--coin-gold);
     text-shadow:2px 2px 0 var(--ink), -1px -1px 0 var(--ink), 1px -1px 0 var(--ink), -1px 1px 0 var(--ink);
   }
-  .end-card-body{ padding:14px 16px 16px; }
+  .end-card-body{ padding:9px 14px 10px; }
   .stat-row{
     display:flex; align-items:center; justify-content:space-between;
-    font-size:15px; padding:7px 0;
+    font-size:14px; padding:4px 0;
     border-bottom:2px dashed #ddd;
   }
   .stat-row:first-child{ padding-top:0; }
@@ -531,7 +541,7 @@
   .final-score .final-label img.icon-inline{ width:15px; height:15px; vertical-align:-2px; margin-right:2px; }
   .stat-row .stat-value{ font-weight:700; color:var(--ink); }
   .final-score{
-    margin-top:10px; padding:10px 12px;
+    margin-top:6px; padding:7px 12px;
     display:flex; align-items:center; justify-content:space-between;
     background:linear-gradient(180deg, #fff6c0, var(--coin-gold));
     border:3px solid var(--coin-gold-dark);
@@ -543,12 +553,22 @@
     color:var(--danger-red-dark);
   }
   .end-reason{
-    margin-top:9px; padding:7px 10px;
+    margin-top:6px; padding:6px 10px;
     background:#f4f4f4; border-left:4px solid var(--danger-red);
-    font-size:13px; color:#444; line-height:1.5;
+    font-size:13px; color:#444; line-height:1.4;
+  }
+  .platform-notice{
+    margin-top:6px; padding:6px 10px;
+    background:rgba(255,200,0,0.18); border-radius:6px;
+    color:#8a5a00; font-weight:700; font-size:12.5px; line-height:1.5; text-align:left;
+  }
+  .ack-notice{
+    margin:8px 16px 0; padding:6px 9px;
+    background:rgba(200,40,40,.14); border:1.5px solid rgba(200,40,40,.4);
+    border-radius:8px; color:#8a2323; font-weight:700; font-size:12px; line-height:1.5; text-align:left;
   }
   .lore-block{
-    margin-top:10px; padding:8px 9px 7px;
+    margin-top:6px; padding:6px 9px 5px;
     background:#FFF8E1; border:2px dashed var(--block-yellow-dark);
     color:#5a4300;
   }
@@ -654,6 +674,12 @@
 </style>
 </head>
 <body>
+<div id="portrait-warning" class="portrait-warning">
+  <div class="portrait-warning-icon">📱↻</div>
+  <h2>請將手機轉為直式</h2>
+  <p>本頁面專為直式螢幕設計，以提供最佳體驗。</p>
+</div>
+
 <div id="app">
 
   <header>
@@ -663,6 +689,7 @@
         <div class="timer pixel" id="levelBadge" style="min-width:auto; padding:2px 6px;">Lv1</div>
         <div class="timer pixel" id="timerDisplay">55</div>
         <button type="button" id="muteBtn" class="mute-btn" aria-label="音效開關" aria-pressed="false">🔊</button>
+        <button type="button" id="exitBtn" class="mute-btn" aria-label="返回平台">↩️</button>
       </div>
     </div>
     <div class="stat-bar">
@@ -719,6 +746,7 @@
         <h1 class="pixel" id="endTitle">收網了</h1>
       </div>
       <div class="end-card-body" id="resultBoard"></div>
+      <div class="ack-notice" id="platformAckNotice" style="display:none;"></div>
     </div>
     <div class="end-btn-row">
       <button class="btn pixel" id="restartBtn">再玩一次</button>
@@ -747,6 +775,54 @@
 <script>
 (function(){
   "use strict";
+
+  /* ============ 平台通訊（對應「任務頁面通訊介面規格.md」） ============ */
+  const TASK_ID = 'fishball';
+  const BADGE_ID = 'fishball_guardian'; // 徽章「魚丸守護神」
+  let platformNickname = null;     // 收到 player_info 後才會有值
+  let platformBadges = [];         // 玩家目前已擁有的徽章清單
+  let myBestScore = null;          // 這個任務的個人最佳成績 { scoreLabel, scoreValue } | null
+
+  // 送訊息給平台（平台用 window.open 開這個頁面，開啟者是 window.opener）。
+  // targetOrigin 用 '*'：不預先假設平台網址，這則訊息也不含敏感資料，可接受。
+  function sendToPlatform(type, payload){
+    if(!window.opener) return;
+    window.opener.postMessage({
+      source: 'culture-task',
+      version: 1,
+      taskId: TASK_ID,
+      type: type,
+      payload: payload || {}
+    }, '*');
+  }
+
+  // 收平台送來的訊息：ready 之後回傳的 player_info；complete 之後回傳的 ack（可能帶拒絕原因）
+  window.addEventListener('message', function(event){
+    const msg = event.data;
+    if(!msg || msg.source !== 'culture-platform') return;
+
+    if(msg.type === 'player_info'){
+      platformNickname = (msg.payload && msg.payload.nickname) || null;
+      platformBadges = (msg.payload && msg.payload.badges) || [];
+      myBestScore = (msg.payload && msg.payload.myScore) || null;
+    }
+
+    if(msg.type === 'ack' && msg.forType === 'complete'){
+      const result = msg.result || {};
+      const noticeEl = document.getElementById('platformAckNotice');
+      if(noticeEl){
+        if(result.rejectedReason){
+          noticeEl.style.display = 'block';
+          noticeEl.textContent = `⚠️ 部分獎勵未發放成功：${result.rejectedReason}`;
+        } else {
+          noticeEl.style.display = 'none';
+        }
+      }
+    }
+  });
+
+  sendToPlatform('ready', {}); // 越早送出，player_info 越有機會在玩家按下 START 前就準備好
+
 
   // ---------- ICONS (canvas-drawn 3D-style icons, replacing plain emoji) ----------
   const ICONS = (function(){
@@ -2270,8 +2346,13 @@
     SFX.lose(); vibrate([50,40,50,40,100]);
     endEmojiImg.src = ICONS[iconKey];
     endTitle.textContent = title;
+    document.getElementById('platformAckNotice').style.display = 'none';
+
+    // 失敗一律不算全破，不會拿到徽章（跟原本的邏輯一致），但分數還是要照實上傳到排行榜
+    const reportHtml = reportResultToPlatform(totalScore, false);
 
     resultBoard.innerHTML =
+      (platformNickname ? `<div class="stat-row"><span class="stat-label">👤 玩家</span><span class="stat-value">${platformNickname}</span></div>` : '') +
       `<div class="stat-row"><span class="stat-label">失敗於</span><span class="stat-value">第${currentLevel}關・${LEVELS[currentLevel-1].name}</span></div>`+
       `<div class="stat-row"><span class="stat-label"><span class="coin-icon"></span>魚丸</span><span class="stat-value">${ballEaten} 顆</span></div>`+
       `<div class="stat-row"><span class="stat-label">🐟 漁獲</span><span class="stat-value">${fishEaten} 尾</span></div>`+
@@ -2279,11 +2360,57 @@
       `<div class="stat-row"><span class="stat-label"><img class="icon-inline" src="${ICONS.anemone}" alt="">復育珊瑚礁</span><span class="stat-value">${Math.floor(reefPct())}%</span></div>`+
       `<div class="final-score"><span class="final-label"><img class="icon-inline" src="${ICONS.trophy}" alt="">最終累計總分</span><span class="final-value">${totalScore}</span></div>`+
       `<div class="end-reason">${reason}</div>`+
+      reportHtml+
       buildKnowledgeBlock();
     restartBtn.style.display = 'none';
     backToInstructionsBtn.style.display = '';
     endOverlay.classList.remove('hidden');
     initLoreCarousel();
+  }
+
+  // 整輪結束（全破或失敗）時，把總分跟徽章上傳給平台，並回傳要注入結算畫面的提示 HTML。
+  // 徽章「魚丸守護神」的發放門檻：isFinalClear（10關全破）且累計總分 ≥ 1000，跟原本的本地判斷門檻一致。
+  function reportResultToPlatform(totalScore, isFinalClear){
+    const earnsBadge = isFinalClear && totalScore >= 1000;
+    const alreadyHasBadge = platformBadges.includes(BADGE_ID);
+    const hasPreviousRecord = myBestScore !== null;
+    const previousBestValue = hasPreviousRecord ? myBestScore.scoreValue : null;
+    // 沒有舊紀錄（第一次玩）不算「破紀錄」，不給這 1 金幣，只有存在舊紀錄且這次分數更高才算
+    const isNewBest = hasPreviousRecord && totalScore > previousBestValue;
+
+    let coins = 0;
+    if(earnsBadge && !alreadyHasBadge) coins += 20;
+    if(isNewBest) coins += 1;
+
+    sendToPlatform('complete', {
+      coins: coins,
+      badgeIds: earnsBadge ? [BADGE_ID] : []
+    });
+    sendToPlatform('score', { scoreLabel: `${totalScore} 分`, scoreValue: totalScore });
+
+    // 更新本地暫存狀態：避免同一次連線內重玩時重複請領「首次徽章」的 20 金幣，
+    // 也讓下一輪結算能正確比較「這次連線內打過的最佳紀錄」
+    if(earnsBadge && !alreadyHasBadge){
+      platformBadges = platformBadges.concat([BADGE_ID]);
+      showBadge();
+    }
+    if(!hasPreviousRecord || totalScore > previousBestValue){
+      myBestScore = { scoreLabel: `${totalScore} 分`, scoreValue: totalScore };
+    }
+
+    const notices = [];
+    if(earnsBadge && !alreadyHasBadge){
+      notices.push('🏅 恭喜首次獲得「魚丸守護神」徽章！（+20 金幣）');
+    } else if(earnsBadge){
+      notices.push('🏅 再次達成「魚丸守護神」等級（徽章已持有）');
+    }
+    if(isNewBest){
+      notices.push(`🎉 打破個人紀錄！原紀錄 ${previousBestValue} 分（+1 金幣）`);
+    } else if(hasPreviousRecord){
+      notices.push(`歷史最佳：${previousBestValue} 分`);
+    }
+
+    return notices.length ? `<div class="platform-notice">${notices.join('<br>')}</div>` : '';
   }
 
   // 徽章特效：畫面中央彈出，顯示5秒後淡出消失
@@ -2315,8 +2442,14 @@
     SFX.win(); vibrate([30,50,30,50,90]);
     endEmojiImg.src = ICONS.trophy;
     endTitle.textContent = isFinal ? '滿載而歸！十關全破！' : `第 ${currentLevel} 關過關！`;
+    document.getElementById('platformAckNotice').style.display = 'none';
+
+    // 只有全破（isFinal）才是整輪真正結束，才上傳分數/徽章給平台；
+    // 中途過關（還有下一關）只是玩家自己選擇要不要繼續，不算整輪結束，不上傳。
+    const reportHtml = isFinal ? reportResultToPlatform(totalScore, true) : '';
 
     resultBoard.innerHTML =
+      (isFinal && platformNickname ? `<div class="stat-row"><span class="stat-label">👤 玩家</span><span class="stat-value">${platformNickname}</span></div>` : '') +
       `<div class="stat-row"><span class="stat-label">本關分數</span><span class="stat-value">${score}</span></div>`+
       `<div class="stat-row"><span class="stat-label"><span class="coin-icon"></span>魚丸</span><span class="stat-value">${ballEaten} 顆</span></div>`+
       `<div class="stat-row"><span class="stat-label">🐟 漁獲</span><span class="stat-value">${fishEaten} 尾</span></div>`+
@@ -2324,13 +2457,12 @@
       `<div class="stat-row"><span class="stat-label"><img class="icon-inline" src="${ICONS.anemone}" alt="">復育珊瑚礁</span><span class="stat-value">${Math.floor(reefPct())}%</span></div>`+
       `<div class="final-score"><span class="final-label"><img class="icon-inline" src="${ICONS.trophy}" alt="">累計總分</span><span class="final-value">${totalScore}</span></div>`+
       (isFinal
-        ? (totalScore >= 1000 ? `<div class="end-reason">🏅 恭喜獲得「魚丸守護神」徽章！</div>` : '') + buildKnowledgeBlock()
+        ? reportHtml + buildKnowledgeBlock()
         : `<div class="end-reason">準備好前往第 ${currentLevel+1} 關：${LEVELS[currentLevel].name}</div>`);
     if(isFinal){
       restartBtn.style.display = 'none';
       backToInstructionsBtn.style.display = '';
       initLoreCarousel();
-      if(totalScore >= 1000) showBadge(); // 全通10關＋總分≥1000 → 「魚丸守護神」徽章
     } else {
       restartBtn.textContent = '下一關';
       restartBtn.style.display = '';
@@ -2902,13 +3034,14 @@
   });
   backToInstructionsBtn.addEventListener('click', ()=>{
     SFX.uiTap();
-    SFX.ambientStop();
-    stopIntervals();
-    running = false;
-    currentLevel = 1;
-    totalScore = 0;
-    endOverlay.classList.add('hidden');
-    startOverlay.classList.remove('hidden');
+    sendToPlatform('exit', {});
+    window.close();
+  });
+  document.getElementById('exitBtn').addEventListener('click', ()=>{
+    SFX.uiTap();
+    if(!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
+    sendToPlatform('exit', {});
+    window.close();
   });
 
   // init
