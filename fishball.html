@@ -1789,10 +1789,6 @@
   const FOOD_TARGET_COUNT = 6;
   const BALL_SPAWN_EVERY = 4;
 
-  // ---------- 開發者模式（測試用，加 ?dev=1 網址參數才會啟用，一般玩家看不到） ----------
-  const DEV_MODE = new URLSearchParams(location.search).has('dev');
-  let devInvincible = false;
-
   // ---------- 10 關卡地圖 ----------
   // walls：每關固定障礙物座標（0-index，x:0~14, y:0~20）。
   // 撞到牆不會失敗，只會自動轉向（見 step() 內的撞牆處理）。
@@ -2152,7 +2148,6 @@
     if(isWall(nx, ny)){
       const alt = pickDeflectDir(head, dir);
       if(!alt){
-        if(DEV_MODE && devInvincible) return; // 開發者無敵模式：卡死時原地不動，不觸發失敗
         return gameOver('魚丸串被地圖困住了，動彈不得！');
       }
       dir = alt;
@@ -2163,12 +2158,7 @@
 
     const minB = tideInset, maxBx = COLS-1-tideInset, maxBy = ROWS-1-tideInset;
     if(nx<minB || nx>maxBx || ny<minB || ny>maxBy){
-      if(DEV_MODE && devInvincible){
-        nx = Math.min(maxBx, Math.max(minB, nx));
-        ny = Math.min(maxBy, Math.max(minB, ny));
-      } else {
-        return gameOver('潮水淹過了漁港邊界！');
-      }
+      return gameOver('潮水淹過了漁港邊界！');
     }
     let ate = null;
     const fi = foods.findIndex(f=>f.x===nx && f.y===ny);
@@ -2182,7 +2172,7 @@
     if(gProbe <= 0){ willPop++; }
     const bodyToCheck = willPop > 0 ? snake.slice(0, Math.max(0, snake.length - willPop)) : snake;
     if(bodyToCheck.some(s=>s.x===nx && s.y===ny)){
-      if(!(DEV_MODE && devInvincible)) return gameOver('魚丸串撞到自己了！');
+      return gameOver('魚丸串撞到自己了！');
     }
 
     snake.unshift({x:nx,y:ny});
@@ -2246,7 +2236,7 @@
 
       refillFoods();
       if(sustain<=0){
-        if(!(DEV_MODE && devInvincible)) return gameOver('過度捕撈，漁港生態崩潰！');
+        return gameOver('過度捕撈，漁港生態崩潰！');
       }
     } else {
       snake.pop();
@@ -2920,59 +2910,6 @@
     endOverlay.classList.add('hidden');
     startOverlay.classList.remove('hidden');
   });
-
-  function devJumpToLevel(n){
-    stopIntervals();
-    currentLevel = n;
-    startGame();
-  }
-
-  if(DEV_MODE){
-    const devPanel = document.createElement('div');
-    devPanel.style.cssText = 'position:fixed;left:6px;top:6px;z-index:99999;background:rgba(0,0,0,0.78);color:#fff;padding:6px;border-radius:8px;font:11px/1.4 monospace;display:flex;flex-wrap:wrap;gap:4px;max-width:150px;box-shadow:0 2px 8px rgba(0,0,0,0.5);';
-
-    const title = document.createElement('div');
-    title.textContent = '🛠 開發者模式';
-    title.style.cssText = 'width:100%;font-weight:bold;margin-bottom:2px;';
-    devPanel.appendChild(title);
-
-    for(let n=1; n<=LEVELS.length; n++){
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = 'Lv' + n;
-      b.style.cssText = 'font-size:10px;padding:2px 5px;cursor:pointer;';
-      b.addEventListener('click', () => devJumpToLevel(n));
-      devPanel.appendChild(b);
-    }
-
-    const skipBtn = document.createElement('button');
-    skipBtn.type = 'button';
-    skipBtn.textContent = '跳下一關（本關立即過關）';
-    skipBtn.style.cssText = 'width:100%;font-size:10px;padding:4px;cursor:pointer;margin-top:4px;';
-    skipBtn.addEventListener('click', () => { if(running) levelClear(); });
-    devPanel.appendChild(skipBtn);
-
-    const invBtn = document.createElement('button');
-    invBtn.type = 'button';
-    invBtn.textContent = '無敵模式：關';
-    invBtn.style.cssText = 'width:100%;font-size:10px;padding:4px;cursor:pointer;margin-top:4px;';
-    invBtn.addEventListener('click', () => {
-      devInvincible = !devInvincible;
-      invBtn.textContent = '無敵模式：' + (devInvincible ? '開' : '關');
-      invBtn.style.background = devInvincible ? '#2ecc71' : '';
-    });
-    devPanel.appendChild(invBtn);
-
-    const badgeBtn = document.createElement('button');
-    badgeBtn.type = 'button';
-    badgeBtn.textContent = '測試徽章特效';
-    badgeBtn.style.cssText = 'width:100%;font-size:10px;padding:4px;cursor:pointer;margin-top:4px;';
-    badgeBtn.addEventListener('click', () => showBadge());
-    devPanel.appendChild(badgeBtn);
-
-    document.body.appendChild(devPanel);
-    console.log('[dev] 開發者模式已啟用：可直接跳關、跳過本關、開無敵模式。');
-  }
 
   // init
   sizeCanvas();
