@@ -375,7 +375,7 @@
 </header>
 
 <div class="map-wrap">
-  <img id="map-img" src="mlcmap.jpg" alt="苗栗海岸手繪地圖" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'map-missing',textContent:'找不到 mlcmap.jpg，請確認地圖圖片和這個 HTML 檔案放在同一個資料夾'}))">
+  <img id="map-img" src="image/mlcmap.jpg" alt="苗栗海岸手繪地圖" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'map-missing',textContent:'找不到 mlcmap.jpg，請確認地圖圖片和這個 HTML 檔案放在同一個資料夾'}))">
   <div id="pin-layer"></div>
   <div class="map-caption">地圖示意．非精確定位</div>
 </div>
@@ -402,9 +402,9 @@
   <div class="sheet-card">
     <button class="sheet-close" data-close="celebrate-sheet">✕</button>
     <div class="stamp-big-row">
-      <img src="lfhb.jpg" alt="竹南龍鳳漁港通行證">
-      <img src="wphb.jpg" alt="後龍外埔漁港通行證">
-      <img src="yghb.jpg" alt="苑港觀光漁港通行證">
+      <img src="image/lfhb.jpg" alt="竹南龍鳳漁港通行證">
+      <img src="image/wphb.jpg" alt="後龍外埔漁港通行證">
+      <img src="image/yghb.jpg" alt="苑港觀光漁港通行證">
     </div>
     <h3 style="text-align:center;">三港通行證集滿了！</h3>
     <p style="text-align:center;">你已走訪竹南龍鳳、後龍外埔、苑港三座漁港，收藏完整的手繪通行證。</p>
@@ -439,9 +439,9 @@
 
 <script>
 var HARBORS = [
-  { id:'longfeng', short:'龍鳳', name:'竹南龍鳳漁港', lat:24.699778, lng:120.85831, stamp:'lfhb.jpg' },
-  { id:'waipu',    short:'外埔', name:'後龍外埔漁港', lat:24.65002,  lng:120.77310, stamp:'wphb.jpg' },
-  { id:'yuangang', short:'苑港', name:'苑港觀光漁港', lat:24.4591,   lng:120.64726, stamp:'yghb.jpg' }
+  { id:'longfeng', short:'龍鳳', name:'竹南龍鳳漁港', lat:24.699778, lng:120.85831, stamp:'image/lfhb.jpg' },
+  { id:'waipu',    short:'外埔', name:'後龍外埔漁港', lat:24.65002,  lng:120.77310, stamp:'image/wphb.jpg' },
+  { id:'yuangang', short:'苑港', name:'苑港觀光漁港', lat:24.4591,   lng:120.64726, stamp:'image/yghb.jpg' }
 ];
 
 // 手繪地圖上三個漁港圖釘的位置（相對圖片寬高的百分比），由標定工具產生
