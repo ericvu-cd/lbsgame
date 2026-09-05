@@ -17,6 +17,15 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Noto Sans TC", "Helvetica Neue", Arial, sans-serif; }
         html, body { height: 100%; }
+        /* 統一按鍵按壓回饋：去除系統長按選取/高亮，並保證 iOS Safari 上 :active 能確實觸發
+           （iOS 需要頁面上存在 touchstart 監聽器，:active 偽類才會生效，見下方 JS） */
+        button {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        button:active { filter: brightness(0.9); }
         .portrait-warning{
             display:none;position:fixed;inset:0;z-index:9999;
             background:rgba(20,20,20,.94);color:#fff;
@@ -163,12 +172,12 @@
         #arena-sold-overlay.show.other { color: #B9C9C4; }
         #arena-sold-overlay.show.unsold { color: #7A8F89; }
 
-        #history-fab { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; flex-shrink: 0; }
-        #history-fab:active { opacity: 0.85; }
-        #exit-fab { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; flex-shrink: 0; }
-        #exit-fab:active { opacity: 0.85; }
-        #sound-toggle { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 10px; font-size: 0.85rem; font-weight: bold; cursor: pointer; flex-shrink: 0; line-height: 1.4; }
-        #sound-toggle:active { opacity: 0.85; }
+        #history-fab { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; flex-shrink: 0; transition: transform 0.08s ease, background 0.08s ease; }
+        #history-fab:active { transform: scale(0.90); background: rgba(255,255,255,0.32); }
+        #exit-fab { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; flex-shrink: 0; transition: transform 0.08s ease, background 0.08s ease; }
+        #exit-fab:active { transform: scale(0.90); background: rgba(255,255,255,0.32); }
+        #sound-toggle { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 10px; font-size: 0.85rem; font-weight: bold; cursor: pointer; flex-shrink: 0; line-height: 1.4; transition: transform 0.08s ease, background 0.08s ease; }
+        #sound-toggle:active { transform: scale(0.90); background: rgba(255,255,255,0.32); }
         #sound-toggle.muted { opacity: 0.55; }
 
         #drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 39; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
@@ -177,7 +186,8 @@
         #history-drawer.open { transform: translateY(0); }
         #drawer-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #EDE7DA; flex-shrink: 0; }
         #drawer-header h2 { margin: 0; border: none; padding: 0; }
-        #drawer-close { background: #EDE7DA; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1rem; cursor: pointer; color: #3F4E4B; }
+        #drawer-close { background: #EDE7DA; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1rem; cursor: pointer; color: #3F4E4B; transition: transform 0.08s ease, background 0.08s ease; }
+        #drawer-close:active { transform: scale(0.88); background: #DCD3BE; }
         #drawer-body { overflow-y: auto; padding: 12px 16px 24px; }
 
         /* ── 開局說明頁：改用整頁看板圖 fmbg1，按鈕疊在圖片「遊戲開始」原始位置上（單頁塞滿手機直式畫面，不捲動）── */
@@ -186,8 +196,8 @@
         #intro-card img { display: block; width: 100%; height: auto; }
 
         /* 透明按鈕：疊在底圖「開始拍賣」按鈕的實際座標上（以圖片寬高比例定位，圖片比例改變時仍能對齊） */
-        #intro-start-btn { position: absolute; left: 22.5%; top: 88.5%; width: 52.6%; height: 8.3%; margin: 0; padding: 0; background: rgba(255,255,255,0); border: none; cursor: pointer; -webkit-tap-highlight-color: rgba(255,255,255,0.25); }
-        #intro-start-btn:active { background: rgba(255,255,255,0.18); }
+        #intro-start-btn { position: absolute; left: 22.5%; top: 88.5%; width: 52.6%; height: 8.3%; margin: 0; padding: 0; background: rgba(255,255,255,0); border: none; cursor: pointer; -webkit-tap-highlight-color: rgba(255,255,255,0.25); transition: transform 0.08s ease, background 0.08s ease; }
+        #intro-start-btn:active { background: rgba(255,255,255,0.18); transform: scale(0.96); }
 
         /* ── 整局最終結算：改用整頁滿版顯示，內容過長可捲動，不受拍賣區小面板限制 ── */
         #final-result-screen { position: fixed; inset: 0; z-index: 90; display: none; align-items: center; justify-content: center; padding: 3vh 4vw; background: radial-gradient(ellipse at 50% 15%, #123B44 0%, #06232B 65%, #02141A 100%); }
@@ -500,11 +510,39 @@
                 src.stop(t0 + dur + 0.02);
             }
 
+            // 疊和弦：讓單音變成有厚度的和聲，用於強化過關/回合結算等重要時刻
+            function chord(freqs, start, dur, type, peakGain) {
+                freqs.forEach(f => tone(f, start, dur, type, peakGain));
+            }
+
+            // 敲擊感：低頻短促 thump + 濾波噪音，模擬拍賣槌敲在木板上的重量感與木質噪點
+            function thump(start, peakGain, filterFreq) {
+                tone(150, start, 0.055, 'square', peakGain * 0.9, 70);
+                noiseBurst(start, 0.09, peakGain, filterFreq || 500);
+            }
+
+            let aiVoiceCache = {};
+            function aiVoicePitch(aiId) {
+                if (aiVoiceCache[aiId] != null) return aiVoiceCache[aiId];
+                let h = 0;
+                for (let i = 0; i < String(aiId).length; i++) h = (h * 31 + String(aiId).charCodeAt(i)) >>> 0;
+                const steps = [0, 2, 4, 5, 7]; // 五聲音階內的音程差，避免出現不和諧音
+                const semitone = steps[h % steps.length];
+                const freq = 261.63 * Math.pow(2, (semitone - 2) / 12) * 1.15;
+                aiVoiceCache[aiId] = freq;
+                return freq;
+            }
+
             return {
                 unlock() { getCtx(); },
                 click() { tone(720, 0, 0.06, 'triangle', 0.10); },
                 bidPlayer() { tone(523.25, 0, 0.09, 'triangle', 0.20); tone(659.25, 0.07, 0.14, 'triangle', 0.22); },
-                bidAI() { tone(329.63, 0, 0.09, 'sine', 0.13); },
+                // AI出價：依每個AI的id給固定音高（五聲音階內），讓玩家光聽聲音也能分辨是哪一位在加價
+                bidAI(aiId) {
+                    const f = aiId != null ? aiVoicePitch(aiId) : 329.63;
+                    tone(f, 0, 0.1, 'sine', 0.14);
+                    tone(f * 0.5, 0, 0.09, 'sine', 0.05);
+                },
                 tick() { tone(880, 0, 0.07, 'square', 0.14); },
                 // 最後3秒倒數計秒音效：3→2→1音高遞增、音量遞增，最後一聲加疊一個高音短響強調急迫感
                 countdownBeep(sec) {
@@ -515,11 +553,35 @@
                     if (sec <= 1) tone(freq * 1.5, 0.06, 0.09, 'square', gain * 0.9);
                 },
                 boxStart() { tone(440, 0, 0.1, 'sine', 0.14); tone(659.25, 0.1, 0.16, 'sine', 0.16); },
-                win() { [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => tone(f, i * 0.11, 0.22, 'triangle', 0.22)); },
-                lose() { tone(392.00, 0, 0.12, 'sawtooth', 0.13); tone(293.66, 0.1, 0.22, 'sawtooth', 0.13); },
-                unsold() { tone(300, 0, 0.22, 'sine', 0.12, 160); },
+                // 拍賣槌定案：先落槌敲擊聲，再接對應的輸贏音效——呼應畫面上的🔨 SOLD印章
+                gavelBang() { thump(0, 0.26, 450); thump(0.1, 0.16, 380); },
+                // 得標：槌聲之後的勝利和弦更豐厚（三度+五度疊加），再補一段清脆的收銀機「入帳」聲
+                win() {
+                    this.gavelBang();
+                    const t0 = 0.16;
+                    [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+                        chord([f, f * 1.5], t0 + i * 0.11, 0.22, 'triangle', i === 3 ? 0.24 : 0.16);
+                    });
+                    const cashT = t0 + 0.46;
+                    tone(1567.98, cashT, 0.05, 'square', 0.12);
+                    [1318.5, 1760, 2093].forEach((f, i) => tone(f, cashT + 0.05 + i * 0.06, 0.09, 'triangle', 0.13));
+                },
+                // 別人得標：槌聲之後接一段下沉的失落音，比原本更明顯區分「這箱沒了」的情緒
+                lose() {
+                    this.gavelBang();
+                    const t0 = 0.16;
+                    tone(392.00, t0, 0.14, 'sawtooth', 0.14);
+                    tone(293.66, t0 + 0.11, 0.16, 'sawtooth', 0.13);
+                    tone(220.00, t0 + 0.24, 0.24, 'sawtooth', 0.11, 160);
+                },
+                // 流標：不落槌（沒人得標），改用一段更明顯的空虛下滑音
+                unsold() { tone(300, 0, 0.22, 'sine', 0.12, 160); tone(220, 0.1, 0.28, 'sine', 0.08, 120); },
                 giveUp() { noiseBurst(0, 0.16, 0.12, 900); tone(220, 0, 0.14, 'sawtooth', 0.09); },
-                roundEnd() { [659.25, 523.25, 659.25, 880.00].forEach((f, i) => tone(f, i * 0.13, 0.2, 'triangle', 0.2)); },
+                // 現金不足：短促的低頻拒絕聲，取代原本按下加價鍵卻完全無聲響的空白感
+                denied() { tone(160, 0, 0.1, 'sawtooth', 0.14, 90); tone(140, 0.12, 0.14, 'sawtooth', 0.12, 80); },
+                roundEnd() {
+                    [659.25, 523.25, 659.25, 880.00].forEach((f, i) => chord([f, f * 0.5], i * 0.13, 0.2, 'triangle', i === 3 ? 0.22 : 0.16));
+                },
                 toggleMuted() {
                     muted = !muted;
                     try { localStorage.setItem('fishmarket-muted', muted ? '1' : '0'); } catch (e) { /* 忽略 */ }
@@ -545,11 +607,19 @@
         sendToPlatform('ready', {}); // 越早送出，player_info 越有機會在玩家按下「開始拍賣」前就準備好
 
         // 通用按鈕點擊音效（拍賣出價／放棄按鈕另有專屬音效，此處排除以免重複）
+        // 同時加上輕微震動回饋
+        // iOS Safari 需要頁面上存在至少一個 touchstart 監聽器，CSS 的 :active 偽類才會確實觸發（否則按下去畫面完全沒反應）
+        function hapticTap(pattern) {
+            try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { /* 裝置不支援時忽略 */ }
+        }
+        document.body.addEventListener('touchstart', function () {}, { passive: true });
+
         document.addEventListener('click', (e) => {
             const btn = e.target.closest('button');
             if (!btn) return;
             if (btn.id === 'arena-btn-5' || btn.id === 'arena-btn-10' || btn.id === 'arena-btn-fast' || btn.id === 'sound-toggle') return;
             SFX.click();
+            hapticTap(8);
         }, true);
 
         const gameState = { round: 1, seasonIndex: 0, budget: 0, todayBoxes: [], playerInventory: [], history: [], lastTopUp: 0, aiBudgets: {} };
@@ -1169,7 +1239,7 @@
                 let bidder = willingAIs[Math.floor(Math.random() * willingAIs.length)];
                 let bidAmount = bidder.type === 'wholesale' ? auctionState.bidStep : (Math.random() > 0.5 ? auctionState.bidStep : auctionState.bidStep * 2);
 
-                SFX.bidAI();
+                SFX.bidAI(bidder.id);
                 auctionState.currentPrice += bidAmount;
                 auctionState.highestBidderId = bidder.id;
                 auctionState.highestBidderName = bidder.name;
@@ -1202,6 +1272,7 @@
             if (auctionState.highestBidderId === 'player') return; // 領先中不能放棄
 
             SFX.giveUp();
+            hapticTap([12, 30, 12]);
             clearInterval(auctionState.mainTimer);
             clearInterval(auctionState.aiTimer);
             auctionState.giveUp = true;
@@ -1224,11 +1295,14 @@
             if (auctionState.phase === 'observe') return;
             if (auctionState.highestBidderId === 'player') return; // 已經領先，不需要跟自己加價
             if (gameState.budget < (auctionState.currentPrice + amount)) {
+                SFX.denied();
+                hapticTap([10, 20, 10]);
                 alert('現金不足！無法加價。');
                 return;
             }
 
             SFX.bidPlayer();
+            hapticTap(amount >= auctionState.bidStep * 2 ? 20 : 12); // 出價金額越大，震動越明顯，讓「賭注大小」有身體感
             auctionState.currentPrice += amount;
             auctionState.highestBidderId = 'player';
             auctionState.highestBidderName = '⭐ 你 (領先)';
@@ -1255,6 +1329,7 @@
                 box.soldPrice = auctionState.currentPrice;
                 overlayCls = 'win'; overlayTitle = '🔨 SOLD！你得標'; overlaySub = `${auctionState.currentPrice} 元`;
                 SFX.win();
+                hapticTap([15, 40, 15, 40, 60]);
             } else if (auctionState.highestBidderId) {
                 box.status = 'sold-other';
                 box.soldPrice = auctionState.currentPrice;
