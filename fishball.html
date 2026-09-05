@@ -1994,6 +1994,7 @@
   let comboKey, comboCount;
   let tideWarning = false;
   let lastEatAt = -9999; // 上次吃到東西的時間戳，用來畫頭部短暫張嘴的動畫
+  let visDir = {x:1, y:0}; // 頭部視覺朝向：會極短緩動追上 dir，避免轉彎時眼睛/嘴巴瞬間切角，減少機械感
 
   // ---------- 關卡進度：每次開頁都從 Lv1 開始，不儲存進度 ----------
   let currentLevel = 1;      // 1~10
@@ -2088,6 +2089,7 @@
     for(let i=0;i<4;i++) snake.push({x:cx-i, y:cy});
     dir = {x:1,y:0};
     nextDir = {x:1,y:0};
+    visDir = {x:1,y:0};
     foods = [];
     tideInset = 0;
     tideAnimFrom = 0; tideAnimTo = 0; tideAnimStart = 0;
@@ -2821,12 +2823,17 @@
         ctx.ellipse(cx, cy - r*0.4, r*0.62, r*0.32, 0, 0, Math.PI*2);
         ctx.fill();
 
+        // 頭部視覺朝向：用經過極短緩動的 visDir（而非瞬間切換的 dir），
+        // 轉彎時眼睛與嘴巴會有一個極短的擺動過程，減少機械感
+        const vlen = Math.hypot(visDir.x, visDir.y) || 1;
+        const fdx = visDir.x/vlen, fdy = visDir.y/vlen;
+
         // 剛吃到東西時，嘴巴朝前進方向短暫張開再合起來（快速放大→回縮的一個 hump）
         const sinceEat = performance.now() - lastEatAt;
         const MOUTH_DUR = 240;
         if(sinceEat >= 0 && sinceEat < MOUTH_DUR){
           const mouthT = Math.sin(Math.min(1, sinceEat/MOUTH_DUR) * Math.PI); // 0→1→0
-          const faceAngle = Math.atan2(dir.y, dir.x);
+          const faceAngle = Math.atan2(fdy, fdx);
           const halfAngle = 0.15 + mouthT*0.55;
           ctx.fillStyle = '#101010';
           ctx.beginPath();
@@ -2839,7 +2846,7 @@
         // 像素方眼
         ctx.fillStyle = '#101010';
         const eyeSize = Math.max(2, Math.floor(size*0.16));
-        const ex = dir.x*size*0.22, ey = dir.y*size*0.22;
+        const ex = fdx*size*0.22, ey = fdy*size*0.22;
         ctx.fillRect(cx-eyeSize/2+ex-ey*0.6, cy-eyeSize/2+ey+ex*0.6, eyeSize, eyeSize);
         ctx.fillRect(cx-eyeSize/2+ex+ey*0.6, cy-eyeSize/2+ey-ex*0.6, eyeSize, eyeSize);
       } else {
@@ -2905,6 +2912,15 @@
     ctx.globalAlpha = 1;
   }
 
+  // 頭部視覺朝向緩動：每個繪製影格都讓 visDir 往 dir 靠近一點，
+  // tau 越小追上得越快（「極短」緩動，約 1~2 影格內完成，不影響實際操控判定）
+  function updateVisDir(dtMs){
+    const tau = 42; // ms
+    const k = 1 - Math.exp(-Math.max(0, dtMs) / tau);
+    visDir.x += (dir.x - visDir.x) * k;
+    visDir.y += (dir.y - visDir.y) * k;
+  }
+
   function loop(ts){
     if(!running) return;
     if(!lastTs) lastTs = ts;
@@ -2920,6 +2936,7 @@
       tickAcc -= tickMs;
       if(running) step();
     }
+    updateVisDir(dt);
     draw();
     if(running) rafId = requestAnimationFrame(loop);
   }

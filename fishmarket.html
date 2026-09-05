@@ -111,12 +111,12 @@
         #arena-ring { width: 100%; height: 100%; transform: rotate(-90deg); }
         .ring-track { fill: none; stroke: rgba(1,47,114,0.16); stroke-width: 8; }
         .ring-progress { fill: none; stroke: #4FD1A8; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 326.7; stroke-dashoffset: 0; transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease; }
-        .ring-progress.urgent { stroke: #FF5844; animation: ringUrgent 0.6s ease-in-out infinite; }
+        .ring-progress.urgent { stroke: #FF5844; animation: ringUrgent var(--blink-dur, 0.6s) ease-in-out infinite; }
         @keyframes ringUrgent { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
         @keyframes timerUrgent { 0%,100% { color: #E3000B; text-shadow: 0 0 12px rgba(227,0,11,0.8); transform: scale(1); } 50% { color: #ff6b6b; text-shadow: 0 0 20px rgba(255,107,107,0.8); transform: scale(1.1); } }
         .arena-timer-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #arena-time { font-size: clamp(0.8rem, 2.4vh, 1.05rem); font-weight: bold; font-family: monospace; transition: color 0.2s ease, transform 0.2s ease; }
-        #arena-time.urgent { animation: timerUrgent 0.5s ease-in-out infinite; }
+        #arena-time.urgent { animation: timerUrgent var(--blink-dur, 0.5s) ease-in-out infinite; }
 
         .arena-fish-info { flex: 1; min-height: 0; width: 100%; text-align: center; background: rgba(255,255,255,0.6); border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; overflow: hidden; }
         .arena-fish-icon-big { font-size: clamp(1.8rem, 6vh, 2.6rem); line-height: 1; }
@@ -506,6 +506,14 @@
                 bidPlayer() { tone(523.25, 0, 0.09, 'triangle', 0.20); tone(659.25, 0.07, 0.14, 'triangle', 0.22); },
                 bidAI() { tone(329.63, 0, 0.09, 'sine', 0.13); },
                 tick() { tone(880, 0, 0.07, 'square', 0.14); },
+                // 最後3秒倒數計秒音效：3→2→1音高遞增、音量遞增，最後一聲加疊一個高音短響強調急迫感
+                countdownBeep(sec) {
+                    const step = Math.max(0, 3 - Math.max(1, Math.min(3, sec))); // 3→0, 2→1, 1→2
+                    const freq = 720 + step * 170;
+                    const gain = 0.16 + step * 0.05;
+                    tone(freq, 0, 0.1, 'square', gain);
+                    if (sec <= 1) tone(freq * 1.5, 0.06, 0.09, 'square', gain * 0.9);
+                },
                 boxStart() { tone(440, 0, 0.1, 'sine', 0.14); tone(659.25, 0.1, 0.16, 'sine', 0.16); },
                 win() { [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => tone(f, i * 0.11, 0.22, 'triangle', 0.22)); },
                 lose() { tone(392.00, 0, 0.12, 'sawtooth', 0.13); tone(293.66, 0.1, 0.22, 'sawtooth', 0.13); },
@@ -1040,14 +1048,30 @@
 
         const RING_CIRCUMFERENCE = 2 * Math.PI * 52;
 
+        // 緊張感提早一點點出現（比原本的 3 秒早），且倒數環／文字的閃爍頻率
+        // 不是等比變化，而是隨剩餘時間非線性加速——快到底時頻率陡增，更貼近真實拍賣最後幾秒的心跳感
+        const URGENT_WARN_START = 4.5; // 秒：提早於原本的 3 秒開始出現警示
+        function getUrgentBlinkDuration(timeLeft) {
+            const t = Math.max(0, Math.min(URGENT_WARN_START, timeLeft));
+            const ratio = t / URGENT_WARN_START; // 1 = 剛進入警示區、0 = 時間到
+            const minDur = 0.16, maxDur = 0.85;
+            // 指數次方讓曲線前段變化平緩、接近 0 時陡然加速
+            return minDur + (maxDur - minDur) * Math.pow(ratio, 2.4);
+        }
+        function applyUrgentBlink(el, isUrgent, timeLeft) {
+            el.classList.toggle('urgent', isUrgent);
+            if (isUrgent) {
+                el.style.setProperty('--blink-dur', getUrgentBlinkDuration(timeLeft).toFixed(2) + 's');
+            }
+        }
+
         function updateRing() {
             const total = auctionState.phase === 'observe' ? OBSERVE_SECONDS : BIDDING_SECONDS;
             const ratio = Math.max(0, Math.min(1, auctionState.timeLeft / total));
             const ring = document.getElementById('ring-progress');
             ring.style.strokeDasharray = RING_CIRCUMFERENCE;
             ring.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - ratio);
-            ring.classList.toggle('urgent', auctionState.phase === 'bidding' && auctionState.timeLeft <= 3);
-            if (auctionState.phase !== 'bidding' && auctionState.timeLeft > 3) ring.classList.remove('urgent');
+            applyUrgentBlink(ring, auctionState.phase === 'bidding' && auctionState.timeLeft <= URGENT_WARN_START, auctionState.timeLeft);
             if (ratio > 0.5) ring.style.stroke = '#4FD1A8';
             else if (ratio > 0.2) ring.style.stroke = '#ffb703';
             else ring.style.stroke = '#FF5844';
@@ -1113,15 +1137,16 @@
                 const timerEl = document.getElementById('arena-time');
                 timerEl.innerText = Math.max(0, auctionState.timeLeft).toFixed(1);
                 updateRing();
+                const isUrgentPhase = auctionState.phase === 'bidding' && auctionState.timeLeft <= URGENT_WARN_START;
+                applyUrgentBlink(timerEl, isUrgentPhase, auctionState.timeLeft);
+
+                // 最後 3 秒的倒數計秒音效：音高與強度隨秒數遞減而升高，愈接近截標愈逼人
                 if (auctionState.phase === 'bidding' && auctionState.timeLeft <= 3) {
-                    timerEl.classList.add('urgent');
                     const sec = Math.ceil(auctionState.timeLeft);
                     if (sec !== auctionState._lastTickSec) {
                         auctionState._lastTickSec = sec;
-                        SFX.tick();
+                        SFX.countdownBeep(sec);
                     }
-                } else {
-                    timerEl.classList.remove('urgent');
                 }
             }
         }
