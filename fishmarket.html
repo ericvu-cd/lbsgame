@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>永續魚市拍賣：苗栗龍鳳漁港</title>
-	<link rel="icon" type="image/png" href="image/fmicon.png">
+	<link rel="icon" type="image/png" href="fmicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -113,8 +113,10 @@
         .ring-progress { fill: none; stroke: #4FD1A8; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 326.7; stroke-dashoffset: 0; transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease; }
         .ring-progress.urgent { stroke: #FF5844; animation: ringUrgent 0.6s ease-in-out infinite; }
         @keyframes ringUrgent { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes timerUrgent { 0%,100% { color: #E3000B; text-shadow: 0 0 12px rgba(227,0,11,0.8); transform: scale(1); } 50% { color: #ff6b6b; text-shadow: 0 0 20px rgba(255,107,107,0.8); transform: scale(1.1); } }
         .arena-timer-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #arena-time { font-size: clamp(0.8rem, 2.4vh, 1.05rem); font-weight: bold; font-family: monospace; }
+        #arena-time { font-size: clamp(0.8rem, 2.4vh, 1.05rem); font-weight: bold; font-family: monospace; transition: color 0.2s ease, transform 0.2s ease; }
+        #arena-time.urgent { animation: timerUrgent 0.5s ease-in-out infinite; }
 
         .arena-fish-info { flex: 1; min-height: 0; width: 100%; text-align: center; background: rgba(255,255,255,0.6); border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; overflow: hidden; }
         .arena-fish-icon-big { font-size: clamp(1.8rem, 6vh, 2.6rem); line-height: 1; }
@@ -153,8 +155,11 @@
         #arena-sold-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(1.6rem, 6vh, 2.6rem); font-weight: 900; letter-spacing: 2px; background: rgba(1,47,114,0); color: transparent; pointer-events: none; transition: background 0.25s ease, color 0.25s ease; }
         #arena-sold-overlay .stamp { display: inline-block; padding: 10px 26px; border: 3px solid currentColor; outline: 1.5px solid currentColor; outline-offset: 5px; border-radius: 8px; transform: rotate(-6deg); }
         #arena-sold-overlay .sold-sub { font-size: 0.5em; font-weight: 700; margin-top: 6px; letter-spacing: 0; }
-        #arena-sold-overlay.show { background: rgba(1,47,114,0.72); }
+        @keyframes soldFlash { 0%,100% { background: rgba(1,47,114,0); } 20% { background: rgba(242,193,78,0.35); } 40% { background: rgba(1,47,114,0.72); } }
+        @keyframes stampBounce { 0%,100% { transform: rotate(-6deg) scale(1); } 50% { transform: rotate(-6deg) scale(1.15); } }
+        #arena-sold-overlay.show { background: rgba(1,47,114,0.72); animation: soldFlash 0.8s ease-out; }
         #arena-sold-overlay.show.win { color: #F2C14E; }
+        #arena-sold-overlay.show.win .stamp { animation: stampBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
         #arena-sold-overlay.show.other { color: #B9C9C4; }
         #arena-sold-overlay.show.unsold { color: #7A8F89; }
 
@@ -235,7 +240,7 @@
 
     <div id="intro-screen">
         <div id="intro-card">
-            <img src="image/fmbg.png" alt="永續魚市拍賣場：漁港開賣！永續海洋決勝負">
+            <img src="fmbg.png" alt="永續魚市拍賣場：漁港開賣！永續海洋決勝負">
             <button id="intro-start-btn" onclick="startGame()" aria-label="開始拍賣"></button>
         </div>
     </div>
@@ -1105,14 +1110,18 @@
                     endCurrentBox();
                 }
             } else {
-                document.getElementById('arena-time').innerText = Math.max(0, auctionState.timeLeft).toFixed(1);
+                const timerEl = document.getElementById('arena-time');
+                timerEl.innerText = Math.max(0, auctionState.timeLeft).toFixed(1);
                 updateRing();
                 if (auctionState.phase === 'bidding' && auctionState.timeLeft <= 3) {
+                    timerEl.classList.add('urgent');
                     const sec = Math.ceil(auctionState.timeLeft);
                     if (sec !== auctionState._lastTickSec) {
                         auctionState._lastTickSec = sec;
                         SFX.tick();
                     }
+                } else {
+                    timerEl.classList.remove('urgent');
                 }
             }
         }

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>苑港｜魚丸追追樂</title>
-<link rel="icon" type="image/png" href="image/fbicon.png">
+<link rel="icon" type="image/png" href="fbicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -726,7 +726,7 @@
   <div class="overlay" id="startOverlay">
    <button type="button" id="startMuteBtn" class="start-mute-btn" aria-label="音效開關" aria-pressed="false">🔊</button>
    <div class="start-bg-wrap" id="startBgWrap">
-    <img src="image/fbbg.png" alt="魚丸追追樂 勇闖海洋冒險" class="start-bg-img" id="startBgImg" draggable="false">
+    <img src="fbbg.png" alt="魚丸追追樂 勇闖海洋冒險" class="start-bg-img" id="startBgImg" draggable="false">
     <button class="start-bg-btn" id="startBtn" aria-label="START"></button>
    </div>
   </div>
@@ -766,7 +766,7 @@
     <span class="badge-sparkle" style="top:42%; right:4%; animation-delay:0.75s;">✨</span>
     <div class="badge-card">
       <div class="badge-unlock-tag pixel">🏅 達成成就！</div>
-      <img src="image/fbbd1.png" alt="魚丸守護神徽章" class="badge-img">
+      <img src="fbbd1.png" alt="魚丸守護神徽章" class="badge-img">
     </div>
   </div>
 
@@ -1990,7 +1990,7 @@
 
   // ---------- STATE ----------
   let snake, dir, nextDir, foods, tideInset, tickMs, tickAcc, lastTs;
-  let score, sustain, fishEaten, ballEaten, fishSinceBall, running, timeLeft, timerId, rafId, floatMsgs;
+  let score, sustain, fishEaten, ballEaten, fishSinceBall, running, timeLeft, timerId, rafId, floatMsgs, particles;
   let comboKey, comboCount;
   let tideWarning = false;
   let lastEatAt = -9999; // 上次吃到東西的時間戳，用來畫頭部短暫張嘴的動畫
@@ -2102,6 +2102,7 @@
     timeLeft = LEVEL_SECONDS;
     running = false;
     floatMsgs = [];
+    particles = [];
     comboKey = null;
     comboCount = 0;
     tideWarning = false;
@@ -2192,6 +2193,24 @@
     floatMsgs.push({x,y,text,color,variant:variant||'score',born:performance.now()});
   }
 
+  // 粒子效應系統：生成爆炸粒子
+  function spawnParticles(cx, cy, count, color, speedMult=1){
+    for(let i=0; i<count; i++){
+      const angle = (i / count) * Math.PI * 2;
+      const speed = (50 + Math.random()*80) * speedMult;
+      particles.push({
+        x: cx*CELL + CELL/2,
+        y: cy*CELL + CELL/2,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 20,
+        life: 0.6 + Math.random()*0.4,
+        maxLife: 0.6 + Math.random()*0.4,
+        color: color,
+        size: 3 + Math.random()*2
+      });
+    }
+  }
+
   // ---------- 撞牆自動轉向：不會失敗，只會改變方向 ----------
   // 判斷某格對「轉向後的下一步」而言是不是走不通（牆／潮水邊界／自己身體）
   function isBlockedForDeflect(cx, cy){
@@ -2277,10 +2296,14 @@
       }
       if(isIce){
         addFloat(nx, ny, `永續+${t.sus}`, '#3FB6D9');
+        spawnParticles(nx, ny, 8, 'rgba(63,182,217,0.8)');
       } else {
+        const ptColor = delta>0?'rgba(34,177,76,0.8)':'rgba(227,37,69,0.8)';
         addFloat(nx, ny, (delta>0?'+':'')+delta, delta>0?'#22B14C':'#E32545');
+        spawnParticles(nx, ny, 12, ptColor);
         if(comboLevel >= 2){
           addFloat(nx, ny, `COMBO×${comboCount}!`, '#FF8C1A', 'combo');
+          spawnParticles(nx, ny, 16, 'rgba(255,140,26,0.9)', 1.3);
           SFX.combo(comboLevel);
         }
       }
@@ -2834,8 +2857,23 @@
       }
     }
 
-    // 浮動分數文字（彈出式動畫：快速放大 → 回彈 → 上飄淡出）
+    // 粒子效應系統
     const now = performance.now();
+    particles = particles.filter(p => p.life > 0);
+    for(const p of particles){
+      p.vy += 200 * (1/60); // 重力加速度（假設60fps）
+      p.x += p.vx * (1/60);
+      p.y += p.vy * (1/60);
+      p.life -= (1/60);
+      
+      const alpha = Math.max(0, p.life / p.maxLife);
+      ctx.fillStyle = p.color.replace(')', `, ${alpha * 0.8})`).replace('rgba', 'rgba').replace('rgb', 'rgba');
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // 浮動分數文字（彈出式動畫：快速放大 → 回彈 → 上飄淡出）
     const FLOAT_DUR = 1150;
     floatMsgs = floatMsgs.filter(m => now - m.born < FLOAT_DUR);
     for(const m of floatMsgs){

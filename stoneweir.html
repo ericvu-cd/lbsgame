@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>石滬修復</title>
-<link rel="icon" type="image/png" href="image/sricon.png">
+<link rel="icon" type="image/png" href="sricon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -59,7 +59,7 @@
     color:var(--ink);
     background:
       linear-gradient(180deg, rgba(8,30,50,.12) 0%, rgba(8,30,50,0) 18%, rgba(8,30,50,0) 70%, rgba(4,20,35,.28) 100%),
-      url('image/swbg.png') center center / cover no-repeat;
+      url('swbg.png') center center / cover no-repeat;
     position:relative;
     display:flex;
     flex-direction:column;
@@ -408,7 +408,9 @@
   /* 統計 chip 尺寸微調，讓 5 個 chip 在小螢幕也能排得整齊 */
   .hud-stats .stat{padding:4px 8px 5px;min-width:0;flex:1 1 0;}
   .hud-stats .stat.score-stat{flex:1.15 1 0;width:auto;}
-  .hud-stats .stat.time-stat{flex:1.35 1 0;}
+  .hud-stats .stat.time-stat{flex:1.35 1 0;transition:color 0.2s, text-shadow 0.2s;}
+  .hud-stats .stat.time-stat.urgent{animation:timeUrgent 0.6s ease-in-out infinite; color:var(--coral);}
+  @keyframes timeUrgent{0%,100%{color:var(--coral);text-shadow:0 0 12px rgba(255,67,39,0.8);}50%{color:#ff6b6b;text-shadow:0 0 20px rgba(255,107,107,0.8);transform:scale(1.08);}}
 
   /* 介紹頁面統計 */
   .intro-stats {
@@ -480,7 +482,7 @@
   <div class="screen active" id="screen-intro">
     <div class="intro-frame">
     <div class="intro-media">
-      <img src="image/srbg.png" alt="石滬修復玩法說明">
+      <img src="srbg.png" alt="石滬修復玩法說明">
       <button class="intro-go-btn" id="startBtn" aria-label="開始遊戲" title="開始遊戲"></button>
     </div>
     <div class="intro-stats" id="introStats"></div>
@@ -511,15 +513,15 @@
       <defs>
         <symbol id="stoneOk" viewBox="0 0 60 60">
           <ellipse cx="30" cy="47" rx="20" ry="5" fill="var(--outline)" opacity=".22"/>
-          <image href="image/m0.png" x="4" y="2" width="52" height="52" preserveAspectRatio="xMidYMid meet"/>
+          <image href="m0.png" x="4" y="2" width="52" height="52" preserveAspectRatio="xMidYMid meet"/>
         </symbol>
         <symbol id="stoneBad" viewBox="0 0 60 60">
           <ellipse cx="30" cy="47" rx="20" ry="5" fill="var(--outline)" opacity=".22"/>
-          <image href="image/m2.png" x="4" y="2" width="52" height="52" preserveAspectRatio="xMidYMid meet"/>
+          <image href="m2.png" x="4" y="2" width="52" height="52" preserveAspectRatio="xMidYMid meet"/>
         </symbol>
         <symbol id="stoneCracked" viewBox="0 0 60 60">
           <ellipse cx="30" cy="47" rx="20" ry="5" fill="var(--outline)" opacity=".22"/>
-          <image href="image/m1.png" x="4" y="2" width="52" height="52" preserveAspectRatio="xMidYMid meet"/>
+          <image href="m1.png" x="4" y="2" width="52" height="52" preserveAspectRatio="xMidYMid meet"/>
         </symbol>
         <symbol id="fishIcon" viewBox="0 0 32 20">
           <path d="M20 10 L30 3 L25 10 L30 17 Z" fill="currentColor" stroke="var(--outline)" stroke-width="1" stroke-linejoin="round" opacity=".95"/>
@@ -581,9 +583,9 @@
     </svg></div>
 
     <div class="legend-mini">
-      <div><img class="swatch" src="image/m0.png" alt="已修復"/>已修復</div>
-      <div><img class="swatch" src="image/m1.png" alt="龜裂中"/>龜裂中</div>
-      <div><img class="swatch" src="image/m2.png" alt="毀損中"/>毀損中</div>
+      <div><img class="swatch" src="m0.png" alt="已修復"/>已修復</div>
+      <div><img class="swatch" src="m1.png" alt="龜裂中"/>龜裂中</div>
+      <div><img class="swatch" src="m2.png" alt="毀損中"/>毀損中</div>
     </div>
   </div>
 </div>
@@ -1762,7 +1764,14 @@ function startGame(){
 
   state.timerHandle = setInterval(()=>{
     state.seconds++;
-    document.getElementById('statTime').textContent = formatTime(state.seconds);
+    const timeStat = document.getElementById('statTime');
+    timeStat.textContent = formatTime(state.seconds);
+    // 當潮汐間隔變短（緊張程度增加）時，添加視覺警告
+    if(state.tideInterval !== undefined && state.tideInterval <= 10){
+      timeStat.parentElement.classList.add('urgent');
+    } else {
+      timeStat.parentElement.classList.remove('urgent');
+    }
     updateLiveScore();
   }, 1000);
 
