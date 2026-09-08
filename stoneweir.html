@@ -474,7 +474,7 @@
 <div id="nightOverlay"></div>
 <div id="tideFlash"></div>
 
-<button class="sound-toggle-btn corner-left" id="restartBtn" aria-label="返回平台" title="返回平台" style="display:none">↩️</button>
+<button class="sound-toggle-btn corner-left" id="restartBtn" aria-label="返回平台" title="返回平台" style="display:none">🔚</button>
 <button class="sound-toggle-btn" id="muteBtn" aria-label="切換音效" title="切換音效">🔊</button>
 
 <div class="app">
@@ -661,6 +661,19 @@ function sendToPlatform(type, payload){
     type: type,
     payload: payload || {}
   }, '*');
+}
+
+// ── 攔截瀏覽器「上一頁」（含手機滑動返回手勢）：不要讓它直接把分頁導覽走 ──
+// 原理：先塞一筆假的瀏覽紀錄，使用者按上一頁時只會觸發 popstate（不會真的離開），
+// 這時候把假紀錄補回去、跳確認視窗；確定要走才真的送 exit + 關閉分頁。
+if (window.history && window.history.pushState) {
+  history.pushState(null, '', location.href);
+  window.addEventListener('popstate', function () {
+    history.pushState(null, '', location.href);
+    if (!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
+    sendToPlatform('exit', {});
+    window.close();
+  });
 }
 
 // 收平台送來的訊息：ready 之後回傳的 player_info；complete 之後回傳的 ack（可能帶拒絕原因）

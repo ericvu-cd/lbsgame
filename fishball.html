@@ -36,7 +36,7 @@
     --c-ball:#FFD700;    --c-ball-ring:#8a6c0e;
     --c-ice:#FFFFFF;     --c-ice-ring:#0B5A82;
   }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none;}
   html,body{
     margin:0; padding:0; height:100%;
     background:var(--sky-top);
@@ -689,7 +689,7 @@
         <div class="timer pixel" id="levelBadge" style="min-width:auto; padding:2px 6px;">Lv1</div>
         <div class="timer pixel" id="timerDisplay">55</div>
         <button type="button" id="muteBtn" class="mute-btn" aria-label="音效開關" aria-pressed="false">🔊</button>
-        <button type="button" id="exitBtn" class="mute-btn" aria-label="返回平台">↩️</button>
+        <button type="button" id="exitBtn" class="mute-btn" aria-label="返回平台">🔚</button>
       </div>
     </div>
     <div class="stat-bar">
@@ -794,6 +794,19 @@
       type: type,
       payload: payload || {}
     }, '*');
+  }
+
+  // ── 攔截瀏覽器「上一頁」（含手機滑動返回手勢）：不要讓它直接把分頁導覽走 ──
+  // 原理：先塞一筆假的瀏覽紀錄，使用者按上一頁時只會觸發 popstate（不會真的離開），
+  // 這時候把假紀錄補回去、跳確認視窗；確定要走才真的送 exit + 關閉分頁。
+  if (window.history && window.history.pushState) {
+    history.pushState(null, '', location.href);
+    window.addEventListener('popstate', function () {
+      history.pushState(null, '', location.href);
+      if (!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
+      sendToPlatform('exit', {});
+      window.close();
+    });
   }
 
   // 收平台送來的訊息：ready 之後回傳的 player_info；complete 之後回傳的 ack（可能帶拒絕原因）

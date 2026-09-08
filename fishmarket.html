@@ -15,7 +15,7 @@
             --gold-color: #FFD500; --gold-color-dark: #C79F00; --green-color: #00852B; --green-color-dark: #045E1E;
             --text-color: #1F2A38; --panel-bg: #DCEBFA; --panel-white: #FFFFFF; --brick-border: #0055BF;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Noto Sans TC", "Helvetica Neue", Arial, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Noto Sans TC", "Helvetica Neue", Arial, sans-serif; -webkit-touch-callout: none; }
         html, body { height: 100%; }
         /* 統一按鍵按壓回饋：去除系統長按選取/高亮，並保證 iOS Safari 上 :active 能確實觸發
            （iOS 需要頁面上存在 touchstart 監聽器，:active 偽類才會生效，見下方 JS） */
@@ -288,7 +288,7 @@
             <div id="ui-day-season">🌸春季</div>
             <div style="display:flex; align-items:center; gap:8px;">
                 <div id="ui-budget">💰 現金: 1500元</div>
-                <button id="exit-fab" onclick="exitAndReturnToPlatform()" aria-label="返回平台">↩️ 返回</button>
+                <button id="exit-fab" onclick="exitAndReturnToPlatform()" aria-label="返回平台">🔚 返回</button>
             </div>
         </div>
         <div id="top-bar-row2">
@@ -672,6 +672,22 @@
                 payload: payload || {}
             }, '*');
         }
+
+        // ── 攔截瀏覽器「上一頁」（含手機滑動返回手勢）：不要讓它直接把分頁導覽走 ──
+        // 原理：先塞一筆假的瀏覽紀錄，使用者按上一頁時只會觸發 popstate（不會真的離開），
+        // 這時候把假紀錄補回去、跳確認視窗；確定要走才真的送 exit + 關閉分頁。
+        if (window.history && window.history.pushState) {
+            history.pushState(null, '', location.href);
+            window.addEventListener('popstate', function () {
+                history.pushState(null, '', location.href);
+                if (!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
+                sendToPlatform('exit', {});
+                window.close();
+            });
+        }
+
+        // ── 防止長按跳出系統右鍵/選單 ──
+        document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
         // 收平台送來的訊息：ready 之後回傳的 player_info，帶玩家暱稱、已擁有徽章、這個任務的個人最佳成績
         window.addEventListener('message', function (event) {
