@@ -1115,11 +1115,21 @@
             if (earnsBadge && !alreadyHasBadge) coins += 20;
             if (isNewBest) coins += 1;
 
-            sendToPlatform('complete', {
-                coins: coins,
-                badgeIds: earnsBadge ? [BADGE_ID] : []
-            });
-            sendToPlatform('score', { scoreLabel: `${totalScore} 分`, scoreValue: totalScore });
+            // 只有「這次真的有新東西」才送 complete：沒有新徽章、金幣也是 0，
+            // 送出去只是讓後台白處理一則什麼都不用做的訊息（還要多寫 2 筆除錯記錄）。
+            const hasNewBadge = earnsBadge && !alreadyHasBadge;
+            if (coins > 0 || hasNewBadge) {
+                sendToPlatform('complete', {
+                    coins: coins,
+                    badgeIds: earnsBadge ? [BADGE_ID] : []
+                });
+            }
+            // score 同理：第一次玩（沒有舊紀錄）要送、之後只有真的破紀錄才送。
+            // 分數比舊紀錄低或打平時送出去，平台那邊還是得先讀一次現有分數來比較，
+            // 比較完發現「不用寫」也已經先耗掉一次讀取額度，白工。
+            if (!hasPreviousRecord || isNewBest) {
+                sendToPlatform('score', { scoreLabel: `${totalScore} 分`, scoreValue: totalScore });
+            }
 
             // 更新本地暫存狀態：避免同一次連線內重玩時重複請領「首次徽章」的 20 金幣，
             // 也讓下一輪結算能正確比較「這次連線內打過的最佳紀錄」

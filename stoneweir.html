@@ -2165,11 +2165,20 @@ function reportResultToPlatform(total){
   if(earnsBadge && !alreadyHasBadge) coins += 20;
   if(isNewBestOnPlatform) coins += 1;
 
-  sendToPlatform('complete', {
-    coins: coins,
-    badgeIds: earnsBadge ? [BADGE_ID] : []
-  });
-  sendToPlatform('score', { scoreLabel: `${total} 分`, scoreValue: total });
+  // 只有「這次真的有新東西」才送 complete，理由同 fishmarket：
+  // 沒有新徽章、金幣也是 0 的話，送出去只是讓後台白處理一則什麼都不用做的訊息。
+  const hasNewBadge = earnsBadge && !alreadyHasBadge;
+  if (coins > 0 || hasNewBadge) {
+    sendToPlatform('complete', {
+      coins: coins,
+      badgeIds: earnsBadge ? [BADGE_ID] : []
+    });
+  }
+  // score 同理：第一次玩要送、之後只有真的破紀錄才送，不然平台那邊還是得先讀一次
+  // 現有分數來比較，比完發現「不用寫」也已經先耗掉一次讀取額度。
+  if (!hasPreviousRecord || isNewBestOnPlatform) {
+    sendToPlatform('score', { scoreLabel: `${total} 分`, scoreValue: total });
+  }
 
   // 更新本地暫存狀態：避免同一次連線內重玩時重複請領「首次徽章」的 20 金幣，
   // 也讓下一局結算能正確比較「這次連線內打過的最佳紀錄」
