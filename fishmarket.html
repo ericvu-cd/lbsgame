@@ -155,21 +155,30 @@
         @keyframes pricePulseOrange { 0% { transform: scale(1); } 40% { transform: scale(1.18); color: #ff9d5c; } 100% { transform: scale(1); color: #F2B84D; } }
         .arena-price-unit { font-size: 0.58em; margin-left: 3px; color: #52758D; }
 
-        .arena-ai-row { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); gap: clamp(4px,1vh,7px); align-content: stretch; padding: 8px; }
+        .arena-ai-row { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); gap: clamp(9px,2vh,14px); align-content: stretch; padding: 8px; }
 
         /* 右欄下方：我的現金 + 出價操作（與左欄「即時資訊」對調位置） */
         .arena-bid-panel { flex-shrink: 0; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
         .arena-budget-line { font-size: 0.8rem; font-weight: bold; color: var(--primary-color); }
         .arena-budget-line span { color: var(--gold-color-dark); font-family: monospace; }
-        .ai-chip { background: rgba(255,255,255,0.58); border-radius: 10px; padding: 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 0.76rem; transition: transform 0.2s ease, background 0.2s ease; border: 2px solid transparent; min-height: 0; overflow: hidden; }
-        .ai-chip .ai-name { font-weight: bold; color: #163E5B; font-size: clamp(0.64rem, 1.7vh, 0.75rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-        .ai-chip .ai-status { color: #52758D; margin-top: 1px; font-size: clamp(0.58rem, 1.5vh, 0.66rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-        .ai-chip.out { opacity: 0.35; }
+        .ai-chip { position: relative; border-radius: 10px; overflow: visible; border: 2px solid transparent; min-height: 0; background: linear-gradient(160deg, #E8F1F8 0%, #CFE2EF 100%); transition: transform 0.2s ease, border-color 0.2s ease; }
+        .ai-chip-clip { position: absolute; inset: 0; border-radius: 8px; overflow: hidden; }
+        .ai-chip-avatar { position: absolute; left: 0; top: 0; height: 100%; width: auto; max-width: 100%; object-fit: contain; object-position: left center; }
+        .ai-chip-avatar-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+        .ai-chip .ai-name { position: absolute; top: 2px; right: 3px; z-index: 2; background: rgba(4,20,42,0.68); color: #fff; font-weight: 900; font-size: clamp(0.56rem, 1.5vh, 0.7rem); padding: 1px 5px; border-radius: 6px; max-width: 80%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ai-chip .ai-status { position: absolute; bottom: 2px; right: 3px; z-index: 2; background: rgba(4,20,42,0.55); color: #EAF3FB; font-size: clamp(0.5rem, 1.3vh, 0.6rem); padding: 1px 5px; border-radius: 6px; max-width: 80%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .ai-bubble { position: absolute; top: -10px; left: 4px; z-index: 5; background: #fff; color: #C1541A; font-weight: 900; font-size: clamp(0.5rem, 1.3vh, 0.64rem); padding: 2px 6px; border-radius: 10px; border: 1.5px solid #ff9d5c; box-shadow: 0 2px 4px rgba(0,0,0,0.3); white-space: nowrap; animation: bubblePop 0.2s ease; }
+        .ai-bubble::after { content: ''; position: absolute; left: 9px; bottom: -5px; border-width: 5px 4px 0 4px; border-style: solid; border-color: #fff transparent transparent transparent; }
+        .ai-bubble::before { content: ''; position: absolute; left: 8.5px; bottom: -7px; border-width: 6px 4.5px 0 4.5px; border-style: solid; border-color: #ff9d5c transparent transparent transparent; }
+        @keyframes bubblePop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .ai-chip.out { filter: grayscale(80%) brightness(0.75); }
         .ai-chip.out .ai-name { text-decoration: line-through; }
-        .ai-chip.bid { background: rgba(255,157,92,0.22); border-color: #ff9d5c; transform: scale(1.06); }
-        .ai-chip.bid .ai-status { color: #ffb27a; }
-        .ai-chip.leader { background: #F2C14E; border-color: #B9791F; transform: scale(1.08); box-shadow: 0 3px 10px rgba(185,121,31,0.5); }
-        .ai-chip.leader .ai-name, .ai-chip.leader .ai-status { color: #4A2E00; }
+        .ai-chip.bid { border-color: #ff9d5c; transform: scale(1.03); z-index: 2; box-shadow: 0 3px 10px rgba(255,157,92,0.5); }
+        .ai-chip.bid .ai-status { background: rgba(255,141,58,0.92); color: #3A1400; font-weight: bold; }
+        .ai-chip.leader { border-color: #B9791F; transform: scale(1.05); z-index: 2; box-shadow: 0 3px 12px rgba(185,121,31,0.65); }
+        .ai-chip.leader .ai-name, .ai-chip.leader .ai-status { background: rgba(242,193,78,0.95); color: #4A2E00; }
+        .ai-chip.leader .ai-status { font-weight: 900; }
 
         .arena-action-btns { display: flex; gap: 8px; flex-shrink: 0; padding-top: 6px; }
         .arena-action-btns .btn-bid { padding: 12px 6px; font-size: 0.9rem; }
@@ -1254,7 +1263,10 @@
 
                 const parts = splitAiName(ai.name);
                 const nameDisplay = parts.label;
-                aiGrid.innerHTML += `<div class="${cls}"><span class="ai-name">${nameDisplay}</span><span class="ai-status">${ai.status}</span></div>`;
+                const bidMatch = ai.status.match(/加價\s*\+?(\d+)/);
+                const statusDisplay = bidMatch ? '出價中' : ai.status;
+                const bubbleHTML = bidMatch ? `<div class="ai-bubble">加價+${bidMatch[1]}</div>` : '';
+                aiGrid.innerHTML += `<div class="${cls}"><div class="ai-chip-clip"><img class="ai-chip-avatar" src="image/${nameDisplay}.png" alt="${nameDisplay}" onerror="this.outerHTML='<div class=\\'ai-chip-avatar-fallback\\'>${parts.emoji}</div>'"></div>${bubbleHTML}<span class="ai-name">${nameDisplay}</span><span class="ai-status">${statusDisplay}</span></div>`;
             });
         }
 
