@@ -3192,6 +3192,9 @@
     resetState();
     running = true;
     startOverlay.classList.add('hidden');
+    startOverlay.style.display = 'none'; // 額外用 inline style 再鎖一次，優先權比任何 class 都高，
+                                          // 避免某些情境下 .hidden 這個 class 沒有正確生效，
+                                          // 導致開場的藍色天空背景層沒有真的完全消失、蓋住下面的遊戲畫面
     endOverlay.classList.add('hidden');
     swipeHint.style.display = 'block';
     lastTs = 0;
