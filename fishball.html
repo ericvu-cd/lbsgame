@@ -321,6 +321,30 @@
     padding:0;
     overflow:hidden;
   }
+  #startHelpBtn{
+    position:absolute; top:calc(10px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left));
+    z-index:10; width:38px; height:38px; border-radius:50%; border:none; cursor:pointer;
+    background:rgba(10,20,25,0.55); color:#fff; font-size:16px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #helpOverlay{
+    position:fixed; inset:0; z-index:300; display:none;
+    background:rgba(4,14,20,0.88); overflow-y:auto;
+    font-family:"Noto Sans TC",sans-serif; color:#222;
+  }
+  #helpOverlay.show{ display:block; }
+  #helpInner{ max-width:420px; margin:0 auto; min-height:100%; background:#fff8ec; padding:18px 18px 26px; box-sizing:border-box; }
+  #helpInner h2{ font-size:1.1rem; margin:0 0 4px; color:#8a5a16; }
+  #helpInner h3{ font-size:.95rem; margin:18px 0 8px; color:#8a5a16; }
+  #helpInner p, #helpInner li{ font-size:.83rem; line-height:1.7; }
+  #helpInner ol{ margin:0; padding-left:1.4em; }
+  #helpInner .help-icon-table{ width:100%; border-collapse:collapse; margin-top:8px; }
+  #helpInner .help-icon-table td{ border-bottom:1px solid #eee0c8; padding:8px 4px; font-size:.78rem; vertical-align:middle; }
+  #helpInner .help-icon-table img, #helpInner .help-icon-table canvas{ width:32px; height:32px; display:block; }
+  #helpInner .help-note{ background:rgba(138,90,22,.08); border-radius:8px; padding:8px 10px; font-size:.78rem; color:#5a4a2f; margin-top:8px; }
+  #helpInner .help-close-row{ margin-top:22px; }
+  #helpInner .help-close-row button{ width:100%; padding:12px; border:none; border-radius:10px; background:#8a5a16; color:#fff; font-weight:bold; font-size:.95rem; cursor:pointer; }
+  #helpInner .help-copyright{ margin-top:16px; text-align:center; font-size:.7rem; color:#999; }
   #endOverlay{
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
@@ -732,10 +756,55 @@
   <!-- START (full screen) -->
   <div class="overlay" id="startOverlay">
    <button type="button" id="startMuteBtn" class="start-mute-btn" aria-label="音效開關" aria-pressed="false">🔊</button>
+   <button type="button" id="startHelpBtn" aria-label="遊戲說明" onclick="document.getElementById('helpOverlay').classList.add('show')">📖</button>
    <div class="start-bg-wrap" id="startBgWrap">
     <img src="image/fbbg.png" alt="魚丸追追樂 勇闖海洋冒險" class="start-bg-img" id="startBgImg" draggable="false">
     <button class="start-bg-btn" id="startBtn" aria-label="START"></button>
    </div>
+  </div>
+
+  <div id="helpOverlay">
+    <div id="helpInner">
+      <h2>📖 苑港｜魚丸追追樂</h2>
+
+      <h3>🎮 遊戲介紹</h3>
+      <p>在漁港出現一串會持續移動的魚丸，一路吃東西維持生態平衡，10 個關卡、每關都有潮水上漲的時間壓力跟地形機關，分數是全程累計的。</p>
+
+      <h3>📋 玩法流程</h3>
+      <ol>
+        <li>魚丸串會持續往前移動，滑動控制轉向</li>
+        <li>吃到東西依種類加減分、變長變短</li>
+        <li>連續吃到同一種東西會累積 COMBO 加成</li>
+        <li>潮水會隨時間上漲，走過潮水邊界就直接失敗</li>
+        <li>撞到自己也會失敗，但<strong>撞到地圖上的牆只會自動轉向，不會失敗</strong></li>
+        <li>「永續值」歸零（過度捕撈）也會直接失敗——失敗一律整輪重來</li>
+        <li>移動路徑經過的海底會逐漸復育成珊瑚礁，達成階段門檻額外加分</li>
+      </ol>
+
+      <h3>🔎 圖示說明</h3>
+      <p style="font-size:.76rem;color:#8a7a5a;">下面的圖示是直接從遊戲程式抓出來的，跟畫面上看到的一模一樣。</p>
+      <table class="help-icon-table" id="helpIconTable">
+        <tr><td id="helpIcon-normal"></td><td>一般魚：+5 分，加長</td></tr>
+        <tr><td id="helpIcon-shark"></td><td>鯊魚：+10 分，大幅加長</td></tr>
+        <tr><td id="helpIcon-juvenile"></td><td>幼魚：−5 分，縮短，扣永續值</td></tr>
+        <tr><td id="helpIcon-protected"></td><td>保育類：−20 分，縮短，大幅扣永續值（盡量避開）</td></tr>
+        <tr><td id="helpIcon-ball"></td><td>金幣：+20 分，不影響長度</td></tr>
+        <tr><td id="helpIcon-ice"></td><td>保鮮冰塊：不加減分，回補永續值，不參與連線</td></tr>
+      </table>
+      <div class="help-note">撞到地圖上的牆壁只會自動轉向，不算失敗；真正的失敗條件是撞到自己、潮水淹過邊界、永續值歸零、或被地圖困住。</div>
+
+      <h3>🏆 計分與獎勵</h3>
+      <p>吃到的東西分數加總 + 連線加成 + 珊瑚礁復育階段獎勵。</p>
+      <ul>
+        <li>通過全部 10 關且總分 1000 分以上：發「魚丸守護神」徽章 +20 金幣</li>
+        <li>之後每次破紀錄：+1 金幣</li>
+      </ul>
+
+      <div class="help-close-row">
+        <button onclick="document.getElementById('helpOverlay').classList.remove('show')">關閉說明</button>
+      </div>
+      <div class="help-copyright">© 2026 友魚守護團</div>
+    </div>
   </div>
 
   <!-- GAME OVER (full screen) -->
@@ -1667,6 +1736,37 @@
       out[name] = c.toDataURL('image/png');
     });
     return out;
+  })();
+
+  // ── 說明頁的圖示，直接用遊戲原本快取好的同一份 dataURL，保證跟畫面上長得一模一樣 ──
+  ['normal','shark','juvenile','protected','ice'].forEach(name => {
+    const td = document.getElementById('helpIcon-' + name);
+    if (td) td.innerHTML = `<img src="${ICONS[name]}" alt="${name}">`;
+  });
+  // 金幣（資料上標記 ball／🍥）沒有被收進 ICONS 快取，因為它在遊戲裡是每一幀
+  // 都重新畫的旋轉動畫（drawCoin()，讀取的是遊戲board自己的ctx/CELL）。
+  // 這裡另外開一個獨立的小 canvas，照抄 drawCoin() 轉到正面時的畫法（金色圓 + 🍥），
+  // 畫一張靜止的畫面當說明用，不去動遊戲本身的 ctx，避免互相干擾。
+  (function drawHelpCoinIcon(){
+    const td = document.getElementById('helpIcon-ball');
+    if (!td) return;
+    const size = 64;
+    const c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    const cctx = c.getContext('2d');
+    const cx = size/2, cy = size/2, r = size*0.34;
+    cctx.fillStyle = '#FFD700';
+    cctx.globalAlpha = 0.35;
+    cctx.beginPath(); cctx.arc(cx, cy, r*1.6, 0, Math.PI*2); cctx.fill();
+    cctx.globalAlpha = 1;
+    cctx.fillStyle = '#8a6c0e';
+    cctx.beginPath(); cctx.arc(cx, cy, r, 0, Math.PI*2); cctx.fill();
+    cctx.fillStyle = '#FFD700';
+    cctx.beginPath(); cctx.arc(cx, cy, r-2, 0, Math.PI*2); cctx.fill();
+    cctx.font = `${Math.floor(size*0.42)}px serif`;
+    cctx.textAlign = 'center'; cctx.textBaseline = 'middle';
+    cctx.fillText('🍥', cx, cy+1);
+    td.appendChild(c);
   })();
 
   // ---------- SFX (procedural Web Audio, no external files) ----------

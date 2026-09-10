@@ -394,6 +394,25 @@
   }
   .sound-toggle-btn:active{transform:translateY(3px) scale(.95);box-shadow:0 1px 0 var(--wood-dark), 0 1px 0 1px var(--outline);}
   .sound-toggle-btn.corner-left{left:calc(10px + env(safe-area-inset-left));right:auto;}
+  .sound-toggle-btn.corner-right2{right:calc(58px + env(safe-area-inset-right));}
+
+  /* ── 說明介紹頁 ── */
+  #helpOverlay{position:fixed;inset:0;z-index:200;display:none;background:rgba(20,10,4,.88);overflow-y:auto;font-family:'Noto Sans TC',sans-serif;color:var(--ink);}
+  #helpOverlay.show{display:block;}
+  #helpInner{max-width:420px;margin:0 auto;min-height:100%;background:var(--cream);padding:18px 18px 26px;box-sizing:border-box;}
+  #helpInner h2{font-size:1.1rem;margin:0 0 4px;color:var(--wood-dark);}
+  #helpInner h3{font-size:.95rem;margin:18px 0 8px;color:var(--wood-dark);display:flex;align-items:center;gap:6px;}
+  #helpInner p, #helpInner li{font-size:.83rem;line-height:1.7;}
+  #helpInner ol{margin:0;padding-left:1.4em;}
+  #helpInner .help-icon-row{display:flex;flex-wrap:wrap;gap:12px;margin:8px 0;}
+  #helpInner .help-icon-item{display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;text-align:center;}
+  #helpInner .help-icon-item .icon-box{width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #e0d5bd;border-radius:10px;}
+  #helpInner .help-icon-item .icon-box svg{width:36px;height:36px;}
+  #helpInner .help-icon-item span.label{font-size:.68rem;color:#5a4a2f;line-height:1.3;}
+  #helpInner .help-note{background:rgba(90,60,20,.08);border-radius:8px;padding:8px 10px;font-size:.78rem;color:#5a4a2f;margin-top:8px;}
+  #helpInner .help-close-row{margin-top:22px;}
+  #helpInner .help-close-row button{width:100%;padding:12px;border:none;border-radius:10px;background:var(--wood-dark);color:#fff;font-weight:bold;font-size:.95rem;cursor:pointer;}
+  #helpInner .help-copyright{margin-top:16px;text-align:center;font-size:.7rem;color:#999;}
 
   /* 竹簍收魚按鈕：畫在石滬缺口正上方，滑鼠移過去/按下去有輕微回饋。
      transform-origin 明確指定 0 0，位置完全由這裡的 translate+scale 決定，
@@ -484,6 +503,69 @@
 
 <button class="sound-toggle-btn corner-left" id="restartBtn" aria-label="返回平台" title="返回平台" style="display:none; filter: brightness(1.9) saturate(1.8) drop-shadow(0 0 4px rgba(255,255,255,0.9));">🔚</button>
 <button class="sound-toggle-btn" id="muteBtn" aria-label="切換音效" title="切換音效">🔊</button>
+<button class="sound-toggle-btn corner-right2" id="helpBtn" aria-label="遊戲說明" title="遊戲說明" onclick="document.getElementById('helpOverlay').classList.add('show')">📖</button>
+
+<div id="helpOverlay">
+  <div id="helpInner">
+    <h2>📖 石滬修復</h2>
+
+    <h3>🎮 遊戲介紹</h3>
+    <p>取材自後龍真實的石滬文化——先民利用潮汐、以天然石材堆砌石牆捕魚的傳統漁法。因石滬日久失修，你是搶修匠師，要在潮水不斷侵蝕、鳥賊環伺下把石滬修復完好。</p>
+
+    <h3>📋 玩法流程</h3>
+    <ol>
+      <li>點擊龜裂/損壞的石塊修復（損壞較重的可能要點兩次）</li>
+      <li>潮汐持續輪替：漲潮魚群游進來，退潮時牆修得夠好，魚就會被困住</li>
+      <li>白天用「竹簍」把困住的魚收進安全總數，不收好隨時可能被鳥叼走、被小偷偷走</li>
+      <li>修理工具偶爾故障，故障中沒辦法修理，要等它恢復</li>
+      <li>把所有石塊都修到完好即修復完成過關；分數被扣到 0 則滬堤決堤、直接失敗</li>
+    </ol>
+
+    <h3>🔎 圖示說明</h3>
+    <div class="help-icon-row">
+      <div class="help-icon-item">
+        <div class="icon-box"><svg viewBox="0 0 60 60"><use href="#stoneOk"></use></svg></div>
+        <span class="label">完好</span>
+      </div>
+      <div class="help-icon-item">
+        <div class="icon-box"><svg viewBox="0 0 60 60"><use href="#stoneCracked"></use></svg></div>
+        <span class="label">龜裂</span>
+      </div>
+      <div class="help-icon-item">
+        <div class="icon-box"><svg viewBox="0 0 60 60"><use href="#stoneBad"></use></svg></div>
+        <span class="label">損壞</span>
+      </div>
+      <div class="help-icon-item">
+        <div class="icon-box"><svg viewBox="0 0 44 32"><path d="M2,18 L11,13 L11,23 Z" fill="var(--rock-dark)" stroke="var(--outline)" stroke-width="1.3" stroke-linejoin="round"/><ellipse cx="21" cy="19" rx="10.5" ry="7.5" fill="var(--cream)" stroke="var(--outline)" stroke-width="1.6"/><circle cx="32" cy="12" r="6.4" fill="var(--cream)" stroke="var(--outline)" stroke-width="1.6"/><path d="M37,10 L44.5,8 L38,13.5 Z" fill="var(--gold)" stroke="var(--outline)" stroke-width="1.2" stroke-linejoin="round"/><circle cx="34.2" cy="10.2" r="1.3" fill="var(--outline)"/><path d="M17,17 Q2,4 -3,13 Q9,15 19,21 Z" fill="var(--rock-dark)" stroke="var(--outline)" stroke-width="1.3" stroke-linejoin="round"/></svg></div>
+        <span class="label">飛鳥：叼走還沒收進竹簍的魚</span>
+      </div>
+      <div class="help-icon-item" id="helpThiefIcon">
+        <div class="icon-box"></div>
+        <span class="label">小偷：夜間偷走已捕獲但沒收好的魚</span>
+      </div>
+      <div class="help-icon-item">
+        <div class="icon-box"><svg viewBox="0 0 300 300"><path d="M64,72 C40,110 34,150 42,190 C48,225 62,255 90,278 C110,292 190,292 210,278 C238,255 252,225 258,190 C266,150 260,110 236,72 C220,84 180,90 150,90 C120,90 80,84 64,72 Z" fill="#d0842f" stroke="#241407" stroke-width="4.5" stroke-linejoin="round"/><ellipse cx="150" cy="282" rx="62" ry="14" fill="#8a4b16" stroke="#241407" stroke-width="3.5"/></svg></div>
+        <span class="label">竹簍：白天點擊收魚</span>
+      </div>
+    </div>
+    <div class="help-note">工具故障提示 banner 出現時，石塊點了也沒反應，要等它自己恢復。</div>
+
+    <h3>🏆 計分與獎勵</h3>
+    <p>基礎 1000 分，每秒扣 5 分、每個修理動作扣 10 分，每收進竹簍一尾魚 +20 分。</p>
+    <ul>
+      <li>3★：720 分以上</li>
+      <li>2★：350 分以上</li>
+      <li>1★：120 分以上</li>
+      <li>首次達 800 分：發「石滬達人」徽章 +20 金幣</li>
+      <li>之後每次破紀錄：+1 金幣</li>
+    </ul>
+
+    <div class="help-close-row">
+      <button onclick="document.getElementById('helpOverlay').classList.remove('show')">關閉說明</button>
+    </div>
+    <div class="help-copyright">© 2026 友魚守護團</div>
+  </div>
+</div>
 
 <div class="app">
   <!-- 畫面一：說明（整張說明圖 + 疊加在「GO!」石頭上的透明按鈕） -->
@@ -2482,6 +2564,12 @@ function showBadgePopup(){
 
 // 页面加载时初始化统计显示
 updateIntroStats();
+
+// 說明頁的小偷圖示，直接重用遊戲本來畫小偷用的同一段函式，保證長得一模一樣
+(function(){
+  const box = document.querySelector('#helpThiefIcon .icon-box');
+  if(box) box.innerHTML = thiefFigureSVG();
+})();
 </script>
 </body>
 </html>

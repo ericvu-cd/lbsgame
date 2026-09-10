@@ -223,6 +223,35 @@
         #intro-start-btn { position: absolute; left: 22.5%; top: 88.5%; width: 52.6%; height: 8.3%; margin: 0; padding: 0; background: rgba(255,255,255,0); border: none; cursor: pointer; -webkit-tap-highlight-color: rgba(255,255,255,0.25); transition: transform 0.08s ease, background 0.08s ease; }
         #intro-start-btn:active { background: rgba(255,255,255,0.18); transform: scale(0.96); }
 
+        /* ── 說明介紹頁：疊在開場圖右上角的圓形按鈕，點開後是可捲動的整頁說明 ── */
+        #intro-help-btn {
+            position: absolute; top: 12px; right: 12px; z-index: 2;
+            width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;
+            background: rgba(10,20,25,0.55); color: #fff; font-size: 17px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #help-overlay {
+            position: fixed; inset: 0; z-index: 200; display: none;
+            background: rgba(4,14,20,0.88); overflow-y: auto;
+            font-family: "Noto Sans TC", sans-serif; color: #1F2A38;
+        }
+        #help-overlay.show { display: block; }
+        #help-inner {
+            max-width: 440px; margin: 0 auto; min-height: 100%;
+            background: #FBF8F0; padding: 18px 18px 26px; box-sizing: border-box;
+        }
+        #help-inner h2 { font-size: 1.15rem; margin: 0 0 4px; color: #012F72; }
+        #help-inner h3 { font-size: 0.98rem; margin: 18px 0 8px; color: #012F72; display: flex; align-items: center; gap: 6px; }
+        #help-inner p, #help-inner li { font-size: 0.85rem; line-height: 1.7; }
+        #help-inner ol, #help-inner ul { margin: 0; padding-left: 1.4em; }
+        #help-inner .help-note { background: rgba(1,47,114,0.06); border-radius: 8px; padding: 8px 10px; font-size: 0.8rem; color: #444; margin-top: 6px; }
+        #help-inner .help-chip-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0; }
+        #help-inner .help-chip { display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #E5DFD3; border-radius: 999px; padding: 5px 12px 5px 8px; font-size: 0.8rem; }
+        #help-inner .help-chip .chip-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+        #help-inner .help-close-row { margin-top: 22px; }
+        #help-inner .help-close-row button { width: 100%; padding: 12px; border: none; border-radius: 10px; background: #3C8577; color: #fff; font-weight: bold; font-size: 0.95rem; cursor: pointer; }
+        #help-inner .help-copyright { margin-top: 16px; text-align: center; font-size: 0.72rem; color: #999; }
+
         /* ── 整局最終結算：改用整頁滿版顯示，內容過長可捲動，不受拍賣區小面板限制 ── */
         #final-result-screen { position: fixed; inset: 0; z-index: 90; display: none; align-items: center; justify-content: center; padding: 3vh 4vw; background: radial-gradient(ellipse at 50% 15%, #123B44 0%, #06232B 65%, #02141A 100%); }
         #final-result-screen.show { display: flex; }
@@ -282,7 +311,61 @@
     <div id="intro-screen">
         <div id="intro-card">
             <img src="image/fmbg.png" alt="永續魚市拍賣場：漁港開賣！永續海洋決勝負">
+            <button id="intro-help-btn" onclick="document.getElementById('help-overlay').classList.add('show')" aria-label="遊戲說明">📖</button>
             <button id="intro-start-btn" onclick="startGame()" aria-label="開始拍賣"></button>
+        </div>
+    </div>
+
+    <div id="help-overlay">
+        <div id="help-inner">
+            <h2>📖 永續魚市拍賣：苗栗龍鳳漁港</h2>
+
+            <h3>🎮 遊戲介紹</h3>
+            <p>你來到苗栗竹南龍鳳漁港，要跟另外 6 位買家一起競標剛進港的漁獲，用有限的現金標到魚貨，最終依照你的採購內容決定是不是一個懂得永續海鮮觀念的守護者。</p>
+
+            <h3>📋 玩法流程</h3>
+            <ol>
+                <li>每箱魚貨開賣</li>
+                <li>倒數時間內跟其他買家一起喊價</li>
+                <li>得標的魚貨進你的攤位庫存；沒人出價就流標、直接跳下一箱</li>
+                <li>全部箱次結標後，才會看到完整的採購成績分析</li>
+            </ol>
+
+            <h3>🔎 圖示說明</h3>
+            <p>比賽進行中看得到的：</p>
+            <div class="help-chip-row">
+                <span class="help-chip"><span class="chip-icon">🌸</span>目前季節</span>
+                <span class="help-chip"><span class="chip-icon">💰</span>目前現金</span>
+                <span class="help-chip"><span class="chip-icon">🔨</span>拍賣中／SOLD 落槌</span>
+            </div>
+            <div class="help-chip-row">
+                <span class="help-chip"><span class="chip-icon">👨‍🍳</span>餐廳老闆</span>
+                <span class="help-chip"><span class="chip-icon">🍲</span>快炒店</span>
+                <span class="help-chip"><span class="chip-icon">🏭</span>量販採購</span>
+                <span class="help-chip"><span class="chip-icon">🚚</span>批發商</span>
+                <span class="help-chip"><span class="chip-icon">🛒</span>魚販阿姨</span>
+                <span class="help-chip"><span class="chip-icon">🛒</span>魚販阿伯</span>
+            </div>
+            <p>結算時才會看到（競標當下不會提示）：</p>
+            <div class="help-chip-row">
+                <span class="help-chip"><span class="chip-icon">🟢</span>建議</span>
+                <span class="help-chip"><span class="chip-icon">🟡</span>想清楚</span>
+                <span class="help-chip"><span class="chip-icon">🔴</span>避免</span>
+                <span class="help-chip"><span class="chip-icon">🚨</span>保育類／過度捕撈警示</span>
+            </div>
+            <div class="help-note">遊戲刻意不在出價當下告訴你魚是不是保育類，要靠玩家自己的知識判斷。</div>
+
+            <h3>🏆 計分與獎勵</h3>
+            <p>依每箱魚種的永續等級加減分；買到保育類/瀕危魚種會被重扣分，甚至直接被判定 F 級「海洋破壞者」。總分達 550 以上才是 S 級「海洋保衛者」。</p>
+            <ul>
+                <li>首次拿到 S 級：發「永續推廣者」徽章 +20 金幣</li>
+                <li>之後每次刷新個人最高分：+1 金幣</li>
+            </ul>
+
+            <div class="help-close-row">
+                <button onclick="document.getElementById('help-overlay').classList.remove('show')">關閉說明</button>
+            </div>
+            <div class="help-copyright">© 2026 友魚守護團</div>
         </div>
     </div>
 
