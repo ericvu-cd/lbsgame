@@ -329,11 +329,16 @@
   }
   #helpOverlay{
     position:fixed; inset:0; z-index:300; display:none;
-    background:rgba(4,14,20,0.88); overflow-y:auto;
+    background:rgba(4,14,20,0.7);
+    align-items:center; justify-content:center; padding:20px;
     font-family:"Noto Sans TC",sans-serif; color:#222;
   }
-  #helpOverlay.show{ display:block; }
-  #helpInner{ max-width:420px; margin:0 auto; min-height:100%; background:#fff8ec; padding:18px 18px 26px; box-sizing:border-box; }
+  #helpOverlay.show{ display:flex; }
+  #helpInner{
+    width:100%; max-width:380px; max-height:80vh; overflow-y:auto;
+    background:#fff8ec; padding:18px 18px 22px; box-sizing:border-box;
+    border-radius:16px; box-shadow:0 12px 34px rgba(0,0,0,0.4);
+  }
   #helpInner h2{ font-size:1.1rem; margin:0 0 4px; color:#8a5a16; }
   #helpInner h3{ font-size:.95rem; margin:18px 0 8px; color:#8a5a16; }
   #helpInner p, #helpInner li{ font-size:.83rem; line-height:1.7; }

@@ -397,9 +397,9 @@
   .sound-toggle-btn.corner-left2{left:calc(58px + env(safe-area-inset-left));right:auto;}
 
   /* ── 說明介紹頁 ── */
-  #helpOverlay{position:fixed;inset:0;z-index:200;display:none;background:rgba(20,10,4,.88);overflow-y:auto;font-family:'Noto Sans TC',sans-serif;color:var(--ink);}
-  #helpOverlay.show{display:block;}
-  #helpInner{max-width:420px;margin:0 auto;min-height:100%;background:var(--cream);padding:18px 18px 26px;box-sizing:border-box;}
+  #helpOverlay{position:fixed;inset:0;z-index:200;display:none;background:rgba(20,10,4,.7);align-items:center;justify-content:center;padding:20px;font-family:'Noto Sans TC',sans-serif;color:var(--ink);}
+  #helpOverlay.show{display:flex;}
+  #helpInner{width:100%;max-width:360px;max-height:80vh;overflow-y:auto;background:var(--cream);padding:18px;box-sizing:border-box;border-radius:16px;box-shadow:0 12px 34px rgba(0,0,0,0.4);}
   #helpInner h2{font-size:1.1rem;margin:0 0 4px;color:var(--wood-dark);}
   #helpInner h3{font-size:.95rem;margin:18px 0 8px;color:var(--wood-dark);display:flex;align-items:center;gap:6px;}
   #helpInner p, #helpInner li{font-size:.83rem;line-height:1.7;}
@@ -503,7 +503,7 @@
 
 <button class="sound-toggle-btn corner-left" id="restartBtn" aria-label="返回平台" title="返回平台" style="display:none; filter: brightness(1.9) saturate(1.8) drop-shadow(0 0 4px rgba(255,255,255,0.9));">🔚</button>
 <button class="sound-toggle-btn" id="muteBtn" aria-label="切換音效" title="切換音效">🔊</button>
-<button class="sound-toggle-btn corner-left2" id="helpBtn" aria-label="遊戲說明" title="遊戲說明" onclick="document.getElementById('helpOverlay').classList.add('show')">📖</button>
+<button class="sound-toggle-btn corner-left" id="helpBtn" aria-label="遊戲說明" title="遊戲說明" onclick="document.getElementById('helpOverlay').classList.add('show')">📖</button>
 
 <div id="helpOverlay">
   <div id="helpInner">
@@ -1371,6 +1371,10 @@ function switchScreen(id){
   // 返回按鈕（原本是重來按鈕，改成強制返回平台用）：只在遊戲進行中顯示，說明頁/結算頁不需要
   const restartBtn = document.getElementById('restartBtn');
   if(restartBtn) restartBtn.style.display = (id === 'screen-game') ? '' : 'none';
+
+  // 說明按鈕：只在介紹頁出現，不需要在遊戲進行中或結算頁顯示
+  const helpBtn = document.getElementById('helpBtn');
+  if(helpBtn) helpBtn.style.display = (id === 'screen-intro') ? '' : 'none';
   
   // 如果切換到介紹頁面，更新統計顯示
   if(id === 'screen-intro'){

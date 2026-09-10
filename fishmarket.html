@@ -224,11 +224,11 @@
         #intro-start-btn:active { background: rgba(255,255,255,0.18); transform: scale(0.96); }
 
         /* ── 說明介紹頁：疊在開場圖右上角的圓形按鈕，點開後是可捲動的整頁說明 ── */
-        #intro-help-btn {
-            position: absolute; top: 12px; left: 12px; z-index: 2;
-            width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;
-            background: rgba(10,20,25,0.55); color: #fff; font-size: 17px;
-            display: flex; align-items: center; justify-content: center;
+        #ingame-help-btn {
+            width: 22px; height: 22px; border-radius: 50%; border: none; cursor: pointer;
+            background: rgba(255,255,255,0.35); color: #012F72; font-size: 13px; font-weight: bold;
+            display: inline-flex; align-items: center; justify-content: center;
+            margin-left: 6px; vertical-align: middle; flex-shrink: 0;
         }
         #help-overlay {
             position: fixed; inset: 0; z-index: 200; display: none;
@@ -312,7 +312,6 @@
     <div id="intro-screen">
         <div id="intro-card">
             <img src="image/fmbg.png" alt="永續魚市拍賣場：漁港開賣！永續海洋決勝負">
-            <button id="intro-help-btn" onclick="document.getElementById('help-overlay').classList.add('show')" aria-label="遊戲說明">📖</button>
             <button id="intro-start-btn" onclick="startGame()" aria-label="開始拍賣"></button>
         </div>
     </div>
@@ -386,7 +385,10 @@
 
     <header id="top-bar">
         <div id="top-bar-row1">
-            <div id="ui-day-season">🌸春季</div>
+            <div style="display:flex; align-items:center;">
+                <div id="ui-day-season">🌸春季</div>
+                <button id="ingame-help-btn" onclick="document.getElementById('help-overlay').classList.add('show')" aria-label="遊戲說明">?</button>
+            </div>
             <div style="display:flex; align-items:center; gap:8px;">
                 <div id="ui-budget">💰 現金: 1500元</div>
                 <button id="exit-fab" onclick="exitAndReturnToPlatform()" aria-label="返回平台" style="filter: brightness(1.9) saturate(1.8) drop-shadow(0 0 4px rgba(255,255,255,0.9));">🔚 返回</button>
