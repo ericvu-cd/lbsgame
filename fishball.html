@@ -763,50 +763,6 @@
    </div>
   </div>
 
-  <div id="helpOverlay">
-    <div id="helpInner">
-      <h2>📖 苑港｜魚丸追追樂</h2>
-
-      <h3>🎮 遊戲介紹</h3>
-      <p>在漁港出現一串會持續移動的魚丸，一路吃東西維持生態平衡，10 個關卡、每關都有潮水上漲的時間壓力跟地形機關，分數是全程累計的。</p>
-
-      <h3>📋 玩法流程</h3>
-      <ol>
-        <li>魚丸串會持續往前移動，滑動控制轉向</li>
-        <li>吃到東西依種類加減分、變長變短</li>
-        <li>連續吃到同一種東西會累積 COMBO 加成</li>
-        <li>潮水會隨時間上漲，走過潮水邊界就直接失敗</li>
-        <li>撞到自己也會失敗，但<strong>撞到地圖上的牆只會自動轉向，不會失敗</strong></li>
-        <li>「永續值」歸零（過度捕撈）也會直接失敗——失敗一律整輪重來</li>
-        <li>移動路徑經過的海底會逐漸復育成珊瑚礁，達成階段門檻額外加分</li>
-      </ol>
-
-      <h3>🔎 圖示說明</h3>
-      <p style="font-size:.76rem;color:#8a7a5a;">下面的圖示是直接從遊戲程式抓出來的，跟畫面上看到的一模一樣。</p>
-      <table class="help-icon-table" id="helpIconTable">
-        <tr><td id="helpIcon-normal"></td><td>一般魚：+5 分，加長</td></tr>
-        <tr><td id="helpIcon-shark"></td><td>鯊魚：+10 分，大幅加長</td></tr>
-        <tr><td id="helpIcon-juvenile"></td><td>幼魚：−5 分，縮短，扣永續值</td></tr>
-        <tr><td id="helpIcon-protected"></td><td>保育類：−20 分，縮短，大幅扣永續值（盡量避開）</td></tr>
-        <tr><td id="helpIcon-ball"></td><td>金幣：+20 分，不影響長度</td></tr>
-        <tr><td id="helpIcon-ice"></td><td>保鮮冰塊：不加減分，回補永續值，不參與連線</td></tr>
-      </table>
-      <div class="help-note">撞到地圖上的牆壁只會自動轉向，不算失敗；真正的失敗條件是撞到自己、潮水淹過邊界、永續值歸零、或被地圖困住。</div>
-
-      <h3>🏆 計分與獎勵</h3>
-      <p>吃到的東西分數加總 + 連線加成 + 珊瑚礁復育階段獎勵。</p>
-      <ul>
-        <li>通過全部 10 關且總分 1000 分以上：發「魚丸守護神」徽章 +20 金幣</li>
-        <li>之後每次破紀錄：+1 金幣</li>
-      </ul>
-
-      <div class="help-close-row">
-        <button onclick="document.getElementById('helpOverlay').classList.remove('show')">關閉說明</button>
-      </div>
-      <div class="help-copyright">© 2026 友魚守護團</div>
-    </div>
-  </div>
-
   <!-- GAME OVER (full screen) -->
   <div class="overlay hidden" id="endOverlay">
    <span class="end-bg-deco" style="top:8%;left:8%;">🐟</span>
@@ -846,6 +802,50 @@
     </div>
   </div>
 
+</div>
+
+<div id="helpOverlay">
+  <div id="helpInner">
+    <h2>📖 苑港｜魚丸追追樂</h2>
+
+    <h3>🎮 遊戲介紹</h3>
+    <p>在漁港出現一串會持續移動的魚丸，一路吃東西維持生態平衡，10 個關卡、每關都有潮水上漲的時間壓力跟地形機關，分數是全程累計的。</p>
+
+    <h3>📋 玩法流程</h3>
+    <ol>
+      <li>魚丸串會持續往前移動，滑動控制轉向</li>
+      <li>吃到東西依種類加減分、變長變短</li>
+      <li>連續吃到同一種東西會累積 COMBO 加成</li>
+      <li>潮水會隨時間上漲，走過潮水邊界就直接失敗</li>
+      <li>撞到自己也會失敗，但<strong>撞到地圖上的牆只會自動轉向，不會失敗</strong></li>
+      <li>「永續值」歸零（過度捕撈）也會直接失敗——失敗一律整輪重來</li>
+      <li>移動路徑經過的海底會逐漸復育成珊瑚礁，達成階段門檻額外加分</li>
+    </ol>
+
+    <h3>🔎 圖示說明</h3>
+    <p style="font-size:.76rem;color:#8a7a5a;">下面的圖示是直接從遊戲程式抓出來的，跟畫面上看到的一模一樣。</p>
+    <table class="help-icon-table" id="helpIconTable">
+      <tr><td id="helpIcon-normal"></td><td>一般魚：+5 分，加長</td></tr>
+      <tr><td id="helpIcon-shark"></td><td>鯊魚：+10 分，大幅加長</td></tr>
+      <tr><td id="helpIcon-juvenile"></td><td>幼魚：−5 分，縮短，扣永續值</td></tr>
+      <tr><td id="helpIcon-protected"></td><td>保育類：−20 分，縮短，大幅扣永續值（盡量避開）</td></tr>
+      <tr><td id="helpIcon-ball"></td><td>金幣：+20 分，不影響長度</td></tr>
+      <tr><td id="helpIcon-ice"></td><td>保鮮冰塊：不加減分，回補永續值，不參與連線</td></tr>
+    </table>
+    <div class="help-note">撞到地圖上的牆壁只會自動轉向，不算失敗；真正的失敗條件是撞到自己、潮水淹過邊界、永續值歸零、或被地圖困住。</div>
+
+    <h3>🏆 計分與獎勵</h3>
+    <p>吃到的東西分數加總 + 連線加成 + 珊瑚礁復育階段獎勵。</p>
+    <ul>
+      <li>通過全部 10 關且總分 1000 分以上：發「魚丸守護神」徽章 +20 金幣</li>
+      <li>之後每次破紀錄：+1 金幣</li>
+    </ul>
+
+    <div class="help-close-row">
+      <button onclick="document.getElementById('helpOverlay').classList.remove('show')">關閉說明</button>
+    </div>
+    <div class="help-copyright">© 2026 友魚守護團</div>
+  </div>
 </div>
 
 <script>

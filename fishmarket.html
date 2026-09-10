@@ -248,6 +248,7 @@
         #help-inner .help-chip-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0; }
         #help-inner .help-chip { display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #E5DFD3; border-radius: 999px; padding: 5px 12px 5px 8px; font-size: 0.8rem; }
         #help-inner .help-chip .chip-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+        #help-inner .help-chip .chip-icon-img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
         #help-inner .help-close-row { margin-top: 22px; }
         #help-inner .help-close-row button { width: 100%; padding: 12px; border: none; border-radius: 10px; background: #3C8577; color: #fff; font-weight: bold; font-size: 0.95rem; cursor: pointer; }
         #help-inner .help-copyright { margin-top: 16px; text-align: center; font-size: 0.72rem; color: #999; }
@@ -339,18 +340,19 @@
                 <span class="help-chip"><span class="chip-icon">🔨</span>拍賣中／SOLD 落槌</span>
             </div>
             <div class="help-chip-row">
-                <span class="help-chip"><span class="chip-icon">👨‍🍳</span>餐廳老闆</span>
-                <span class="help-chip"><span class="chip-icon">🍲</span>快炒店</span>
-                <span class="help-chip"><span class="chip-icon">🏭</span>量販採購</span>
-                <span class="help-chip"><span class="chip-icon">🚚</span>批發商</span>
-                <span class="help-chip"><span class="chip-icon">🛒</span>魚販阿姨</span>
-                <span class="help-chip"><span class="chip-icon">🛒</span>魚販阿伯</span>
+                <span class="help-chip"><img class="chip-icon-img" src="image/餐廳老闆.png" alt="" onerror="this.outerHTML='👨‍🍳'">餐廳老闆</span>
+                <span class="help-chip"><img class="chip-icon-img" src="image/快炒店.png" alt="" onerror="this.outerHTML='🍲'">快炒店</span>
+                <span class="help-chip"><img class="chip-icon-img" src="image/量販採購.png" alt="" onerror="this.outerHTML='🏭'">量販採購</span>
+                <span class="help-chip"><img class="chip-icon-img" src="image/批發商.png" alt="" onerror="this.outerHTML='🚚'">批發商</span>
+                <span class="help-chip"><img class="chip-icon-img" src="image/魚販阿姨.png" alt="" onerror="this.outerHTML='🛒'">魚販阿姨</span>
+                <span class="help-chip"><img class="chip-icon-img" src="image/魚販阿伯.png" alt="" onerror="this.outerHTML='🛒'">魚販阿伯</span>
             </div>
             <p>結算時才會看到（競標當下不會提示）：</p>
             <div class="help-chip-row">
                 <span class="help-chip"><span class="chip-icon">🟢</span>建議</span>
                 <span class="help-chip"><span class="chip-icon">🟡</span>想清楚</span>
                 <span class="help-chip"><span class="chip-icon">🔴</span>避免</span>
+                <span class="help-chip"><span class="chip-icon">✅</span>非保育類物種</span>
                 <span class="help-chip"><span class="chip-icon">🚨</span>保育類／過度捕撈警示</span>
             </div>
             <div class="help-note">遊戲刻意不在出價當下告訴你魚是不是保育類，要靠玩家自己的知識判斷。</div>
