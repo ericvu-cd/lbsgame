@@ -227,7 +227,14 @@
         #final-result-screen { position: fixed; inset: 0; z-index: 90; display: none; align-items: center; justify-content: center; padding: 3vh 4vw; background: radial-gradient(ellipse at 50% 15%, #123B44 0%, #06232B 65%, #02141A 100%); }
         #final-result-screen.show { display: flex; }
         #final-result-card { width: 100%; max-width: 440px; max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 34px rgba(0,0,0,0.45); }
-        #final-result-body { overflow-y: auto; padding: 22px 20px; text-align: center; color: #1F2A38; }
+        #final-result-body {
+            flex: 1 1 auto; min-height: 0; /* 沒有這兩行，內容一長就會把卡片撐爆，
+                超出 max-height 的部分（包括最下面的「關閉」按鈕）會被外層 overflow:hidden
+                直接裁掉、完全看不到，不是玩家找不到，是畫面上根本沒顯示出來。
+                加上這兩行後，這塊區域會固定佔滿卡片扣掉按鈕列之後的剩餘高度，
+                內容太長就在這塊區域「內部」捲動，按鈕列永遠留在卡片最下面看得到。 */
+            overflow-y: auto; padding: 22px 20px; text-align: center; color: #1F2A38;
+        }
         #final-result-body .idle-emoji { font-size: clamp(2rem, 6vh, 3rem); }
         #final-result-body .idle-title { font-size: clamp(1.15rem, 3.2vh, 1.45rem); font-weight: bold; color: #012F72; margin: 4px 0 10px; }
         #final-result-body .final-round-list { text-align: left; margin-bottom: 12px; font-size: 0.9rem; }
@@ -1327,6 +1334,19 @@
                 auctionState.timeLeft = BIDDING_SECONDS;
                 bidder.bidCount++;
                 bidder.status = `加價 +${bidAmount}`;
+
+                // 出價泡泡最長只顯示 3 秒：畫面重繪只會在「有其他出價事件」時才觸發，
+                // 如果接下來一段時間都沒人再出價，氣泡在沒有這個計時器的情況下會
+                // 一直停在畫面上不會消失。這裡另外排一個 3 秒後的強制重繪，
+                // 到時間就把狀態文字換掉（讓 bidMatch 比對不到，氣泡自然不會再畫出來）。
+                clearTimeout(bidder._bubbleTimer);
+                bidder._bubbleTimer = setTimeout(() => {
+                    // 這 3 秒內如果又出價了，status 早就被換成新的內容，這裡就不要誤蓋掉
+                    if (bidder.status === `加價 +${bidAmount}`) {
+                        bidder.status = (auctionState.highestBidderId === bidder.id) ? '領先中' : '觀望';
+                        updateAuctionUI();
+                    }
+                }, 3000);
 
                 auctionState.aiStatus.forEach(ai => {
                     if (!ai.out && ai.id !== bidder.id) ai.status = '觀望';

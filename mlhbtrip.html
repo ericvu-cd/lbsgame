@@ -531,8 +531,26 @@ window.addEventListener('message', function(event){
     renderNick();
     renderAll();
   }
-  // ack（回應 complete）目前不需要特別處理：通行證是就地判斷 isNew 才顯示领取效果，
-  // 不需要等平台回應才給使用者回饋；如果平台端有拒絕的情況，通行證本身不會被收回。
+  // ack（回應 complete）：通行證本來是就地判斷 isNew 就顯示領取效果，不等平台回應，
+  // 但如果平台明確拒絕了這筆（result.rejectedReason 有值，且我們要的這枚證書不在
+  // certificatesAwarded 裡），代表剛剛樂觀顯示的「已領取」其實是假的，要復原掉。
+  // 注意：certificatesAwarded 只列「這次新發放」的，已經擁有過的證書重送一次
+  // （例如剛好卡到瞬間網路問題後玩家自己重新整理重試）不會在裡面，但那種情況
+  // result.rejectedReason 也不會有值，不會被這裡誤判成失敗、誤復原。
+  if(msg.type === 'ack' && msg.forType === 'complete'){
+    var result = msg.result || {};
+    var awarded = result.certificatesAwarded || [];
+    Object.keys(pendingCertClaims).forEach(function(certId){
+      if(result.rejectedReason && awarded.indexOf(certId) === -1){
+        var harborId = pendingCertClaims[certId];
+        var h = HARBORS.filter(function(x){return x.id===harborId;})[0];
+        revokePass(harborId);
+        showToast('⚠️「'+(h?h.name:harborId)+'」通行證領取失敗，請稍後重試');
+      }
+      delete pendingCertClaims[certId];
+    });
+    renderAll();
+  }
 });
 
 /* ---------- storage ---------- */
@@ -667,6 +685,13 @@ function renderAll(){
 }
 
 /* ---------- claim ---------- */
+// 樂觀更新：點下去立刻顯示「已領取」給玩家即時回饋，同時記下這筆請求，
+// 等平台的 ack 回來——如果平台明確拒絕了（例如剛好卡到當日次數上限），
+// 才把這個假的「已領取」復原掉，不會讓玩家看著一個其實沒有真的存進去的畫面
+// 卻毫無察覺（下次重新整理雖然 syncPassesFromPlatform 也會校正回來，
+// 但在那之前這段期間畫面是錯的）。
+var pendingCertClaims = {}; // certId -> harborId
+
 el.claimBtn.addEventListener('click', function(){
   var h = HARBORS.filter(function(x){return x.id===selectedId;})[0];
   var isNew = grantPass(h.id);
@@ -674,13 +699,21 @@ el.claimBtn.addEventListener('click', function(){
     playStampFx(h);
     justClaimedId = h.id;
     showToast('已領取「'+h.name+'」通行證');
-    sendToPlatform('complete', { certificateIds: [certIdFor(h.id)] }); // 每集到一張，就上傳那一張
+    var certId = certIdFor(h.id);
+    pendingCertClaims[certId] = h.id;
+    sendToPlatform('complete', { certificateIds: [certId] }); // 每集到一張，就上傳那一張
     if(passCount()===HARBORS.length){
       setTimeout(function(){ openSheet(el.celebrateSheet); }, 1400);
     }
   }
   renderAll();
 });
+
+function revokePass(id){
+  var d = loadPasses();
+  delete d[id];
+  savePasses(d);
+}
 
 /* ---------- locate ---------- */
 // 只在頁面載入時呼叫一次 watchPosition：整個瀏覽階段只會跳出一次權限請求，
