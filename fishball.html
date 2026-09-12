@@ -346,6 +346,24 @@
   }
   #helpOverlay.show{ display:flex; }
 
+  /* 切到背景時暫停：回到前景後顯示，點了才真的恢復計時/移動 */
+  #pauseOverlay{
+    position:fixed; inset:0; z-index:400; display:none;
+    align-items:center; justify-content:center;
+    background:rgba(4,14,20,0.75);
+    font-family:"Noto Sans TC",sans-serif;
+  }
+  #pauseOverlay.show{ display:flex; }
+  #pauseOverlay .pause-card{
+    background:#fff8ec; border-radius:16px; padding:26px 30px;
+    text-align:center; box-shadow:0 12px 34px rgba(0,0,0,0.4);
+  }
+  #pauseOverlay h3{ margin:0 0 16px; font-size:1.1rem; color:#8a5a16; }
+  #pauseOverlay button{
+    padding:12px 30px; border:none; border-radius:10px;
+    background:#8a5a16; color:#fff; font-weight:bold; font-size:0.95rem; cursor:pointer;
+  }
+
   /* ── 開始遊戲前的 5 秒倒數 ── */
   #gameCountdownOverlay{
     position:fixed; inset:0; z-index:250; display:none;
@@ -742,6 +760,9 @@
 </style>
 </head>
 <body>
+<audio id="bgm" loop preload="auto">
+  <source src="audio/fbbgm.m4a" type="audio/mp4">
+</audio>
 <div id="portrait-warning" class="portrait-warning">
   <div class="portrait-warning-icon">📱↻</div>
   <h2>請將手機轉為直式</h2>
@@ -757,7 +778,7 @@
         <div class="timer pixel" id="levelBadge" style="min-width:auto; padding:2px 6px;">Lv1</div>
         <div class="timer pixel" id="timerDisplay">55</div>
         <button type="button" id="muteBtn" class="mute-btn" aria-label="音效開關" aria-pressed="false">🔊</button>
-        <button type="button" id="exitBtn" class="mute-btn" aria-label="返回平台" style="filter: brightness(1.9) saturate(1.8) drop-shadow(0 0 4px rgba(255,255,255,0.9));">🔚</button>
+        <button type="button" id="exitBtn" class="mute-btn" aria-label="返回平台" style="filter: brightness(1.9) saturate(1.8) drop-shadow(0 0 4px rgba(255,255,255,0.9));">⛔</button>
       </div>
     </div>
     <div class="stat-bar">
@@ -844,6 +865,13 @@
     </div>
   </div>
 
+</div>
+
+<div id="pauseOverlay">
+  <div class="pause-card">
+    <h3>⏸ 遊戲已暫停</h3>
+    <button onclick="resumeFromPause()">▶ 繼續遊戲</button>
+  </div>
 </div>
 
 <div id="helpOverlay">
@@ -2118,6 +2146,11 @@
   const startMuteBtn = document.getElementById('startMuteBtn');
   const muteBtns = [muteBtn, startMuteBtn];
 
+  // ── 背景音樂：跟 SFX 是分開的兩套東西（SFX 是即時合成的音效，這是外部檔案），
+  // 但共用同一顆靜音按鈕跟音量邏輯，靜音時 SFX 靜音的同時，背景音樂也要跟著靜音。
+  const bgm = document.getElementById('bgm');
+  bgm.volume = 0.35;
+
   function syncMuteUI(nowMuted){
     for(const b of muteBtns){
       if(!b) continue;
@@ -2125,6 +2158,7 @@
       b.classList.toggle('is-muted', nowMuted);
       b.setAttribute('aria-pressed', String(nowMuted));
     }
+    bgm.muted = nowMuted;
   }
 
   function toggleMute(){
@@ -3233,6 +3267,11 @@
     SFX.unlock();
     SFX.start();
     SFX.ambientStart();
+    // 背景音樂：只有「真正重新開始」（第一次玩／再玩一次，withCountdown 為 true）
+    // 才重置回開頭播放；銜接下一關時（withCountdown 為 false）讓音樂繼續播放，
+    // 不要每過一關就整首歌重播一次，聽起來會很跳。
+    if (withCountdown) bgm.currentTime = 0;
+    if (bgm.paused) bgm.play().catch(()=>{}); // 用 catch 保險，避免拋出未處理的例外
     sizeCanvas();
     resetState(); // 這裡面本來就會把 running 設回 false、準備好蛇跟食物的初始位置
     startOverlay.classList.add('hidden');
@@ -3282,6 +3321,31 @@
     clearTimeout(tideTimeoutId);
     cancelAnimationFrame(rafId);
   }
+
+  // ── 切到背景時暫停：分頁不可見時（切app、鎖螢幕、切分頁）直接停下來，
+  // 不讓潮水/計時在背景偷跑；回到前景後跳出提示，玩家點了才真的恢復移動，
+  // 不會一回來就發現時間已經跑掉、或魚丸串已經自己撞牆了。
+  let pausedForVisibility = false;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (running) {
+        pausedForVisibility = true;
+        running = false;
+        stopIntervals();
+        bgm.pause(); // 音樂本身不會因為分頁隱藏就自動停，要自己明確暫停
+      }
+      // 分頁現在是隱藏的，暫停提示等真的切回來才顯示，不然使用者看不到。
+    } else if (pausedForVisibility) {
+      document.getElementById('pauseOverlay').classList.add('show');
+    }
+  });
+
+  window.resumeFromPause = function () {
+    document.getElementById('pauseOverlay').classList.remove('show');
+    pausedForVisibility = false;
+    bgm.play().catch(()=>{});
+    beginMotion(); // 跟一開始倒數結束時是同一段「真正開始移動」的邏輯，直接重用
+  };
 
   startBtn.addEventListener('click', ()=>{
     currentLevel = 1;
