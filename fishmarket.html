@@ -376,6 +376,7 @@
         <div id="final-result-card" class="brick-panel">
             <div id="final-result-body"></div>
             <div id="final-result-btn-row">
+                <button class="btn-bid" style="background:#3C8577;" onclick="resetAndPlayAgain()">再玩一次</button>
                 <button class="btn-bid" style="background:#3C8577;" onclick="closeAndReturnToPlatform()">關閉</button>
             </div>
         </div>
@@ -1587,6 +1588,24 @@
         function startGame() {
             SFX.unlock();
             document.getElementById('intro-screen').style.display = 'none';
+            initRound();
+        }
+
+        // 「再玩一次」：只重置遊戲內部狀態、重新開始，不跳回平台，
+        // 所以不會再走到 openTask() 那段扣款流程——這是特意要的效果。
+        // 徽章/金幣/分數照樣走 sendToPlatform('complete'/'score')，平台那邊是逐則訊息
+        // 獨立處理，不會管這是分頁裡的第幾次遊玩，判斷邏輯（已擁有徽章不重複發、
+        // 分數要贏過 Firestore 上真正的最高分）跟重新整理分頁進來玩沒有任何差別。
+        function resetAndPlayAgain() {
+            gameState.round = 1;
+            gameState.seasonIndex = 0;
+            gameState.budget = 0;
+            gameState.todayBoxes = [];
+            gameState.playerInventory = [];
+            gameState.history = [];
+            gameState.lastTopUp = 0;
+            gameState.aiBudgets = {};
+            document.getElementById('final-result-screen').style.display = 'none';
             initRound();
         }
     </script>

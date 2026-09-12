@@ -707,6 +707,7 @@
       </div>
     </div>
     <div class="btn-row">
+      <button class="start-btn" id="playAgainBtn" style="padding:12px 30px;">再玩一次</button>
       <button class="start-btn" id="closeGameBtn" style="padding:12px 30px;">關閉</button>
     </div>
   </div>
@@ -731,6 +732,7 @@
       </div>
     </div>
     <div class="btn-row">
+      <button class="start-btn" id="playAgainLoseBtn" style="padding:12px 30px;">再玩一次</button>
       <button class="start-btn" id="closeGameLoseBtn" style="padding:12px 30px;">關閉</button>
 
     </div>
@@ -1417,10 +1419,18 @@ document.getElementById('collectFishBtn').addEventListener('keydown', (e)=>{
   SoundFX.uiClick?.();
   collectFish();
 });
+document.getElementById('playAgainBtn').addEventListener('click', ()=>{
+  SoundFX.uiClick();
+  startGame(); // 只重置遊戲內部狀態、重新開始，不跳回平台，不會再走到扣款流程
+});
 document.getElementById('closeGameBtn').addEventListener('click', ()=>{
   SoundFX.uiClick();
   sendToPlatform('exit', {}); // 通知平台這個任務視窗要關了，平台會清掉對應的記錄
   window.close();
+});
+document.getElementById('playAgainLoseBtn').addEventListener('click', ()=>{
+  SoundFX.uiClick();
+  startGame();
 });
 document.getElementById('closeGameLoseBtn').addEventListener('click', ()=>{
   SoundFX.uiClick();
@@ -1833,6 +1843,12 @@ function isFullyRepaired(){
 
 function startGame(){
   stopTimers();
+  // 「再玩一次」是從結算彈窗直接呼叫這個函式，彈窗本身要記得關掉，
+  // 不然畫面會變成遊戲畫面已經重新開始、上面卻還蓋著上一局的結算彈窗。
+  // 第一次開局呼叫這裡時，這兩個彈窗本來就沒有 active，移除一個不存在的
+  // class 不會有任何副作用，所以不用分「是不是第一次」，一律清乾淨最安全。
+  document.getElementById('winOverlay').classList.remove('active');
+  document.getElementById('loseOverlay').classList.remove('active');
   state = {
     cells: randomPuzzle(),
     moves: 0,

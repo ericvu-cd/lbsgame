@@ -326,6 +326,17 @@
     z-index:10; width:38px; height:38px; border-radius:50%; border:none; cursor:pointer;
     background:rgba(10,20,25,0.55); color:#fff; font-size:16px;
     display:flex; align-items:center; justify-content:center;
+    animation: helpBtnBreathe 2.4s ease-in-out infinite;
+    /* 只用 opacity + transform 做呼吸效果——這兩個屬性瀏覽器可以直接交給合成層處理，
+       不會觸發版面重新計算（reflow），是耗電成本最低的動畫做法。避免用 box-shadow
+       發光、放大陰影範圍這類效果，那些每一幀都要重新算陰影範圍，比較耗電。 */
+  }
+  @keyframes helpBtnBreathe {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.55; transform: scale(0.9); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #startHelpBtn { animation: none; } /* 尊重使用者「減少動態效果」的系統設定 */
   }
   #helpOverlay{
     position:fixed; inset:0; z-index:300; display:none;
@@ -334,6 +345,27 @@
     font-family:"Noto Sans TC",sans-serif; color:#222;
   }
   #helpOverlay.show{ display:flex; }
+
+  /* ── 開始遊戲前的 5 秒倒數 ── */
+  #gameCountdownOverlay{
+    position:fixed; inset:0; z-index:250; display:none;
+    align-items:center; justify-content:center;
+    background:rgba(4,14,20,0.35);
+    pointer-events:none; /* 倒數期間不擋住畫面下方任何東西，純視覺覆蓋 */
+  }
+  #gameCountdownOverlay.show{ display:flex; }
+  #gameCountdownNumber{
+    font-family:'Press Start 2P','Noto Sans TC',sans-serif;
+    font-size:96px; color:#fff; line-height:1;
+    text-shadow: 0 0 18px rgba(255,255,255,0.6), 0 4px 10px rgba(0,0,0,0.5);
+    animation: countdownPop 1s ease-out both;
+  }
+  @keyframes countdownPop {
+    0%   { transform: scale(0.2); opacity: 0; }
+    35%  { transform: scale(1.25); opacity: 1; }
+    65%  { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1); opacity: 0; }
+  }
   #helpInner{
     width:100%; max-width:380px; max-height:80vh; overflow-y:auto;
     background:#fff8ec; padding:18px 18px 22px; box-sizing:border-box;
@@ -768,6 +800,10 @@
    </div>
   </div>
 
+  <div id="gameCountdownOverlay">
+    <div id="gameCountdownNumber">5</div>
+  </div>
+
   <!-- GAME OVER (full screen) -->
   <div class="overlay hidden" id="endOverlay">
    <span class="end-bg-deco" style="top:8%;left:8%;">🐟</span>
@@ -787,6 +823,7 @@
     </div>
     <div class="end-btn-row">
       <button class="btn pixel" id="restartBtn">再玩一次</button>
+      <button class="btn pixel" id="playAgainBtn" style="display:none;">再玩一次</button>
       <button class="btn btn-outline pixel" id="backToInstructionsBtn">關閉</button>
     </div>
    </div>
@@ -2060,6 +2097,7 @@
   if(startBgImg.complete) positionStartButton();
   else startBgImg.addEventListener('load', positionStartButton);
   const restartBtn = document.getElementById('restartBtn');
+  const playAgainBtn = document.getElementById('playAgainBtn');
   const backToInstructionsBtn = document.getElementById('backToInstructionsBtn');
   const badgePopup = document.getElementById('badgePopup');
   const resultBoard = document.getElementById('resultBoard');
@@ -2513,6 +2551,7 @@
       reportHtml+
       buildKnowledgeBlock();
     restartBtn.style.display = 'none';
+    playAgainBtn.style.display = '';
     backToInstructionsBtn.style.display = '';
     endOverlay.classList.remove('hidden');
     initLoreCarousel();
@@ -2620,11 +2659,13 @@
         : `<div class="end-reason">準備好前往第 ${currentLevel+1} 關：${LEVELS[currentLevel].name}</div>`);
     if(isFinal){
       restartBtn.style.display = 'none';
+      playAgainBtn.style.display = '';
       backToInstructionsBtn.style.display = '';
       initLoreCarousel();
     } else {
       restartBtn.textContent = '下一關';
       restartBtn.style.display = '';
+      playAgainBtn.style.display = 'none';
       backToInstructionsBtn.style.display = 'none';
     }
     endOverlay.classList.remove('hidden');
@@ -3189,23 +3230,52 @@
   }, {passive:true});
 
   // ---------- START / RESTART ----------
-  function startGame(){
+  function startGame(withCountdown){
     SFX.unlock();
     SFX.start();
     SFX.ambientStart();
     sizeCanvas();
-    resetState();
-    running = true;
+    resetState(); // 這裡面本來就會把 running 設回 false、準備好蛇跟食物的初始位置
     startOverlay.classList.add('hidden');
-    startOverlay.style.display = 'none'; // 額外用 inline style 再鎖一次，優先權比任何 class 都高，
-                                          // 避免某些情境下 .hidden 這個 class 沒有正確生效，
-                                          // 導致開場的藍色天空背景層沒有真的完全消失、蓋住下面的遊戲畫面
+    startOverlay.style.display = 'none';
     endOverlay.classList.add('hidden');
     swipeHint.style.display = 'block';
+    draw(); // 手動畫一次，讓畫面先看得到蛇跟食物在哪，不是空白畫面
+    if (withCountdown) runCountdownThenBegin();
+    else beginMotion();
+  }
+
+  // 真正「開始移動」：計時、潮汐、主迴圈都是這裡才啟動
+  function beginMotion(){
+    running = true;
     lastTs = 0;
     startTide();
     startTimer();
     rafId = requestAnimationFrame(loop);
+  }
+
+  // 倒數 5→1，畫面正中央的數字用「由小放大」的方式跳出來，
+  // 倒數完才真的開始計時、開始移動——只用在「第一次開始遊戲」跟「再玩一次」，
+  // 過關後銜接下一關不用（不然每一關都多等5秒，10關玩下來太拖）。
+  function runCountdownThenBegin(){
+    const overlay = document.getElementById('gameCountdownOverlay');
+    const numEl = document.getElementById('gameCountdownNumber');
+    overlay.classList.add('show');
+    let n = 5;
+    function tick(){
+      if(n <= 0){
+        overlay.classList.remove('show');
+        beginMotion();
+        return;
+      }
+      numEl.textContent = String(n);
+      numEl.style.animation = 'none';
+      void numEl.offsetWidth; // 強制 reflow，讓動畫可以重新從頭播放一次
+      numEl.style.animation = '';
+      n--;
+      setTimeout(tick, 1000);
+    }
+    tick();
   }
 
   function stopIntervals(){
@@ -3217,12 +3287,22 @@
   startBtn.addEventListener('click', ()=>{
     currentLevel = 1;
     totalScore = 0;
-    startGame();
+    startGame(true); // 第一次開始遊戲：要倒數
+  });
+  // 「再玩一次」：只在真正的最終結算畫面（全破或失敗）出現，重置關卡與累計總分、
+  // 從第1關重新開始，不跳回平台——所以不會再走到 openTask() 那段扣款流程。
+  // startGame() 本身已經會處理隱藏 endOverlay，不用另外再清一次。
+  playAgainBtn.addEventListener('click', ()=>{
+    SFX.uiTap();
+    stopIntervals();
+    currentLevel = 1;
+    totalScore = 0;
+    startGame(true); // 重新開始：要倒數
   });
   restartBtn.addEventListener('click', ()=>{
     stopIntervals();
     currentLevel = Math.min(LEVELS.length, currentLevel + 1);
-    startGame();
+    startGame(false); // 銜接下一關：不要倒數，避免10關玩下來每關都多等5秒
   });
   backToInstructionsBtn.addEventListener('click', ()=>{
     SFX.uiTap();
