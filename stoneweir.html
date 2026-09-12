@@ -399,13 +399,6 @@
   /* ── 說明介紹頁 ── */
   #helpOverlay{position:fixed;inset:0;z-index:200;display:none;background:rgba(20,10,4,.7);align-items:center;justify-content:center;padding:20px;font-family:'Noto Sans TC',sans-serif;color:var(--ink);}
   #helpOverlay.show{display:flex;}
-
-  /* 切到背景時暫停：回到前景後顯示，點了才真的恢復 */
-  #pauseOverlay{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;background:rgba(20,10,4,.75);font-family:'Noto Sans TC',sans-serif;}
-  #pauseOverlay.show{display:flex;}
-  #pauseOverlay .pause-card{background:var(--cream);border-radius:16px;padding:26px 30px;text-align:center;box-shadow:0 12px 34px rgba(0,0,0,0.4);}
-  #pauseOverlay h3{margin:0 0 16px;font-size:1.1rem;color:var(--wood-dark);}
-  #pauseOverlay button{padding:12px 30px;border:none;border-radius:10px;background:var(--wood-dark);color:#fff;font-weight:bold;font-size:.95rem;cursor:pointer;}
   #helpInner{width:100%;max-width:360px;max-height:80vh;overflow-y:auto;background:var(--cream);padding:18px;box-sizing:border-box;border-radius:16px;box-shadow:0 12px 34px rgba(0,0,0,0.4);}
   #helpInner h2{font-size:1.1rem;margin:0 0 4px;color:var(--wood-dark);}
   #helpInner h3{font-size:.95rem;margin:18px 0 8px;color:var(--wood-dark);display:flex;align-items:center;gap:6px;}
@@ -511,13 +504,6 @@
 <button class="sound-toggle-btn corner-left" id="restartBtn" aria-label="返回平台" title="返回平台" style="display:none; filter: brightness(1.9) saturate(1.8) drop-shadow(0 0 4px rgba(255,255,255,0.9));">⛔</button>
 <button class="sound-toggle-btn" id="muteBtn" aria-label="切換音效" title="切換音效">🔊</button>
 <button class="sound-toggle-btn corner-left" id="helpBtn" aria-label="遊戲說明" title="遊戲說明" onclick="document.getElementById('helpOverlay').classList.add('show')">📖</button>
-
-<div id="pauseOverlay">
-  <div class="pause-card">
-    <h3>⏸ 遊戲已暫停</h3>
-    <button onclick="resumeFromPause()">▶ 繼續遊戲</button>
-  </div>
-</div>
 
 <div id="helpOverlay">
   <div id="helpInner">
@@ -1070,15 +1056,7 @@ const SoundFX = (function(){
     lose(){
       tone(220, 0.5, 'sawtooth', 0.18, 0, 90);
       noiseBurst({dur:0.6, vol:0.15, filterFreq:300, filterType:'lowpass', Q:0.6, delay:0.05});
-    },
-    // 真正的暫停：AudioContext.suspend() 會讓整個音訊處理圖徹底停止運算，
-    // 不是像 setAmbientLevel(0,...) 那樣只是「調小聲音但音訊圖還在跑」——
-    // 之前那版被抓到「音效還在背景跑」就是這個差異：調音量到 0 只是聽不到，
-    // 底層的振盪器/噪音源其實完全沒停，還在佔用運算資源、時間軸也還在走。
-    // suspend() 之後，之前排定好的所有音訊事件都會原地凍結，resume() 一叫，
-    // 會從凍結的那個時間點繼續，不會像「重新建立一個新的環境音」那樣從頭來過。
-    suspendAll(){ if(ctx && ctx.state === 'running') ctx.suspend(); },
-    resumeAll(){ if(ctx && ctx.state === 'suspended') ctx.resume(); }
+    }
   };
 })();
 
@@ -1476,38 +1454,6 @@ function randomPuzzle(){
   return cells;
 }
 
-// ── 真正可暫停的計時器：包住 setTimeout，額外記住「什麼時候排的、原本要等多久」，
-// 暫停時就能算出「還剩多少時間」再清掉；恢復時用剩下的時間繼續排，接著跑同一個
-// callback——不是把計時器整個清掉、恢復時重新起算一次全新的等待時間。
-// state[field] 還是照樣存實際的 timeoutId，跟原本程式碼裡到處會讀/清 state.tideHandle
-// 這類欄位的地方完全相容，不用去改動那些既有的檢查邏輯。
-const timerRegistry = new Map(); // field -> { fn, delay, startedAt }
-
-function pTimeout(field, fn, delay){
-  const startedAt = Date.now();
-  const id = setTimeout(fn, delay);
-  state[field] = id;
-  timerRegistry.set(field, { fn, delay, startedAt });
-  return id;
-}
-
-function pauseAllPTimers(){
-  const frozen = {};
-  for(const [field, rec] of timerRegistry){
-    clearTimeout(state[field]);
-    frozen[field] = { fn: rec.fn, remaining: Math.max(0, rec.delay - (Date.now() - rec.startedAt)) };
-    state[field] = null;
-  }
-  timerRegistry.clear();
-  return frozen;
-}
-
-function resumeAllPTimers(frozen){
-  for(const field in frozen){
-    pTimeout(field, frozen[field].fn, frozen[field].remaining);
-  }
-}
-
 function stopTimers(){
   if(state){
     clearInterval(state.timerHandle);
@@ -1521,129 +1467,6 @@ function stopTimers(){
     clearTimeout(state.thiefHandle);
   }
 }
-
-// ── 切到背景時暫停：分頁不可見時（切app、鎖螢幕、切分頁）把所有計時器清掉，
-// 不讓潮汐/鳥/小偷在背景偷跑；回到前景後跳出提示，玩家點了才真的恢復。
-// 恢復時只重新排程「當下日夜階段」對應的事件（白天排鳥、夜晚排小偷），
-// 不能呼叫 enterDayMode()/enterNightMode()——那兩個函式會連視覺（夜晚罩層、
-// 收魚按鈕狀態）一起重置，如果暫停當下是晚上，回來卻被強制重置回白天畫面就錯了。
-let pausedForVisibility = false;
-document.addEventListener('visibilitychange', () => {
-  if(document.hidden){
-    if(state && !state.over && (state.timerHandle || timerRegistry.size > 0)){
-      pausedForVisibility = true;
-      freezeVisualsForPause();
-    }
-    // 分頁現在是隱藏的，暫停提示等真的切回來才顯示，不然使用者看不到。
-  } else if(pausedForVisibility){
-    document.getElementById('pauseOverlay').classList.add('show');
-  }
-});
-
-// 暫停當下，把畫面「凍結在目前這一刻」，不是清掉重置——
-// 海水讀出目前實際畫面位置凍結住，飛鳥用 CSS animation-play-state 暫停（原地不動，
-// 不是砍掉），環境音用 AudioContext.suspend() 真正停止運算（不是把音量調到0，
-// 那樣音訊圖其實還在跑，只是聽不到），每個計時器都記住「還剩多少時間」，
-// 之後 resumeFromPause() 會從這些凍結的狀態接著繼續，不是重新起算。
-function freezeVisualsForPause(){
-  SoundFX.suspendAll();
-
-  const oceanEl = document.getElementById('ocean');
-  state._oceanPhase = null;
-  if(oceanEl){
-    const matrix = getComputedStyle(oceanEl).transform;
-    let currentPx = 0;
-    if(matrix && matrix !== 'none'){
-      const is3d = matrix.startsWith('matrix3d');
-      const m = matrix.match(/matrix(?:3d)?\(([^)]+)\)/);
-      if(m){
-        const parts = m[1].split(',').map(s => parseFloat(s.trim()));
-        currentPx = is3d ? parts[13] : parts[5];
-      }
-    }
-    const vh = (currentPx / window.innerHeight) * 100;
-    oceanEl.style.transition = 'none';
-    oceanEl.style.transform = `translateY(${vh}vh)`;
-    void oceanEl.offsetWidth; // 強制 reflow，確保上面兩行立刻生效、不會被接下來的動作誤觸發過渡
-    if(timerRegistry.has('tideHandle')) state._oceanPhase = 'rising';
-    else if(timerRegistry.has('recedeHandle')) state._oceanPhase = 'receding';
-  }
-
-  // 飛鳥：animation-play-state 是 CSS 動畫原生支援的暫停/恢復機制，
-  // 凍結在目前飛到的那個位置，恢復時會從原地接著飛完剩下的動畫，不是重新飛一次。
-  document.querySelectorAll('.bird-fly').forEach(el => { el.style.animationPlayState = 'paused'; });
-
-  // 夜晚罩層：把目前實際的 computed transform 原封不動寫回 inline style 再關掉
-  // transition，就能凍結在滑動到一半的那個確切位置（這個是用 inline transition
-  // 手動控制的，不是 CSS animation，沒有 animation-play-state 可以用）。
-  const nightOverlayEl = document.getElementById('nightOverlay');
-  if(nightOverlayEl){
-    const matrix = getComputedStyle(nightOverlayEl).transform;
-    nightOverlayEl.style.transition = 'none';
-    if(matrix && matrix !== 'none') nightOverlayEl.style.transform = matrix;
-    void nightOverlayEl.offsetWidth;
-  }
-
-  clearInterval(state.timerHandle);
-  state.timerHandle = null;
-  state._frozenTimers = pauseAllPTimers();
-}
-
-window.resumeFromPause = function(){
-  document.getElementById('pauseOverlay').classList.remove('show');
-  pausedForVisibility = false;
-  if(!state || state.over) return;
-
-  SoundFX.resumeAll();
-
-  // 海水：從剛剛凍結的位置，用「原本這個階段還剩下的時間」繼續動畫到目標，
-  // 不是重新起算一個全新的漲潮/退潮週期。
-  const oceanEl = document.getElementById('ocean');
-  if(oceanEl && state._oceanPhase && state._frozenTimers){
-    const isRising = state._oceanPhase === 'rising';
-    const rec = state._frozenTimers[isRising ? 'tideHandle' : 'recedeHandle'];
-    const remaining = rec ? rec.remaining : 0;
-    if(remaining > 0){
-      const easing = isRising ? 'linear' : 'cubic-bezier(.34,1.2,.4,1)';
-      const target = isRising ? OCEAN_PEAK : OCEAN_LOW;
-      oceanEl.style.transition = `transform ${remaining}ms ${easing}`;
-      void oceanEl.offsetWidth;
-      oceanEl.style.transform = `translateY(${target})`;
-    }
-  }
-  state._oceanPhase = null;
-
-  // 飛鳥：解除暫停，從凍結的位置接著飛完剩下的動畫
-  document.querySelectorAll('.bird-fly').forEach(el => { el.style.animationPlayState = 'running'; });
-
-  // 夜晚罩層：從凍結的位置補完剩下的滑動。這裡沒有像海水那樣精確追蹤剩餘時間
-  // （它不是用 setTimeout 排程控制的，是直接在 enterDayMode/enterNightMode 觸發的
-  // 一次性 CSS transition），簡化成統一用一段較短時間把它從目前位置滑到該有的
-  // 最終位置，是目前唯一沒有做到「精確剩餘時間」的地方，其餘（海水/飛鳥/計時器/
-  // 音效）都是真正接續、不是重來。
-  const nightOverlayEl = document.getElementById('nightOverlay');
-  if(nightOverlayEl && state){
-    const targetTransform = (state.tidePhase === 'night') ? 'translateX(0)' : 'translateX(-100%)';
-    nightOverlayEl.style.transition = 'transform 0.6s ease';
-    void nightOverlayEl.offsetWidth;
-    nightOverlayEl.style.transform = targetTransform;
-  }
-
-  state.timerHandle = setInterval(()=>{
-    state.seconds++;
-    const timeStat = document.getElementById('statTime');
-    timeStat.textContent = formatTime(state.seconds);
-    if(state.tideInterval !== undefined && state.tideInterval <= 10){
-      timeStat.parentElement.classList.add('urgent');
-    } else {
-      timeStat.parentElement.classList.remove('urgent');
-    }
-    updateLiveScore();
-  }, 1000);
-
-  if(state._frozenTimers) resumeAllPTimers(state._frozenTimers);
-  state._frozenTimers = null;
-};
 
 /* ============ 日夜模式系统 ============ */
 const THIEF_CHECK_MIN_MS = 2000, THIEF_CHECK_MAX_MS = 5000;
@@ -1761,7 +1584,7 @@ function scheduleThiefCheck(){
   if(state.tidePhase !== 'night') return;
   
   const wait = THIEF_CHECK_MIN_MS + Math.random()*(THIEF_CHECK_MAX_MS - THIEF_CHECK_MIN_MS);
-  pTimeout('thiefHandle', ()=>{
+  state.thiefHandle = setTimeout(()=>{
     // 检查时才判断，允许跨越阶段
     if(!state || state.over) return;
     
@@ -1977,7 +1800,7 @@ function scheduleTide(){
   // 魚群要到這次漲潮週期的後半段才開始出現，不是一開始就跟著游進來；
   // 剩餘時間內游到定位，正好跟撞擊同時抵達
   const fishInDelay = delay / 2;
-  pTimeout('fishInHandle', ()=>{
+  state.fishInHandle = setTimeout(()=>{
     if(!state || state.over) return;
     const fishIn = 2 + Math.floor(Math.random()*4); // 每次漲潮帶入2~5尾
     const riseDur = delay - fishInDelay;
@@ -1987,26 +1810,26 @@ function scheduleTide(){
 
     // 等魚真的游到石滬定位（跟海浪撞擊同一時間抵達）才更新魚獲數字，
     // 不然數字比魚提早出現，會讓人覺得魚還在海裡就先算進魚獲了
-    pTimeout('fishArriveHandle', ()=>{
+    state.fishArriveHandle = setTimeout(()=>{
       if(!state || state.over) return;
       document.getElementById('statFish').textContent = state.fishCaught;
       showFishDelta(fishIn);
     }, riseDur);
   }, fishInDelay);
 
-  pTimeout('tideHandle', ()=>{
+  state.tideHandle = setTimeout(()=>{
     tideStrike();
     state.tideInterval = Math.max(TIDE_INTERVAL_MIN, state.tideInterval - 1); // 沖刷一次後間隔縮短1秒，最短6秒
     if(state && !state.over && !isFullyRepaired()){
       // 海浪撞擊後檢查是否切換日夜
       updateTidePhase();
       // 畫面震動播完之後，海水才開始往下退
-      pTimeout('shakeWaitHandle', ()=>{
+      state.shakeWaitHandle = setTimeout(()=>{
         if(!state || state.over) return;
         recedeOceanQuickly();
         SoundFX.setAmbientLevel(0.12, RECEDE_MS / 1000); // 潮聲底噪跟著退潮變小聲
         ebbFish(RECEDE_MS); // 海水開始後退的瞬間，依照當下的毀損比例讓魚群跟著缺口逃走，動畫時長跟退潮同步
-        pTimeout('recedeHandle', ()=>{
+        state.recedeHandle = setTimeout(()=>{
           if(state && !state.over && !isFullyRepaired()) scheduleTide();
         }, RECEDE_MS);
       }, SHAKE_MS);
@@ -2310,7 +2133,7 @@ const BIRD_CHANCE = 0.15;
 function scheduleBirdCheck(){
   if(!state || state.over) return;
   const wait = BIRD_CHECK_MIN_MS + Math.random()*(BIRD_CHECK_MAX_MS - BIRD_CHECK_MIN_MS);
-  pTimeout('birdHandle', ()=>{
+  state.birdHandle = setTimeout(()=>{
     if(!state || state.over) return;
     if(state.fishList.length > 0 && Math.random() < BIRD_CHANCE){
       triggerBirdEvent();
@@ -2383,7 +2206,7 @@ function triggerToolBroken(){
   banner.classList.remove('show');
   void banner.offsetWidth;
   banner.classList.add('show');
-  pTimeout('toolBrokenHandle', ()=>{
+  state.toolBrokenHandle = setTimeout(()=>{
     if(!state) return;
     state.toolBroken = false;
     state.toolBreakSafeClicksLeft = TOOL_BREAK_SAFE_CLICKS; // 修好後保障至少兩次點擊不會再故障
