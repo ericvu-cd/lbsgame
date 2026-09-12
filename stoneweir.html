@@ -399,6 +399,13 @@
   /* ── 說明介紹頁 ── */
   #helpOverlay{position:fixed;inset:0;z-index:200;display:none;background:rgba(20,10,4,.7);align-items:center;justify-content:center;padding:20px;font-family:'Noto Sans TC',sans-serif;color:var(--ink);}
   #helpOverlay.show{display:flex;}
+
+  /* 切到背景時暫停：回到前景後顯示，點了才真的恢復 */
+  #pauseOverlay{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;background:rgba(20,10,4,.75);font-family:'Noto Sans TC',sans-serif;}
+  #pauseOverlay.show{display:flex;}
+  #pauseOverlay .pause-card{background:var(--cream);border-radius:16px;padding:26px 30px;text-align:center;box-shadow:0 12px 34px rgba(0,0,0,0.4);}
+  #pauseOverlay h3{margin:0 0 16px;font-size:1.1rem;color:var(--wood-dark);}
+  #pauseOverlay button{padding:12px 30px;border:none;border-radius:10px;background:var(--wood-dark);color:#fff;font-weight:bold;font-size:.95rem;cursor:pointer;}
   #helpInner{width:100%;max-width:360px;max-height:80vh;overflow-y:auto;background:var(--cream);padding:18px;box-sizing:border-box;border-radius:16px;box-shadow:0 12px 34px rgba(0,0,0,0.4);}
   #helpInner h2{font-size:1.1rem;margin:0 0 4px;color:var(--wood-dark);}
   #helpInner h3{font-size:.95rem;margin:18px 0 8px;color:var(--wood-dark);display:flex;align-items:center;gap:6px;}
@@ -501,9 +508,16 @@
 <div id="nightOverlay"></div>
 <div id="tideFlash"></div>
 
-<button class="sound-toggle-btn corner-left" id="restartBtn" aria-label="返回平台" title="返回平台" style="display:none; filter: brightness(1.9) saturate(1.8) drop-shadow(0 0 4px rgba(255,255,255,0.9));">🔚</button>
+<button class="sound-toggle-btn corner-left" id="restartBtn" aria-label="返回平台" title="返回平台" style="display:none; filter: brightness(1.9) saturate(1.8) drop-shadow(0 0 4px rgba(255,255,255,0.9));">⛔</button>
 <button class="sound-toggle-btn" id="muteBtn" aria-label="切換音效" title="切換音效">🔊</button>
 <button class="sound-toggle-btn corner-left" id="helpBtn" aria-label="遊戲說明" title="遊戲說明" onclick="document.getElementById('helpOverlay').classList.add('show')">📖</button>
+
+<div id="pauseOverlay">
+  <div class="pause-card">
+    <h3>⏸ 遊戲已暫停</h3>
+    <button onclick="resumeFromPause()">▶ 繼續遊戲</button>
+  </div>
+</div>
 
 <div id="helpOverlay">
   <div id="helpInner">
@@ -1467,6 +1481,44 @@ function stopTimers(){
     clearTimeout(state.thiefHandle);
   }
 }
+
+// ── 切到背景時暫停：分頁不可見時（切app、鎖螢幕、切分頁）把所有計時器清掉，
+// 不讓潮汐/鳥/小偷在背景偷跑；回到前景後跳出提示，玩家點了才真的恢復。
+// 恢復時只重新排程「當下日夜階段」對應的事件（白天排鳥、夜晚排小偷），
+// 不能呼叫 enterDayMode()/enterNightMode()——那兩個函式會連視覺（夜晚罩層、
+// 收魚按鈕狀態）一起重置，如果暫停當下是晚上，回來卻被強制重置回白天畫面就錯了。
+let pausedForVisibility = false;
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden){
+    if(state && !state.over && (state.timerHandle || state.tideHandle)){
+      pausedForVisibility = true;
+      stopTimers();
+    }
+    // 分頁現在是隱藏的，暫停提示等真的切回來才顯示，不然使用者看不到。
+  } else if(pausedForVisibility){
+    document.getElementById('pauseOverlay').classList.add('show');
+  }
+});
+
+window.resumeFromPause = function(){
+  document.getElementById('pauseOverlay').classList.remove('show');
+  pausedForVisibility = false;
+  if(!state || state.over) return;
+  state.timerHandle = setInterval(()=>{
+    state.seconds++;
+    const timeStat = document.getElementById('statTime');
+    timeStat.textContent = formatTime(state.seconds);
+    if(state.tideInterval !== undefined && state.tideInterval <= 10){
+      timeStat.parentElement.classList.add('urgent');
+    } else {
+      timeStat.parentElement.classList.remove('urgent');
+    }
+    updateLiveScore();
+  }, 1000);
+  scheduleTide();
+  if(state.tidePhase === 'night') scheduleThiefCheck();
+  else scheduleBirdCheck();
+};
 
 /* ============ 日夜模式系统 ============ */
 const THIEF_CHECK_MIN_MS = 2000, THIEF_CHECK_MAX_MS = 5000;

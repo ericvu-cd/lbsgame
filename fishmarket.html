@@ -230,6 +230,24 @@
             display: inline-flex; align-items: center; justify-content: center;
             margin-left: 6px; vertical-align: middle; flex-shrink: 0;
         }
+        /* 切到背景時暫停：回到前景後顯示這個提示，玩家點了才真的恢復計時，
+           避免玩家沒注意到，回來瞬間就被扣秒數/被 AI 搶標。 */
+        #pause-overlay {
+            position: fixed; inset: 0; z-index: 400; display: none;
+            align-items: center; justify-content: center;
+            background: rgba(4,14,20,0.75);
+            font-family: "Noto Sans TC", sans-serif;
+        }
+        #pause-overlay.show { display: flex; }
+        #pause-overlay .pause-card {
+            background: #FBF8F0; border-radius: 16px; padding: 26px 30px;
+            text-align: center; box-shadow: 0 12px 34px rgba(0,0,0,0.4);
+        }
+        #pause-overlay h3 { margin: 0 0 16px; font-size: 1.1rem; color: #012F72; }
+        #pause-overlay button {
+            padding: 12px 30px; border: none; border-radius: 10px;
+            background: #3C8577; color: #fff; font-weight: bold; font-size: 0.95rem; cursor: pointer;
+        }
         #help-overlay {
             position: fixed; inset: 0; z-index: 200; display: none;
             background: rgba(4,14,20,0.7);
@@ -386,6 +404,13 @@
         <img src="image/fmbd1.jpg" alt="永續推廣者徽章" id="badge-popup-img">
     </div>
 
+    <div id="pause-overlay">
+        <div class="pause-card">
+            <h3>⏸ 遊戲已暫停</h3>
+            <button onclick="resumeFromPause()">▶ 繼續遊戲</button>
+        </div>
+    </div>
+
     <header id="top-bar">
         <div id="top-bar-row1">
             <div style="display:flex; align-items:center;">
@@ -394,7 +419,7 @@
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
                 <div id="ui-budget">💰 現金: 1500元</div>
-                <button id="exit-fab" onclick="exitAndReturnToPlatform()" aria-label="返回平台" style="filter: brightness(1.9) saturate(1.8) drop-shadow(0 0 4px rgba(255,255,255,0.9));">🔚 返回</button>
+                <button id="exit-fab" onclick="exitAndReturnToPlatform()" aria-label="返回平台" style="filter: brightness(1.9) saturate(1.8) drop-shadow(0 0 4px rgba(255,255,255,0.9));">⛔ 返回</button>
             </div>
         </div>
         <div id="top-bar-row2">
@@ -1577,6 +1602,40 @@
                 }
             }, 1000);
         }
+
+        // ── 切到背景時暫停：分頁不可見時（切app、鎖螢幕、切分頁）清掉正在跑的計時器，
+        // 不讓拍賣倒數/AI出價在背景偷跑；回到前景後跳出提示，玩家點了才真的恢復，
+        // 不會一回來就發現時間已經被扣完、或被 AI 搶標。
+        let pausedContext = null; // 'bidding'（正在喊價）｜'nextBox'（換下一箱的5秒倒數）｜null
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (auctionState.mainTimer || auctionState.aiTimer) {
+                    pausedContext = 'bidding';
+                    clearInterval(auctionState.mainTimer);
+                    clearInterval(auctionState.aiTimer);
+                    auctionState.mainTimer = null;
+                    auctionState.aiTimer = null;
+                } else if (auctionState.nextBoxTimer) {
+                    pausedContext = 'nextBox';
+                    clearInterval(auctionState.nextBoxTimer);
+                    auctionState.nextBoxTimer = null;
+                }
+                // 分頁現在是隱藏的，暫停提示等真的切回來才顯示，不然使用者根本看不到。
+            } else if (pausedContext) {
+                document.getElementById('pause-overlay').classList.add('show');
+            }
+        });
+
+        window.resumeFromPause = function () {
+            document.getElementById('pause-overlay').classList.remove('show');
+            if (pausedContext === 'bidding') {
+                auctionState.mainTimer = setInterval(countdownTimer, 100);
+                auctionState.aiTimer = setInterval(aiThinkLoop, 800);
+            } else if (pausedContext === 'nextBox') {
+                startNextBoxCountdown(); // 5秒倒數重新開始算，不強求精準保留剩餘秒數
+            }
+            pausedContext = null;
+        };
 
         function continueNextBox() {
             clearInterval(auctionState.nextBoxTimer);
