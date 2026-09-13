@@ -322,6 +322,9 @@
     </style>
 </head>
 <body>
+<audio id="bgm" loop preload="auto">
+  <source src="audio/fmbgm.m4a" type="audio/mp4">
+</audio>
 
     <div id="portrait-warning" class="portrait-warning">
         <div class="portrait-warning-icon">📱↻</div>
@@ -746,16 +749,21 @@
             };
         })();
 
+        const bgm = document.getElementById('bgm');
+        bgm.volume = 0.22; // 「輕量」的bgm，音量壓低一點，不搶過拍賣音效跟畫面文字
+
         function toggleSound() {
             const isMuted = SFX.toggleMuted();
             const btn = document.getElementById('sound-toggle');
             btn.innerText = isMuted ? '🔇' : '🔊';
             btn.classList.toggle('muted', isMuted);
+            bgm.muted = isMuted;
         }
 
         (function initSoundToggleIcon() {
             const btn = document.getElementById('sound-toggle');
             if (btn && SFX.isMuted()) { btn.innerText = '🔇'; btn.classList.add('muted'); }
+            bgm.muted = SFX.isMuted(); // 頁面載入時就同步好，不用等玩家點一次靜音鍵才對齊
         })();
 
         sendToPlatform('ready', {}); // 越早送出，player_info 越有機會在玩家按下「開始拍賣」前就準備好
@@ -1607,6 +1615,8 @@
         // 不讓拍賣倒數/AI出價在背景偷跑；回到前景後跳出提示，玩家點了才真的恢復，
         // 不會一回來就發現時間已經被扣完、或被 AI 搶標。
         let pausedContext = null; // 'bidding'（正在喊價）｜'nextBox'（換下一箱的5秒倒數）｜null
+        let wasBgmPlaying = false;
+        let showPauseOverlayPending = false;
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 if (auctionState.mainTimer || auctionState.aiTimer) {
@@ -1620,14 +1630,31 @@
                     clearInterval(auctionState.nextBoxTimer);
                     auctionState.nextBoxTimer = null;
                 }
+                // 背景音樂從按下「開始拍賣」就會一路播到結束，橫跨拍賣中／看板整備中
+                // 這些不同階段，不能只跟著上面那兩種計時器有沒有在跑來決定要不要暫停——
+                // 「看板已就緒、等你按開始拍賣」這種準備畫面本來就沒有計時器在跑，
+                // 但音樂還是在播，之前只檢查計時器，這個階段切到背景音樂完全沒被暫停到。
+                // 改成只要音樂正在播放，就記一個 wasBgmPlaying，跟計時器分開判斷。
+                if (!bgm.paused) {
+                    wasBgmPlaying = true;
+                    bgm.pause();
+                }
                 // 分頁現在是隱藏的，暫停提示等真的切回來才顯示，不然使用者根本看不到。
-            } else if (pausedContext) {
+                if (pausedContext) showPauseOverlayPending = true;
+            } else if (showPauseOverlayPending) {
+                showPauseOverlayPending = false;
                 document.getElementById('pause-overlay').classList.add('show');
+            } else if (wasBgmPlaying) {
+                // 剛剛只有音樂在播、沒有拍賣計時器在跑（例如在「看板已就緒」畫面被切走），
+                // 不需要跳出「遊戲已暫停」的提示擋住畫面，直接把音樂接回來就好。
+                wasBgmPlaying = false;
+                bgm.play().catch(()=>{});
             }
         });
 
         window.resumeFromPause = function () {
             document.getElementById('pause-overlay').classList.remove('show');
+            if (wasBgmPlaying) { wasBgmPlaying = false; bgm.play().catch(()=>{}); }
             if (pausedContext === 'bidding') {
                 auctionState.mainTimer = setInterval(countdownTimer, 100);
                 auctionState.aiTimer = setInterval(aiThinkLoop, 800);
@@ -1646,6 +1673,8 @@
 
         function startGame() {
             SFX.unlock();
+            bgm.currentTime = 0;
+            bgm.play().catch(()=>{}); // 用 catch 保險，避免拋出未處理的例外
             document.getElementById('intro-screen').style.display = 'none';
             initRound();
         }
@@ -1665,6 +1694,8 @@
             gameState.lastTopUp = 0;
             gameState.aiBudgets = {};
             document.getElementById('final-result-screen').style.display = 'none';
+            bgm.currentTime = 0;
+            bgm.play().catch(()=>{});
             initRound();
         }
     </script>
