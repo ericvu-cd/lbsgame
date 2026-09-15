@@ -3,6 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script>
+        /* 桌機/寬螢幕自動導向「手機外框」展示版（fishmarket-desktop.html），
+           手機直接開（寬度 <=700）完全不受影響、不會跳轉。 */
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            var inIframe = (window.self !== window.top);
+            if (window.innerWidth > 700 && !inIframe && !params.has('embedded')) {
+                window.location.replace('fishmarket-desktop.html');
+            }
+        })();
+    </script>
     <title>永續魚市拍賣：苗栗龍鳳漁港</title>
 	<link rel="icon" type="image/png" href="image/fmicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -799,11 +810,19 @@
         }
 
         /* ---------- 平台通訊（對應「任務頁面通訊介面規格.md」） ---------- */
-        // 送訊息給平台（平台用 window.open 開這個頁面，開啟者是 window.opener）。
-        // targetOrigin 用 '*'：不預先假設平台網址，這則訊息也不含敏感資料，可接受。
+        // 送訊息給平台。targetOrigin 用 '*'：不預先假設平台網址，這則訊息也不含敏感資料，可接受。
+        //
+        // ⚠️ 桌機/寬螢幕模式下，這個頁面是被 fishmarket-desktop.html 用 <iframe> 包起來
+        // 執行的，iframe 裡的 window.opener 永遠是 null。就算改成摸 window.top.opener
+        // 直接送，也會因為 postMessage 的 event.source 永遠是「實際執行這行程式碼的視窗」
+        // （也就是 iframe 自己），跟平台記錄的視窗物件對不上而被忽略（6htw 實測踩過這個坑）。
+        // 正確做法：iframe 只送給自己的上一層（window.parent），由 fishmarket-desktop.html
+        // 自己執行 postMessage 轉發給平台；沒有套桌機外框時 window.parent 就是 window 自己，
+        // 效果等同直接送給 window.opener。
         function sendToPlatform(type, payload) {
-            if (!window.opener) return;
-            window.opener.postMessage({
+            const target = (window.self !== window.top) ? window.parent : window.opener;
+            if (!target) return;
+            target.postMessage({
                 source: 'culture-task',
                 version: 1,
                 taskId: TASK_ID,
@@ -821,7 +840,7 @@
                 history.pushState(null, '', location.href);
                 if (!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
                 sendToPlatform('exit', {});
-                window.close();
+                (window.top || window).close();
             });
         }
 
@@ -1307,14 +1326,14 @@
         // 不再是原本「重設遊戲狀態、回到開場畫面重玩」的行為（原本按鈕文字跟實際行為不一致）。
         function closeAndReturnToPlatform() {
             sendToPlatform('exit', {});
-            window.close();
+            (window.top || window).close(); // 桌機外框模式下要關的是最外層視窗，iframe 自己無法關閉自己
         }
 
         // 頂部列的「返回」按鈕：遊戲進行中隨時可以按，會中斷這一局，先跳確認框避免誤觸。
         function exitAndReturnToPlatform() {
             if (!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
             sendToPlatform('exit', {});
-            window.close();
+            (window.top || window).close();
         }
 
         function updateInventorySummary() {
