@@ -3,6 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<script>
+    /* 桌機/寬螢幕自動導向「手機外框」展示版（mlhbtrip-desktop.html），
+       手機直接開（寬度 <=700）完全不受影響、不會跳轉。 */
+    (function() {
+        var params = new URLSearchParams(window.location.search);
+        var inIframe = (window.self !== window.top);
+        if (window.innerWidth > 700 && !inIframe && !params.has('embedded')) {
+            window.location.replace('mlhbtrip-desktop.html');
+        }
+    })();
+</script>
 <title>苗栗漁港一日遊</title>
 <link rel="icon" type="image/png" href="image/mlhbicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -487,18 +498,35 @@ var el = {
 // 每座漁港的通行證對應一個平台端的 certificateId，命名規則：TASK_ID + '_' + 漁港id
 function certIdFor(harborId){ return TASK_ID + '_' + harborId; }
 
-// 送訊息給平台（平台是用 window.open 開這個頁面，開啟者是 window.opener）。
-// 不預先假設平台網址，targetOrigin 用 '*'：這個訊息本身不含任何敏感資料，
-// 頁面若不是被平台開啟（例如直接用瀏覽器打開測試），window.opener 會是 null，這裡會靜默略過。
+// 送訊息給平台。不預先假設平台網址，targetOrigin 用 '*'：這個訊息本身不含任何敏感資料，
+// 頁面若不是被平台開啟（例如直接用瀏覽器打開測試），會靜默略過。
+//
+// ⚠️ 桌機/寬螢幕模式下，這個頁面是被 mlhbtrip-desktop.html 用 <iframe> 包起來執行的，
+// iframe 裡的 window.opener 永遠是 null。就算改成摸 window.top.opener 直接送，也會因為
+// postMessage 的 event.source 永遠是「實際執行這行程式碼的視窗」（也就是 iframe 自己），
+// 跟平台記錄的視窗物件對不上而被忽略（6htw 實測踩過這個坑）。正確做法：iframe 只送給
+// 自己的上一層（window.parent），由 mlhbtrip-desktop.html 自己執行 postMessage 轉發給
+// 平台；沒有套桌機外框時 window.parent 就是 window 自己，效果等同直接送給 window.opener。
 function sendToPlatform(type, payload){
-  if(!window.opener) return;
-  window.opener.postMessage({
+  const target = (window.self !== window.top) ? window.parent : window.opener;
+  if(!target) return;
+  target.postMessage({
     source: 'culture-task',
     version: 1,
     taskId: TASK_ID,
     type: type,
     payload: payload || {}
   }, '*');
+}
+
+// 送 exit 訊息 + 關閉分頁的共用做法：postMessage 是非同步的，如果送完立刻同步呼叫
+// close()，桌機外框模式下這則 exit 訊息還要多轉一手（iframe → window.parent →
+// 轉發給平台），視窗有可能在轉發完成前就被關掉，導致平台收到訊息時記錄已經被判定
+// 失效、或訊息根本沒轉發成功就消失了（其他任務實測遇過「exit 訊息但查無記錄」的警告）。
+// 延遲一小段時間再關閉，確保訊息有時間走完整趟轉發。
+function exitAndClosePlatform(){
+  sendToPlatform('exit', {});
+  setTimeout(function(){ (window.top || window).close(); }, 150);
 }
 
 // ── 攔截瀏覽器「上一頁」（含手機滑動返回手勢）：不要讓它直接把分頁導覽走 ──
@@ -509,8 +537,7 @@ if (window.history && window.history.pushState) {
   window.addEventListener('popstate', function () {
     history.pushState(null, '', location.href);
     if (!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
-    sendToPlatform('exit', {});
-    window.close();
+    exitAndClosePlatform();
   });
 }
 
