@@ -778,6 +778,16 @@ function sendToPlatform(type, payload){
   }, '*');
 }
 
+// 送 exit 訊息 + 關閉分頁的共用做法：postMessage 是非同步的，如果送完立刻同步呼叫
+// close()，桌機外框模式下這則 exit 訊息還要多轉一手（iframe → window.parent →
+// 轉發給平台），視窗有可能在轉發完成前就被關掉，導致平台收到訊息時記錄已經被判定
+// 失效、或訊息根本沒轉發成功就消失了（實測遇過「exit 訊息但查無記錄」的警告）。
+// 延遲一小段時間再關閉，確保訊息有時間走完整趟轉發。
+function exitAndClosePlatform(){
+  sendToPlatform('exit', {});
+  setTimeout(function(){ (window.top || window).close(); }, 150);
+}
+
 // ── 攔截瀏覽器「上一頁」（含手機滑動返回手勢）：不要讓它直接把分頁導覽走 ──
 // 原理：先塞一筆假的瀏覽紀錄，使用者按上一頁時只會觸發 popstate（不會真的離開），
 // 這時候把假紀錄補回去、跳確認視窗；確定要走才真的送 exit + 關閉分頁。
@@ -786,8 +796,7 @@ if (window.history && window.history.pushState) {
   window.addEventListener('popstate', function () {
     history.pushState(null, '', location.href);
     if (!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
-    sendToPlatform('exit', {});
-    (window.top || window).close(); // 桌機外框模式下要關的是最外層視窗，iframe 自己無法關閉自己
+    exitAndClosePlatform();
   });
 }
 
@@ -1422,8 +1431,7 @@ document.addEventListener('contextmenu', (e)=>{ e.preventDefault(); });
 document.getElementById('restartBtn').addEventListener('click', ()=>{
   SoundFX.uiClick();
   if(!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
-  sendToPlatform('exit', {});
-  (window.top || window).close(); // 桌機外框模式下要關的是最外層視窗，iframe 自己無法關閉自己
+  exitAndClosePlatform();
 });
 document.getElementById('collectFishBtn').addEventListener('click', ()=>{
   if(!state || state.over || state.tidePhase !== 'day') return;
@@ -1443,8 +1451,7 @@ document.getElementById('playAgainBtn').addEventListener('click', ()=>{
 });
 document.getElementById('closeGameBtn').addEventListener('click', ()=>{
   SoundFX.uiClick();
-  sendToPlatform('exit', {}); // 通知平台這個任務視窗要關了，平台會清掉對應的記錄
-  (window.top || window).close(); // 桌機外框模式下要關的是最外層視窗，iframe 自己無法關閉自己
+  exitAndClosePlatform(); // 通知平台這個任務視窗要關了，平台會清掉對應的記錄
 });
 document.getElementById('playAgainLoseBtn').addEventListener('click', ()=>{
   SoundFX.uiClick();
@@ -1452,8 +1459,7 @@ document.getElementById('playAgainLoseBtn').addEventListener('click', ()=>{
 });
 document.getElementById('closeGameLoseBtn').addEventListener('click', ()=>{
   SoundFX.uiClick();
-  sendToPlatform('exit', {}); // 通知平台這個任務視窗要關了，平台會清掉對應的記錄
-  (window.top || window).close(); // 桌機外框模式下要關的是最外層視窗，iframe 自己無法關閉自己
+  exitAndClosePlatform(); // 通知平台這個任務視窗要關了，平台會清掉對應的記錄
 });
 
 /* ============ 遊戲邏輯 ============ */
